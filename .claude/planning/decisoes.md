@@ -19,7 +19,7 @@
 |---|---|---|
 | D1 | **.NET 10 (LTS)** | A spec não fixava versão. Inicialmente .NET 9; trocado porque o 9 sai de suporte em nov/2026 e o ambiente só instala 8 ou 10 |
 | D2 | Solution `Viteme.sln` **na raiz** do repositório | |
-| D3 | **Somente API** neste repositório; frontend fica para outro momento | `viteme-web` fora do escopo agora |
+| D3 | **Somente API** neste repositório; frontend em repositório/pasta própria, **depois da API** | Entrega 3 exige frontend integrado: etapa 7 do roadmap |
 | D4 | Banco: **PostgreSQL no Supabase** | Ver nota de conexão abaixo |
 | D5 | **Sem Docker/docker-compose** por enquanto | Não há necessidade de rodar nada local no momento |
 | D6 | Gateway de pagamento: **Asaas** | Aceita CPF (sem exigir CNPJ), tem sandbox gratuito, Pix nativo. Implementação real fica **para depois**; começa com stub |
@@ -41,7 +41,7 @@
 
 **Fora desta versão (spec, seção 1.7):** cupons e benefícios; relatórios além da lista de inscritos; notificações por e-mail/WhatsApp (entram como novos canais); aplicativo nativo; exclusão de conta pelo próprio usuário (será por anonimização); escolha do provedor de SMS.
 
-**Fora por decisão da equipe agora:** frontend. Não transcrito nestes documentos: seção 5 do PDF (tecnologias, telas T01–T12, navegação, fluxos, formulários e interações com a API) e os casos CT58–CT63. Consultar o PDF original quando o frontend for retomado.
+**Frontend:** adiado só em ordem de implementação; a Entrega 3 exige frontend integrado, então volta ao escopo na etapa 7 ([entrega-3.md](entrega-3.md)). Não transcrito nestes documentos: seção 5 do PDF (tecnologias, telas T01–T12, navegação, fluxos, formulários e interações com a API) e os casos CT58–CT63. Consultar o PDF original quando o frontend for retomado.
 
 ## 4. Pontos em aberto / riscos a verificar
 

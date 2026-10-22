@@ -2,13 +2,16 @@
 
 Base: *Especificação Técnica Viteme* (Uniceve, Engenharia de Software, Maringá/PR, 2026 — Vitor Boer, Vitor Antonio, Luiz Ricardo; Prof. Fabricio), complementada pelas decisões tomadas na conversa de inicialização do projeto.
 
-Este repositório contém **somente a API**. O frontend (`viteme-web`, React) fica para outro momento e outro repositório.
+Este repositório contém **a API**. O frontend (`viteme-web`, React) vem depois, em outro repositório/pasta, mas é exigido pela Entrega 3 (ver [entrega-3.md](entrega-3.md)).
 
 ## Índice
 
 | Arquivo | Conteúdo |
 |---|---|
 | [decisoes.md](decisoes.md) | Decisões da equipe, desvios em relação ao PDF e pontos em aberto |
+| [entrega-3.md](entrega-3.md) | Conferência dos requisitos da Entrega 3 contra o plano (lacunas e ajustes) |
+| [testes-execucao.md](testes-execucao.md) | Registro de execução dos testes (resultado e evidência) |
+| [bugs.md](bugs.md) | Registro de bugs e correções |
 | [pendencias.md](pendencias.md) | Pendências técnicas (P1–P9), responsáveis e etapa em que resolver |
 | [arquitetura.md](arquitetura.md) | Camadas, projetos da solution, fluxos, integrações e tarefas em segundo plano |
 | [banco/modelo.md](banco/modelo.md) | Convenções, 14 entidades, enums, relacionamentos, integridade e índices |

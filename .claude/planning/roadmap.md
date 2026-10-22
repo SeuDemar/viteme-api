@@ -2,7 +2,7 @@
 
 Ordem combinada: scaffold → Domain + DbContext + migration inicial → Auth (E01–E09) → Eventos → Inscrições/Pagamentos → resto.
 
-Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e SMS em **stub**, sem Docker/compose, frontend fora do escopo. Cada etapa fecha com `dotnet build` e `dotnet test` verdes (sem subir a aplicação nem conectar ao banco).
+Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e SMS em **stub**, sem Docker/compose. Frontend: etapa 7 (exigido pela Entrega 3, ver [entrega-3.md](entrega-3.md)). Cada etapa fecha com `dotnet build` e `dotnet test` verdes (sem subir a aplicação nem conectar ao banco).
 
 ## Etapa 0 — Scaffold
 
@@ -34,6 +34,8 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 - `AuthService`, `ITokenService` (JWT HS256, refresh com hash, rotação e detecção de reuso), PasswordHasher.
 - Cookie de refresh (`HttpOnly; Secure; SameSite=Strict`, path `/api/v1/auth`), CORS com credenciais.
 - Bloqueio de login (RN03), rate limiting (login 5/min), ProblemDetails com `codigo`.
+- **Swagger UI** (exigido pela Entrega 3): esquema Bearer, descrição de erros, acessível no ambiente da demonstração.
+- Decidir biblioteca de validação (FluentValidation ou DataAnnotations).
 - `UsuarioService`: perfil, telefone, código de verificação (hash, 10 min, 5 tentativas, 60 s entre envios), aceite de SMS (RN18).
 - `INotificationSender` + **stub de SMS**.
 - Testes: CT01–CT13.
@@ -72,8 +74,24 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 - Revisão de segurança (matriz de acesso, rate limiting, logs sem dados sensíveis).
 - OpenAPI completo; README e guia de deploy; escolha e implementação do provedor de SMS real e do adaptador Asaas, se a equipe decidir.
 
+## Etapa 7 — Frontend (exigido pela Entrega 3)
+
+- Repositório/pasta `viteme-web` (React + TypeScript + Vite), conforme seção 5 do PDF: telas T01–T12, navegação, fluxos, formulários com Zod, cliente Axios com renovação automática de token, TanStack Query.
+- Fluxo mínimo da demonstração: cadastro → login → mural → inscrição (gratuita e paga) → minhas inscrições → criar/publicar evento → check-in → certificado.
+- Testes CT58–CT63 (Vitest + RTL + MSW).
+- Decidir antes a hospedagem (mesmo site para API e frontend por causa do cookie `SameSite=Strict`).
+
+## Etapa 8 — Fechamento da Entrega 3
+
+- Rodar **todos** os testes e preencher [testes-execucao.md](testes-execucao.md) com resultado e evidência; [bugs.md](bugs.md) completo.
+- Seed de dados e script SQL (`dotnet ef migrations script`) para demonstrar o banco.
+- Documentação final em `docs/` e README completo (descrição, como executar, tecnologias, estrutura, ambiente, endpoints, banco, autenticação, guia de uso).
+- Conferir [entrega-3.md](entrega-3.md) item a item.
+
 ## Convenções de trabalho por etapa
 
 - Uma etapa = uma sequência de commits pequenos na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito.
+- A banca avalia a participação de cada integrante: cada um commita com nome/e-mail próprios e, preferencialmente, via branch + PR (ver [entrega-3.md](entrega-3.md), seção 6).
+- Registrar testes executados e bugs durante o desenvolvimento, não no fim.
 - Atualizar estes documentos quando uma decisão mudar.
 - Não rodar a aplicação nem acessar o banco; validar com `dotnet build` e `dotnet test`.
