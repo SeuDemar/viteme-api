@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Viteme.sln
+
+      - name: Build
+        run: dotnet build Viteme.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test Viteme.sln --no-build -c Release

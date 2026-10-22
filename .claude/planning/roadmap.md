@@ -2,12 +2,12 @@
 
 Ordem combinada: scaffold → Domain + DbContext + migration inicial → Auth (E01–E09) → Eventos → Inscrições/Pagamentos → resto.
 
-Premissas: .NET 9, `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e SMS em **stub**, sem Docker/compose, frontend fora do escopo. Cada etapa fecha com `dotnet build` e `dotnet test` verdes (sem subir a aplicação nem conectar ao banco).
+Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e SMS em **stub**, sem Docker/compose, frontend fora do escopo. Cada etapa fecha com `dotnet build` e `dotnet test` verdes (sem subir a aplicação nem conectar ao banco).
 
 ## Etapa 0 — Scaffold
 
 - `Viteme.sln` com `Viteme.Domain`, `Viteme.Application`, `Viteme.Infrastructure`, `Viteme.Api`, `Viteme.Tests` e as referências da regra de dependência.
-- `global.json`/`Directory.Build.props` (net9.0, nullable, warnings como erros onde fizer sentido), `.editorconfig`, `.gitignore` para .NET.
+- `global.json`/`Directory.Build.props` (net10.0, nullable, warnings como erros onde fizer sentido), `.editorconfig`, `.gitignore` para .NET.
 - Pacotes base: EF Core + Npgsql, JWT Bearer, OpenAPI/Swagger, xUnit + NSubstitute (ou Moq), FluentValidation (a decidir).
 - Estrutura de pastas do [arquitetura.md](arquitetura.md).
 - `Program.cs` mínimo: DI, ProblemDetails, middleware de exceções, versionamento `/api/v1`, `GET /api/v1/saude` (health).
@@ -16,6 +16,8 @@ Premissas: .NET 9, `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e SMS em
 - CI (GitHub Actions): build + testes unitários a cada push.
 
 **Pronto quando:** compila, 1 teste de exemplo passa, CI verde.
+
+> **Concluída.** `dotnet build` sem warnings e 3 testes passando (health check e middleware de erros). Ficaram para depois: FluentValidation (decidir na etapa 2) e Swagger UI (por ora só o OpenAPI nativo em desenvolvimento).
 
 ## Etapa 1 — Domain + DbContext + migration inicial
 

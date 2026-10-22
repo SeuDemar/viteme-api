@@ -17,7 +17,7 @@
 
 | # | Decisão | Observação |
 |---|---|---|
-| D1 | **.NET 9** | A spec não fixava versão |
+| D1 | **.NET 10 (LTS)** | A spec não fixava versão. Inicialmente .NET 9; trocado porque o 9 sai de suporte em nov/2026 e o ambiente só instala 8 ou 10 |
 | D2 | Solution `Viteme.sln` **na raiz** do repositório | |
 | D3 | **Somente API** neste repositório; frontend fica para outro momento | `viteme-web` fora do escopo agora |
 | D4 | Banco: **PostgreSQL no Supabase** | Ver nota de conexão abaixo |

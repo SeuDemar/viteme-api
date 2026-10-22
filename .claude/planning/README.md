@@ -9,6 +9,7 @@ Este repositório contém **somente a API**. O frontend (`viteme-web`, React) fi
 | Arquivo | Conteúdo |
 |---|---|
 | [decisoes.md](decisoes.md) | Decisões da equipe, desvios em relação ao PDF e pontos em aberto |
+| [pendencias.md](pendencias.md) | Pendências técnicas (P1–P9), responsáveis e etapa em que resolver |
 | [arquitetura.md](arquitetura.md) | Camadas, projetos da solution, fluxos, integrações e tarefas em segundo plano |
 | [banco/modelo.md](banco/modelo.md) | Convenções, 14 entidades, enums, relacionamentos, integridade e índices |
 | [api/convencoes-e-erros.md](api/convencoes-e-erros.md) | Convenções da API, ProblemDetails e códigos de erro |
@@ -20,10 +21,10 @@ Este repositório contém **somente a API**. O frontend (`viteme-web`, React) fi
 
 ## Resumo em um parágrafo
 
-Viteme centraliza divulgação, inscrição e acompanhamento dos eventos da faculdade, com avisos de alteração e sem taxa da plataforma. Backend em **.NET 9 (ASP.NET Core)**, monólito modular em camadas inspirado em Clean Architecture, **PostgreSQL no Supabase** via EF Core/Npgsql, autenticação **JWT + refresh token rotativo**, pagamentos por gateway atrás de interface (**Asaas** escolhido, implementação posterior; stub primeiro), notificações no site e por SMS (stub primeiro) e modelo **sem administrador**: o papel (participante, organizador, colaborador) é definido **por evento**.
+Viteme centraliza divulgação, inscrição e acompanhamento dos eventos da faculdade, com avisos de alteração e sem taxa da plataforma. Backend em **.NET 10 LTS (ASP.NET Core)**, monólito modular em camadas inspirado em Clean Architecture, **PostgreSQL no Supabase** via EF Core/Npgsql, autenticação **JWT + refresh token rotativo**, pagamentos por gateway atrás de interface (**Asaas** escolhido, implementação posterior; stub primeiro), notificações no site e por SMS (stub primeiro) e modelo **sem administrador**: o papel (participante, organizador, colaborador) é definido **por evento**.
 
 ## Estado atual
 
-- Repositório inicializado, sem código ainda.
+- Etapa 0 (scaffold) concluída: solution, 5 projetos, health check, middleware de erros e CI.
 - Spec lida por completo e transcrita nesta pasta.
-- Próximo passo: ver [roadmap.md](roadmap.md), etapa 0 (scaffold).
+- Próximo passo: etapa 1 do [roadmap.md](roadmap.md) (Domain + DbContext + migration inicial).
