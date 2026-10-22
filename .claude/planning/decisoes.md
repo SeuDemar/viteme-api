@@ -41,7 +41,7 @@
 
 **Fora desta versão (spec, seção 1.7):** cupons e benefícios; relatórios além da lista de inscritos; notificações por e-mail/WhatsApp (entram como novos canais); aplicativo nativo; exclusão de conta pelo próprio usuário (será por anonimização); escolha do provedor de SMS.
 
-**Fora por decisão da equipe agora:** frontend.
+**Fora por decisão da equipe agora:** frontend. Não transcrito nestes documentos: seção 5 do PDF (tecnologias, telas T01–T12, navegação, fluxos, formulários e interações com a API) e os casos CT58–CT63. Consultar o PDF original quando o frontend for retomado.
 
 ## 4. Pontos em aberto / riscos a verificar
 
