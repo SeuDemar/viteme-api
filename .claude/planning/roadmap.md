@@ -19,7 +19,7 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 
 > **Concluída.** `dotnet build` sem warnings e 3 testes passando (health check e middleware de erros). Ficaram para depois: FluentValidation (decidir na etapa 2) e Swagger UI (por ora só o OpenAPI nativo em desenvolvimento).
 
-## Etapa 1 — Domain + DbContext + migration inicial
+## Etapa 1 — Domain + DbContext + migration inicial  ✅ concluída
 
 - 14 entidades e 6 enums (com comportamento: `Evento.Publicar()`, `Inscricao.Confirmar()` etc.).
 - `VitemeDbContext`, configurações Fluent API (snake_case, enums nativos, `xmin`, índices e CHECKs de [banco/modelo.md](banco/modelo.md)).
@@ -29,12 +29,16 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 
 **Pronto quando:** migration gerada e revisada (SQL conferido contra RI01–RI12); testes de entidade passando.
 
+> **Concluída.** 14 entidades com comportamento, 6 enums nativos, `VitemeDbContext` (snake_case, `criado_em`/`atualizado_em` automáticos, `xmin` como ETag), migration `Inicial` com RI01–RI12 (o índice `lower(email)` entra por SQL na migration), `IRelogio` e `IUnitOfWork`. Script SQL em `docs/banco/schema.sql`. 64 testes (domínio, persistência em PostgreSQL real e Swagger). Os **repositories** e interfaces como `IEventoRepository` entram junto com os services que os usam (etapas 2 em diante), para não criar código sem uso.
+
+> **Swagger UI** (antecipado da etapa 2) também está pronto: `/swagger`.
+
 ## Etapa 2 — Autenticação e conta (E01–E09)
 
 - `AuthService`, `ITokenService` (JWT HS256, refresh com hash, rotação e detecção de reuso), PasswordHasher.
 - Cookie de refresh (`HttpOnly; Secure; SameSite=Strict`, path `/api/v1/auth`), CORS com credenciais.
 - Bloqueio de login (RN03), rate limiting (login 5/min), ProblemDetails com `codigo`.
-- **Swagger UI** (exigido pela Entrega 3): esquema Bearer, descrição de erros, acessível no ambiente da demonstração.
+- ~~**Swagger UI**~~ ✅ já feito na etapa 1 (esquema Bearer, cadeado só nos endpoints `[Authorize]`). Falta documentar os erros (`ProducesResponseType` + ProblemDetails) em cada controller conforme forem criados.
 - Decidir biblioteca de validação (FluentValidation ou DataAnnotations).
 - `UsuarioService`: perfil, telefone, código de verificação (hash, 10 min, 5 tentativas, 60 s entre envios), aceite de SMS (RN18).
 - `INotificationSender` + **stub de SMS**.

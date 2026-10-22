@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Viteme.Api.Middlewares;
-using Viteme.Application.Excecoes;
+using Viteme.Domain.Excecoes;
 
 namespace Viteme.Tests.Unitarios;
 

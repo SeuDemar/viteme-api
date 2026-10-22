@@ -26,6 +26,9 @@
 | D7 | **SMS: stub** (grava em log/banco, não envia) | Não existe SMS gratuito de verdade no Brasil; provedor real é pay-per-use (opções: AWS SNS, Zenvia, Comtele, Twilio). Decidir perto da entrega |
 | D8 | Ordem de implementação: scaffold → Domain + DbContext + migration inicial → Auth (E01–E09) → Eventos → Inscrições/Pagamentos → resto | Ver [roadmap.md](roadmap.md) |
 | D9 | Permitido rodar `dotnet build` e `dotnet test` no ambiente para validar compilação | Sem subir a aplicação nem conectar ao banco |
+| D11 | Testes de persistência rodam em **PostgreSQL real via variável `VITEME_TESTES_DB`** (banco temporário criado e removido a cada execução). No CI é um serviço `postgres:16`; localmente pode ser qualquer Postgres. Sem a variável, esses testes são ignorados | Substitui o Testcontainers da spec (mesmo resultado, sem exigir Docker no ambiente). Pode voltar ao Testcontainers depois |
+| D12 | `RegraDeNegocioException` mora no **Domain** (entidades lançam a exceção; a API converte em ProblemDetails) | Spec previa só validar nos services; invariantes simples ficam nas entidades |
+| D13 | Swagger UI em `/swagger` sobre o OpenAPI nativo (`/openapi/v1.json`); em Desenvolvimento sempre ligado, nos demais ambientes só com `Swagger:Habilitar=true` | Exigido pela Entrega 3 |
 | D10 | Desenvolvimento na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito | |
 
 ### Nota sobre Supabase + Npgsql
@@ -61,3 +64,17 @@ Itens que a spec não resolve ou que dependem de confirmação antes da implemen
 - Código C# em `PascalCase`; tabelas e colunas em `snake_case` em português (mapeadas pelo EF Core); JSON em `camelCase`.
 - Nomes de domínio em português, como na spec (`Inscricao`, `Evento`, `IGatewayPagamento`).
 - Toda regra de negócio nova ou alterada atualiza [api/regras-de-negocio.md](api/regras-de-negocio.md) e a matriz de rastreabilidade em [testes.md](testes.md).
+
+## 6. Acréscimos em relação à spec (códigos e comportamentos novos)
+
+Surgiram ao implementar o domínio. Manter a spec e o código alinhados: se a equipe aprovar, refletir no PDF.
+
+| Item | Onde | Motivo |
+|---|---|---|
+| `EVENTO_JA_PUBLICADO` (409) | `Evento.Publicar` | A spec só define o fluxo RASCUNHO/OCULTO → PUBLICADO; publicar de novo precisava de um erro |
+| `PERIODO_INVALIDO` (400) | `Evento.ValidarPeriodos`, `AtividadeProgramacao` | Rede de segurança no domínio; o validador de DTO deve responder 400 com erro por campo antes (CT15, CT16) |
+| `DESCRICAO_OBRIGATORIA` (400) | `Denuncia` | Motivo `OUTRO` exige descrição (também há CHECK no banco) |
+| `VALOR_INVALIDO` (400), `PAGAMENTO_NAO_PENDENTE/APROVADO` (409), `INSCRICAO_NAO_PENDENTE/ATIVA` (409) | `Pagamento`, `Inscricao` | Transições de estado inválidas |
+| `ERRO_INTERNO` (500) | Middleware de erros | Código estável para erros inesperados |
+| Aprovação tardia de pagamento expirado é registrada como APROVADO | `Pagamento.Aprovar` | RN23: depois o service solicita o estorno automático |
+| `EnvioSms` permanece PENDENTE entre as 3 novas tentativas e só vira FALHOU na 4.ª falha | `EnvioSms` | Permite à tarefa de 1 minuto saber o que reenviar (RN16) |

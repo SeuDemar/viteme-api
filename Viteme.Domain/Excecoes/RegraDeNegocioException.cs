@@ -1,4 +1,4 @@
-namespace Viteme.Application.Excecoes;
+namespace Viteme.Domain.Excecoes;
 
 /// <summary>
 /// Violação de regra de negócio com código estável. A API converte em ProblemDetails

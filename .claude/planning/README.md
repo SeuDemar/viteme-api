@@ -29,5 +29,6 @@ Viteme centraliza divulgação, inscrição e acompanhamento dos eventos da facu
 ## Estado atual
 
 - Etapa 0 (scaffold) concluída: solution, 5 projetos, health check, middleware de erros e CI.
+- Etapa 1 concluída: entidades, enums, DbContext, migration inicial (`docs/banco/schema.sql`) e Swagger UI. 64 testes passando.
 - Spec lida por completo e transcrita nesta pasta.
-- Próximo passo: etapa 1 do [roadmap.md](roadmap.md) (Domain + DbContext + migration inicial).
+- Próximo passo: etapa 2 do [roadmap.md](roadmap.md) (Autenticação e conta, E01–E09).

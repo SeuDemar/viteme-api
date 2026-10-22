@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Viteme.Application.Excecoes;
+using Viteme.Domain.Excecoes;
 
 namespace Viteme.Api.Middlewares;
 

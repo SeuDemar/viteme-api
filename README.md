@@ -29,8 +29,37 @@ Dependências: `Api → Application, Infrastructure`; `Infrastructure → Applic
 ```bash
 dotnet build Viteme.sln
 dotnet test Viteme.sln
-dotnet run --project Viteme.Api   # GET /api/v1/saude
+dotnet run --project Viteme.Api   # GET /api/v1/saude, Swagger em /swagger
 ```
+
+### Documentação interativa (Swagger)
+
+`/swagger` (UI) e `/openapi/v1.json`. Sempre ligado em `Development`; em outros ambientes defina `Swagger__Habilitar=true`.
+
+### Banco de dados
+
+O esquema vem das migrations do EF Core (`Viteme.Infrastructure/Persistencia/Migrations`). O script SQL equivalente está em [`docs/banco/schema.sql`](docs/banco/schema.sql).
+
+```bash
+# aplicar as migrations (usa ConnectionStrings__Default)
+dotnet tool install --global dotnet-ef
+dotnet ef database update --project Viteme.Infrastructure --startup-project Viteme.Api
+
+# gerar uma nova migration / regenerar o script
+dotnet ef migrations add NomeDaMigration --project Viteme.Infrastructure --startup-project Viteme.Api --output-dir Persistencia/Migrations
+dotnet ef migrations script --project Viteme.Infrastructure --startup-project Viteme.Api -o docs/banco/schema.sql
+```
+
+### Testes
+
+Testes unitários e de Swagger rodam sem configuração. Os testes de persistência exigem um PostgreSQL com permissão de criar bancos (cada execução cria e remove um banco temporário; **nunca aponte para o banco real**):
+
+```bash
+export VITEME_TESTES_DB="Host=localhost;Username=postgres;Password=postgres"
+dotnet test Viteme.sln
+```
+
+Sem `VITEME_TESTES_DB`, esses testes são ignorados. No CI há um serviço `postgres:16`.
 
 ## Configuração e segredos
 
@@ -45,4 +74,4 @@ Nada de segredo no repositório. Em desenvolvimento use `dotnet user-secrets` (p
 
 ## Estado
 
-Etapa 0 (scaffold) concluída. Próximo: etapa 1 (Domain + DbContext + migration inicial). Ver [roadmap](.claude/planning/roadmap.md).
+Etapas 0 (scaffold) e 1 (domínio, banco e Swagger) concluídas. Próximo: etapa 2 (autenticação e conta). Ver [roadmap](.claude/planning/roadmap.md).
