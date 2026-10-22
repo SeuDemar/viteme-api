@@ -1,14 +1,39 @@
+using Microsoft.AspNetCore.HttpOverrides;
+using Viteme.Api.Autenticacao;
+using Viteme.Api.Configuracao;
 using Viteme.Api.Documentacao;
 using Viteme.Api.Middlewares;
+using Viteme.Application;
 using Viteme.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddRespostasDeErro();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
+builder.Services.AddAutenticacaoJwt();
+builder.Services.AddLimitacaoDeRequisicoes();
 builder.Services.AddDocumentacaoApi();
 
+// Atrás de proxy/CDN o IP real vem em X-Forwarded-For; sem isso o rate limiting por IP fica ineficaz.
+var confiarNoProxy = builder.Configuration.GetValue<bool>("Proxy:ConfiarEmCabecalhosEncaminhados");
+if (confiarNoProxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(opcoes =>
+    {
+        opcoes.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        opcoes.KnownIPNetworks.Clear();
+        opcoes.KnownProxies.Clear();
+    });
+}
+
 var app = builder.Build();
+
+if (confiarNoProxy)
+{
+    app.UseForwardedHeaders();
+}
 
 app.UseMiddleware<TratamentoExcecoesMiddleware>();
 
@@ -20,6 +45,8 @@ if (!app.Environment.IsDevelopment())
 app.UseDocumentacaoApi();
 
 app.UseHttpsRedirection();
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

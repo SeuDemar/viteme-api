@@ -9,7 +9,7 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P3 | Biblioteca de PDF do certificado (candidata: QuestPDF; checar licença) | Equipe | Etapa 5 | Aberta |
 | P4 | Provedor de SMS real (pay-per-use; opções AWS SNS, Zenvia, Comtele, Twilio). Se AWS SNS: sandbox, registro de sender ID no Brasil, orçamento/limite de gasto | Equipe | Etapa 6 (opcional) | Aberta |
 | P5 | Supabase: usar conexão direta ou session pooler (porta 5432); nunca o pooler transaction (6543) por causa de prepared statements do Npgsql | Dev | Etapa 1 (migration) | Registrada |
-| P6 | Rate limiting por IP atrás de proxy/CDN exige `ForwardedHeaders` configurado, senão limite e bloqueio de login não funcionam | Dev | Etapa 2 | Aberta |
+| P6 | Rate limiting por IP atrás de proxy/CDN exige `ForwardedHeaders`. Implementado por configuração (`Proxy:ConfiarEmCabecalhosEncaminhados`, D16); **ativar na hospedagem** e restringir proxies confiáveis se possível | Dev/Equipe | Na hospedagem (P11) | Parcial |
 | P7 | Testes de integração: resolvido com PostgreSQL via `VITEME_TESTES_DB` (serviço no CI, ver D11). Testcontainers fica opcional | Dev | Etapa 0 (CI) | Resolvida |
 | P8 | `SameSite=Strict` exige frontend e API no mesmo site; manter origem/domínio do cookie parametrizáveis | Dev | Quando o frontend existir | Adiada |
 | P9 | SDK .NET no ambiente de desenvolvimento: .NET 9 indisponível (não está no apt; site da Microsoft bloqueado pela rede). Decidido usar .NET 10 LTS, instalado via apt (`dotnet-sdk-10.0`) | Dev | Etapa 0 | Resolvida |
@@ -18,3 +18,11 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P12 | Autoria no Git: commits atuais saem como "Claude"; cada integrante precisa commitar com identidade própria (branches + PRs) | Equipe | Desde já | Aberta |
 | P13 | Swagger UI obrigatório | Dev | Etapa 1 | Resolvida (`/swagger`) |
 | P14 | Pagamento/SMS em stub na demonstração: declarar na apresentação ou usar sandbox do Asaas (torna P1/P2 bloqueantes) | Equipe | Antes da demonstração | Aberta |
+| P15 | Rotação do refresh token sem proteção contra corrida: duas renovações simultâneas com o mesmo token podem emitir dois tokens novos. Baixo risco; resolver com concorrência otimista (`xmin`) em `token_renovacao` | Dev | Etapa 6 | Aberta |
+| P16 | Rate limiting em memória: com mais de uma instância da API os limites são por instância. Aceitável para um monólito de instância única | Equipe | Hospedagem | Aceita |
+| P17 | O token de acesso (JWT, 15 min) continua válido depois do logout, por ser stateless. Aceito pela spec; refresh é revogado | Equipe | — | Aceita |
+| P18 | O JWT é validado pelo relógio do sistema, não por `IRelogio`; por isso não há teste automático da expiração do token de acesso. Avaliar `TimeProvider` | Dev | Etapa 6 | Aberta |
+| P19 | `POST /auth/cadastro` revela se um e-mail já existe (409, exigido pela spec). Mitigado só pelo rate limiting por IP | Equipe | — | Aceita |
+| P20 | Envio de código SMS para qualquer telefone informado pelo usuário permite abuso contra terceiros (SMS bombing). Hoje: 60 s entre códigos por usuário + 5/min. Considerar limite por número de telefone antes de usar provedor real | Dev | Antes do SMS real (P4) | Aberta |
+| P21 | Medir cobertura de linhas de `Application/Services` (meta ≥ 70%, critério de aceite) e acrescentar testes unitários com mocks (NSubstitute) onde faltar. Hoje a cobertura vem dos testes de integração | Dev | Etapa 8 | Aberta |
+| P22 | Ambiente de desenvolvimento: o PostgreSQL local usado nos testes não sobe sozinho em sessão nova (`pg_ctlcluster 16 main start`) e `VITEME_TESTES_DB` precisa estar definida | Dev | — | Informativa |

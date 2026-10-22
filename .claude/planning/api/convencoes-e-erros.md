@@ -54,4 +54,6 @@ Extraído dos endpoints; manter sincronizado com [endpoints.md](endpoints.md).
 | 429 | `AGUARDE_NOVO_CODIGO` (e limites de rate limiting em geral) |
 | 502 | `GATEWAY_INDISPONIVEL` |
 
+| (acréscimos da implementação) | `NAO_AUTENTICADO` (401), `DADOS_INVALIDOS` (400), `LIMITE_EXCEDIDO` (429), `SMS_INDISPONIVEL` (502), `ERRO_INTERNO` (500). Lista completa em [../decisoes.md](../decisoes.md), seção 6 |
+
 > Observação: a spec lista `TRANSACAO_DESCONHECIDA` com status 404 e `VALOR_DIVERGENTE` com 422 no webhook (E31).

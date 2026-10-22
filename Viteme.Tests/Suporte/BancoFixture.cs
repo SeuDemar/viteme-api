@@ -16,6 +16,9 @@ public sealed class BancoFixture : IAsyncLifetime
     private readonly string _nome = $"viteme_teste_{Guid.NewGuid():N}";
     private string? _conexao;
 
+    /// <summary>String de conexão do banco temporário (disponível após a inicialização).</summary>
+    public string Conexao => _conexao ?? throw new InvalidOperationException("Banco de teste não inicializado.");
+
     public async Task InitializeAsync()
     {
         if (string.IsNullOrWhiteSpace(_conexaoAdmin))

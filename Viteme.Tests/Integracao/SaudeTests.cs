@@ -1,9 +1,9 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Viteme.Tests.Suporte;
 
 namespace Viteme.Tests.Integracao;
 
-public class SaudeTests(WebApplicationFactory<Program> fabrica) : IClassFixture<WebApplicationFactory<Program>>
+public class SaudeTests(ApiFactory fabrica) : IClassFixture<ApiFactory>
 {
     [Fact]
     public async Task Saude_retorna_200()

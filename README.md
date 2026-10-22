@@ -65,13 +65,36 @@ Sem `VITEME_TESTES_DB`, esses testes são ignorados. No CI há um serviço `post
 
 Nada de segredo no repositório. Em desenvolvimento use `dotnet user-secrets` (projeto `Viteme.Api`); em produção, variáveis de ambiente.
 
+```bash
+cd Viteme.Api
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:Default" "Host=...;Port=5432;Database=...;Username=...;Password=...;SSL Mode=Require"
+dotnet user-secrets set "Jwt:Chave" "$(openssl rand -base64 48)"   # mínimo de 32 caracteres
+```
+
+A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (emissor, audiência, limites de rate limiting, SMS stub) ficam em `appsettings*.json`.
+
 | Variável | Uso |
 |---|---|
 | `ConnectionStrings__Default` | PostgreSQL (Supabase). Usar conexão direta ou session pooler (porta 5432), **nunca** o pooler em modo transaction (6543) |
-| `Jwt__Chave`, `Jwt__Emissor`, `Jwt__Audiencia` | Autenticação (a partir da etapa 2) |
+| `Jwt__Chave` | Chave HS256 (≥ 32 caracteres). Também deriva a chave do HMAC dos refresh tokens e códigos |
+| `Jwt__Emissor`, `Jwt__Audiencia` | Opcionais (padrões `viteme-api` e `viteme-web`) |
+| `Sms__LogarConteudo` | `true` só em desenvolvimento: o SMS stub mostra o código no log |
+| `RateLimiting__Habilitar` | Padrão `true`. Limites: login 5/min e cadastro 10/min por IP; código SMS 5/min por usuário |
+| `Proxy__ConfiarEmCabecalhosEncaminhados` | `true` atrás de proxy/CDN, para o rate limiting ver o IP real |
 | `Gateway__Asaas__ApiKey`, `Gateway__Asaas__WebhookToken` | Gateway de pagamento (quando houver adaptador real) |
 | `Cors__OrigemFrontend` | Origem permitida do frontend |
 
+## Endpoints implementados
+
+| Grupo | Endpoints |
+|---|---|
+| Autenticação | `POST /api/v1/auth/cadastro`, `login`, `renovar`, `logout` |
+| Conta | `GET/PUT /api/v1/usuarios/me`, `POST /usuarios/me/telefone/codigo`, `POST /usuarios/me/telefone/verificar`, `PUT /usuarios/me/preferencias-sms` |
+| Infra | `GET /api/v1/saude` |
+
+Documentação interativa completa em `/swagger`. Os demais (E10–E39) seguem o [roadmap](.claude/planning/roadmap.md).
+
 ## Estado
 
-Etapas 0 (scaffold) e 1 (domínio, banco e Swagger) concluídas. Próximo: etapa 2 (autenticação e conta). Ver [roadmap](.claude/planning/roadmap.md).
+Etapas 0 (scaffold), 1 (domínio, banco e Swagger) e 2 (autenticação e conta, E01–E09) concluídas. Próximo: etapa 3 (eventos e programação). Ver [roadmap](.claude/planning/roadmap.md).

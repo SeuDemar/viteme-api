@@ -33,7 +33,7 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 
 > **Swagger UI** (antecipado da etapa 2) também está pronto: `/swagger`.
 
-## Etapa 2 — Autenticação e conta (E01–E09)
+## Etapa 2 — Autenticação e conta (E01–E09)  ✅ concluída
 
 - `AuthService`, `ITokenService` (JWT HS256, refresh com hash, rotação e detecção de reuso), PasswordHasher.
 - Cookie de refresh (`HttpOnly; Secure; SameSite=Strict`, path `/api/v1/auth`), CORS com credenciais.
@@ -45,6 +45,8 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 - Testes: CT01–CT13.
 
 **Pronto quando:** CT01–CT13 passando; revisão de segurança da seção 1–2 de [seguranca.md](seguranca.md).
+
+> **Concluída.** E01–E09 implementados (AuthService, UsuarioService, repositórios, JWT HS256 com `sub/name/email/jti/iat/exp/iss/aud`, refresh rotativo com detecção de reuso em cookie `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, bloqueio de login, rate limiting, ProblemDetails com `errors` por campo, SMS em stub). CT01–CT13 passando em PostgreSQL real; 97 testes. Biblioteca de validação decidida: DataAnnotations (D14). Pendências novas: P15–P22. As **políticas por papel no evento** (`OrganizadorDoEvento`, `OrganizadorOuColaborador`) entram na etapa 3, junto com os endpoints de eventos.
 
 ## Etapa 3 — Eventos e programação (E10–E23)
 

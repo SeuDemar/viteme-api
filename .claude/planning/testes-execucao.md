@@ -10,13 +10,25 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 |---|---|---|---|---|---|---|
 | 2026-10-22 | etapa 0 | `dotnet test Viteme.sln` | 3 | 3 | 0 | Scaffold (health check e middleware de erros). Ainda não são casos CT |
 | 2026-10-22 | etapa 1 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 64 | 64 | 0 | 3 scaffold + 43 domínio + 14 persistência (PostgreSQL 16 real) + 4 Swagger. Evidência: [docs/evidencias/etapa-1-dotnet-test.txt](../../docs/evidencias/etapa-1-dotnet-test.txt). Ainda não são casos CT |
+| 2026-10-22 | etapa 2 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 97 | 97 | 0 | +33 testes de API em PostgreSQL real (E01–E09: CT01–CT13 e variações). 1 falha durante o desenvolvimento (bug #1, corrigido). Sem `VITEME_TESTES_DB`: 50 passam e 47 são ignorados. Evidência: [docs/evidencias/etapa-2-dotnet-test.txt](../../docs/evidencias/etapa-2-dotnet-test.txt) |
 
 ## Casos de teste
 
 | ID | Cenário | Nível | Resultado | Data | Evidência | Bug |
 |---|---|---|---|---|---|---|
-| CT01–CT07 | Autenticação e conta | Unit/Integração | Pendente | | | |
-| CT08–CT13 | Telefone e SMS | Unit/Integração | Pendente | | | |
+| CT01 | Cadastro válido (201, senha em hash) | Integração (PostgreSQL real) | Passou | 2026-10-22 | [etapa-2](../../docs/evidencias/etapa-2-dotnet-test.txt) | |
+| CT02 | E-mail já cadastrado, maiúsculas diferentes (409) | Integração | Passou | 2026-10-22 | idem | |
+| CT03 | Senha fraca (400 com erro no campo `senha`) | Integração | Corrigido | 2026-10-22 | idem | #1 (content-type do 400) |
+| CT04 | Login válido (token + cookie HttpOnly) | Integração | Passou | 2026-10-22 | idem | |
+| CT05 | Senha incorreta (401, mesma mensagem de e-mail inexistente) | Integração | Passou | 2026-10-22 | idem | |
+| CT06 | 5 logins inválidos e 6º correto (423 até 15 min) | Integração | Passou | 2026-10-22 | idem | |
+| CT07 | Reuso de refresh token (401 e tokens revogados) | Integração | Passou | 2026-10-22 | idem | |
+| CT08 | Envio de código (202, SMS com 6 dígitos, hash no banco) | Integração | Passou | 2026-10-22 | idem | |
+| CT09 | Novo código antes de 60 s (429) | Integração | Passou | 2026-10-22 | idem | |
+| CT10 | Código correto após 10 min (CODIGO_EXPIRADO) | Integração | Passou | 2026-10-22 | idem | |
+| CT11 | 6ª tentativa (TENTATIVAS_EXCEDIDAS, código invalidado) | Integração | Passou | 2026-10-22 | idem | |
+| CT12 | Aceite de SMS sem telefone verificado (422) | Integração | Passou | 2026-10-22 | idem | |
+| CT13 | Troca de telefone zera verificação e aceite | Integração | Passou | 2026-10-22 | idem | |
 | CT14–CT22 | Eventos | Unit/Integração | Pendente | | | |
 | CT23–CT30 | Inscrições | Unit/Integração | Pendente | | | |
 | CT31–CT38 | Pagamentos | Unit/Integração | Pendente | | | |

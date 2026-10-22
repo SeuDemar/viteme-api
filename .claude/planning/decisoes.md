@@ -29,6 +29,10 @@
 | D11 | Testes de persistência rodam em **PostgreSQL real via variável `VITEME_TESTES_DB`** (banco temporário criado e removido a cada execução). No CI é um serviço `postgres:16`; localmente pode ser qualquer Postgres. Sem a variável, esses testes são ignorados | Substitui o Testcontainers da spec (mesmo resultado, sem exigir Docker no ambiente). Pode voltar ao Testcontainers depois |
 | D12 | `RegraDeNegocioException` mora no **Domain** (entidades lançam a exceção; a API converte em ProblemDetails) | Spec previa só validar nos services; invariantes simples ficam nas entidades |
 | D13 | Swagger UI em `/swagger` sobre o OpenAPI nativo (`/openapi/v1.json`); em Desenvolvimento sempre ligado, nos demais ambientes só com `Swagger:Habilitar=true` | Exigido pela Entrega 3 |
+| D14 | Validação de DTOs com **DataAnnotations** (+ atributos próprios `SenhaForte` e `TelefoneE164` em `Application/Validacoes`), sem FluentValidation | Atende RN02 e os limites da spec com menos dependências; o 400 sai como ProblemDetails com `errors` por campo em camelCase |
+| D15 | Rate limiting nativo do ASP.NET Core: login 5/min e cadastro 10/min por IP; envio de código SMS 5/min por usuário; tudo configurável em `RateLimiting:*` (desligável em testes) | Spec 4.5. Contadores em memória (uma instância) |
+| D16 | `Proxy:ConfiarEmCabecalhosEncaminhados=true` liga `X-Forwarded-For/Proto` | Para o rate limiting enxergar o IP real atrás de proxy/CDN (P6) |
+| D17 | Refresh token e código de verificação guardados com **HMAC-SHA256** (chave derivada de `Jwt:Chave`), não SHA-256 puro | Código de 6 dígitos tem só 10^6 possibilidades; sem a chave um vazamento do banco não permite reverter |
 | D10 | Desenvolvimento na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito | |
 
 ### Nota sobre Supabase + Npgsql
@@ -78,3 +82,8 @@ Surgiram ao implementar o domínio. Manter a spec e o código alinhados: se a eq
 | `ERRO_INTERNO` (500) | Middleware de erros | Código estável para erros inesperados |
 | Aprovação tardia de pagamento expirado é registrada como APROVADO | `Pagamento.Aprovar` | RN23: depois o service solicita o estorno automático |
 | `EnvioSms` permanece PENDENTE entre as 3 novas tentativas e só vira FALHOU na 4.ª falha | `EnvioSms` | Permite à tarefa de 1 minuto saber o que reenviar (RN16) |
+| `NAO_AUTENTICADO` (401) | `OnChallenge` do JWT | Token ausente, inválido ou expirado em endpoint protegido, com ProblemDetails |
+| `DADOS_INVALIDOS` (400) | Validação de DTOs | Código estável para erros por campo |
+| `LIMITE_EXCEDIDO` (429) | Rate limiting | Código estável para 429 |
+| `SMS_INDISPONIVEL` (502) | `UsuarioService.EnviarCodigoTelefoneAsync` | Falha do provedor ao enviar o código (a spec não previa) |
+| `USUARIO_NAO_ENCONTRADO` (401) | `UsuarioService` | Token válido de usuário que não existe mais |

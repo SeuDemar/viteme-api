@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Viteme.Tests.Suporte;
 
 namespace Viteme.Tests.Integracao;
 
-public class DocumentacaoTests(WebApplicationFactory<Program> fabrica) : IClassFixture<WebApplicationFactory<Program>>
+public class DocumentacaoTests(ApiFactory fabrica) : IClassFixture<ApiFactory>
 {
     [Fact]
     public async Task OpenApi_descreve_a_api_e_o_esquema_bearer()

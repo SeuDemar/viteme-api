@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Viteme.Application.Excecoes;
 using Viteme.Application.Interfaces;
 using Viteme.Domain.Entities;
 using Viteme.Domain.Enums;
@@ -52,7 +54,18 @@ public class VitemeDbContext(DbContextOptions<VitemeDbContext> options, IRelogio
             })
             .UseSnakeCaseNamingConvention();
 
-    public Task<int> SalvarAsync(CancellationToken cancellationToken = default) => SaveChangesAsync(cancellationToken);
+    /// <summary>Confirma as alterações; violações de UNIQUE viram <see cref="ViolacaoDeUnicidadeException"/> para os services tratarem.</summary>
+    public async Task<int> SalvarAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg)
+        {
+            throw new ViolacaoDeUnicidadeException(pg.ConstraintName, ex);
+        }
+    }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
