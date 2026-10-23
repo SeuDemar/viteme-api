@@ -24,10 +24,10 @@ public sealed class AmbienteApi : IDisposable
 
     private readonly WebApplicationFactory<Program> _fabrica;
 
-    public AmbienteApi(BancoFixture banco, ApiFactory api, bool limitacao = false)
+    public AmbienteApi(BancoFixture banco, ApiFactory api, bool limitacao = false, bool tokenRealista = false)
     {
         Banco = banco;
-        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, Gateway, limitacao);
+        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, Gateway, limitacao, tokenRealista);
         Cliente = _fabrica.CreateClient(new WebApplicationFactoryClientOptions
         {
             HandleCookies = false,

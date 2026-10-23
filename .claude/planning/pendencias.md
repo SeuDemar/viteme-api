@@ -18,13 +18,13 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P12 | Autoria no Git: commits atuais saem como "Claude"; cada integrante precisa commitar com identidade própria (branches + PRs) | Equipe | Desde já | Aberta |
 | P13 | Swagger UI obrigatório | Dev | Etapa 1 | Resolvida (`/swagger`) |
 | P14 | Pagamento/SMS em stub na demonstração: declarar na apresentação ou usar sandbox do Asaas (torna P1/P2 bloqueantes) | Equipe | Antes da demonstração | Aberta |
-| P15 | Rotação do refresh token sem proteção contra corrida: duas renovações simultâneas com o mesmo token podem emitir dois tokens novos. Baixo risco; resolver com concorrência otimista (`xmin`) em `token_renovacao` | Dev | Etapa 6 | Aberta |
+| P15 | ~~Rotação do refresh token sem proteção contra corrida~~ — a revogação agora é uma instrução condicional (`WHERE revogado_em IS NULL`): só uma de várias renovações simultâneas emite o novo par (D43) | Dev | Etapa 6 | **Resolvida** |
 | P16 | Rate limiting em memória: com mais de uma instância da API os limites são por instância. Aceitável para um monólito de instância única | Equipe | Hospedagem | Aceita |
 | P17 | O token de acesso (JWT, 15 min) continua válido depois do logout, por ser stateless. Aceito pela spec; refresh é revogado | Equipe | — | Aceita |
-| P18 | O JWT é validado pelo relógio do sistema, não por `IRelogio`; por isso não há teste automático da expiração do token de acesso. Avaliar `TimeProvider` | Dev | Etapa 6 | Aberta |
+| P18 | ~~JWT validado pelo relógio do sistema~~ — validação de validade usa `IRelogio` (D44); a expiração tem teste automático | Dev | Etapa 6 | **Resolvida** |
 | P19 | `POST /auth/cadastro` revela se um e-mail já existe (409, exigido pela spec). Mitigado só pelo rate limiting por IP | Equipe | — | Aceita |
-| P20 | Envio de código SMS para qualquer telefone informado pelo usuário permite abuso contra terceiros (SMS bombing). Hoje: 60 s entre códigos por usuário + 5/min. Considerar limite por número de telefone antes de usar provedor real | Dev | Antes do SMS real (P4) | Aberta |
-| P21 | Medir cobertura de linhas de `Application/Services` (meta ≥ 70%, critério de aceite) e acrescentar testes unitários com mocks (NSubstitute) onde faltar. Hoje a cobertura vem dos testes de integração | Dev | Etapa 8 | Aberta |
+| P20 | ~~SMS bombing~~ — além de 60 s e 5/min por usuário, há limite de 5 códigos por hora **por telefone**, somando todas as contas (D45) | Dev | Antes do SMS real | **Resolvida** |
+| P21 | ~~Cobertura de `Application/Services`~~ — medida: **93,4%** (meta 70%). Ver [cobertura](../../docs/evidencias/cobertura-etapa-6.txt) | Dev | Etapa 6 | **Resolvida** |
 | P22 | Ambiente de desenvolvimento: o PostgreSQL local usado nos testes não sobe sozinho em sessão nova (`pg_ctlcluster 16 main start`) e `VITEME_TESTES_DB` precisa estar definida | Dev | — | Informativa |
 | P23 | Estorno ao cancelar evento (RN14) | Dev | Etapa 4 | Resolvida (D30; CT45) |
 | P24 | ~~RN19: republicar oculto uma vez e cancelamento automático~~ — implementado (D39) | Dev | Etapa 5 | **Resolvida** |
@@ -43,3 +43,6 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P37 | O lembrete de início só vai para inscrições CONFIRMADAS e o do fim das inscrições só para interessados sem inscrição; quem tem inscrição pendente de pagamento não é lembrado de pagar | Equipe | Opcional | Aberta |
 | P38 | O link de validação no PDF vem de `Certificados:UrlValidacao` (padrão `https://viteme.app/validar`). Definir o domínio real e criar a tela de validação no frontend (E39 é público) | Equipe | Etapa 7 | Aberta |
 | P39 | O SMS stub não envia de verdade: o fluxo (fila, tentativas, descarte) está pronto e testado; falta escolher o provedor (P4) | Equipe | Etapa 6 | Aberta |
+| P40 | Reuso de refresh token já revogado revoga **todas** as sessões do usuário (regra da spec). Duas abas renovando no mesmo instante podem derrubar a sessão; o frontend deve renovar uma vez e compartilhar o resultado entre abas | Equipe | Etapa 7 | Aberta |
+| P41 | `Infrastructure/Tarefas` tem pouca cobertura (27,7%): os workers são desligados nos testes. A lógica executada por eles tem 90%+; o laço de repetição em si é simples | Dev | — | Aceita |
+| P42 | O CSP (Content-Security-Policy) é responsabilidade do frontend/host estático; a API envia `nosniff`, `X-Frame-Options`, `Referrer-Policy` e `Cache-Control: no-store` | Equipe | Etapa 7 | Aberta |

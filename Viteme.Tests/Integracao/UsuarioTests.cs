@@ -7,8 +7,9 @@ namespace Viteme.Tests.Integracao;
 /// <summary>E05–E09: perfil, verificação de telefone e consentimento de SMS. Casos CT08–CT13.</summary>
 public class UsuarioTests(BancoFixture banco, ApiFactory api) : IClassFixture<BancoFixture>, IClassFixture<ApiFactory>
 {
-    private const string Telefone = "+5544999990000";
-    private const string OutroTelefone = "+5544988880000";
+    // Um telefone novo por teste: o limite de códigos por telefone (5/h) vale entre contas e os testes dividem o banco.
+    private readonly string Telefone = $"+55449{Random.Shared.Next(10000000, 99999999)}";
+    private readonly string OutroTelefone = $"+55448{Random.Shared.Next(10000000, 99999999)}";
 
     private static object Codigo(string codigo) => new { codigo };
 

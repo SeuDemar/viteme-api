@@ -25,11 +25,16 @@ public class ApiFactory : WebApplicationFactory<Program>
 
     /// <summary>Aplicação ligada ao banco temporário, com relógio e SMS controláveis.</summary>
     public WebApplicationFactory<Program> ComBanco(
-        string conexao, RelogioFixo relogio, SmsEmMemoria sms, GatewayEmMemoria gateway, bool limitacao = false) =>
+        string conexao, RelogioFixo relogio, SmsEmMemoria sms, GatewayEmMemoria gateway, bool limitacao = false,
+        bool tokenRealista = false) =>
         WithWebHostBuilder(b =>
         {
             b.UseSetting("ConnectionStrings:Default", conexao);
             b.UseSetting("RateLimiting:Habilitar", limitacao ? "true" : "false");
+
+            // O relógio dos testes salta horas e dias; por padrão o token de acesso dura o suficiente para o teste não
+            // precisar renová-lo. Os testes de expiração pedem a validade real (15 min).
+            b.UseSetting("Jwt:MinutosAcesso", tokenRealista ? "15" : "525600");
             b.ConfigureServices(servicos =>
             {
                 servicos.RemoveAll<IRelogio>();

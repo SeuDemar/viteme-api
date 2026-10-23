@@ -58,6 +58,10 @@
 | D40 | Quem não vê o evento (rascunho de terceiro, ou OCULTO sem estar inscrito) recebe **404** ao denunciar ou acompanhar; evento cancelado/encerrado recebe 422 `EVENTO_INDISPONIVEL` | Não revela a existência de eventos não públicos |
 | D41 | Certificado: emitido na 1.ª chamada com código de 16 caracteres (mesmo alfabeto de D32); chamadas seguintes e emissões simultâneas devolvem o mesmo certificado (UNIQUE na inscrição). E39 aceita o código sem diferenciar maiúsculas | Idempotência de RN21; validação pública não expõe e-mail nem telefone |
 | D42 | `CancelamentoEventoService` concentra o cancelamento (RN14), usado por E15 e pela denúncia automática; o estorno no gateway sempre depois do commit | Uma única implementação da regra |
+| D43 | Renovação do refresh token revoga com `UPDATE ... WHERE revogado_em IS NULL`; quem perde a corrida recebe 401 `TOKEN_INVALIDO` | Impede dois pares novos para o mesmo token (P15) sem coluna de versão |
+| D44 | O JWT é validado com o `IRelogio` da aplicação (`LifetimeValidator`), mantendo tolerância de 30 s | Testar a expiração do token (P18) e manter um único relógio |
+| D45 | Código de verificação: no máximo 5 por hora por telefone (somadas todas as contas) → 429 `LIMITE_EXCEDIDO` | Evita usar o Viteme para enviar SMS a terceiros (P20) |
+| D46 | CORS só com `Cors:OrigemFrontend` configurada (origem única, credenciais permitidas, cabeçalhos `Authorization`, `Content-Type`, `If-Match`; expõe `ETag` e `Content-Disposition`). Cabeçalhos de segurança e `Cache-Control: no-store` em todas as respostas da API | Necessário ao frontend e ao cookie de refresh; respostas têm dados pessoais |
 | D10 | Desenvolvimento na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito | |
 
 ### Nota sobre Supabase + Npgsql

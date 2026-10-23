@@ -109,4 +109,4 @@ Documentação interativa completa em `/swagger`. Os 39 endpoints da spec (E01�
 
 ## Estado
 
-Etapas 0–5 concluídas (scaffold, domínio/banco/Swagger, autenticação, eventos, inscrições e pagamentos com gateway stub, interesse, notificações com SMS, denúncias e certificados). Próximo: etapa 6 (fechamento) e etapa 7 (frontend). Ver [roadmap](.claude/planning/roadmap.md).
+Etapas 0–6 concluídas (scaffold, domínio/banco/Swagger, autenticação, eventos, inscrições e pagamentos com gateway stub, interesse, notificações com SMS, denúncias e certificados, fechamento de segurança e cobertura). Próximo: etapa 7 (frontend). Guia de publicação: [docs/deploy.md](docs/deploy.md). Ver [roadmap](.claude/planning/roadmap.md).

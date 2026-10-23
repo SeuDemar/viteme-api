@@ -102,7 +102,13 @@ public class AuthService(
         }
 
         var usuario = await usuarios.ObterPorIdAsync(atual.UsuarioId, cancellationToken) ?? throw TokenInvalido();
-        atual.Revogar(agora);
+
+        // Duas renovações simultâneas com o mesmo token: só a primeira a revogar emite o novo par.
+        if (!await tokens.TentarRevogarAsync(atual.Id, agora, cancellationToken))
+        {
+            throw TokenInvalido();
+        }
+
         return await EmitirTokensAsync(usuario, agora, cancellationToken);
     }
 

@@ -12,6 +12,12 @@ public class CodigoVerificacaoRepository(VitemeDbContext contexto) : ICodigoVeri
             .OrderByDescending(c => c.CriadoEm)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<int> ContarEnviosParaTelefoneAsync(string telefone, DateTime desde, CancellationToken cancellationToken = default) =>
+        (from c in contexto.CodigosVerificacao
+         join u in contexto.Usuarios on c.UsuarioId equals u.Id
+         where u.Telefone == telefone && c.CriadoEm >= desde
+         select c.Id).CountAsync(cancellationToken);
+
     public Task<CodigoVerificacao?> ObterUltimoPendenteAsync(Guid usuarioId, CancellationToken cancellationToken = default) =>
         contexto.CodigosVerificacao
             .Where(c => c.UsuarioId == usuarioId && !c.Utilizado)

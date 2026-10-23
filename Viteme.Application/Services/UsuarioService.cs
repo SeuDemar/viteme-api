@@ -15,6 +15,11 @@ public class UsuarioService(
     IUnitOfWork unitOfWork,
     IRelogio relogio)
 {
+    /// <summary>Códigos por telefone na janela (anti-abuso de SMS contra terceiros).</summary>
+    private const int LimiteTelefoneEnvios = 5;
+
+    private static readonly TimeSpan LimiteTelefoneJanela = TimeSpan.FromHours(1);
+
     public async Task<PerfilResponse> ObterPerfilAsync(Guid usuarioId, CancellationToken cancellationToken = default) =>
         Mapear(await ObterAsync(usuarioId, cancellationToken));
 
@@ -61,6 +66,13 @@ public class UsuarioService(
         {
             throw new RegraDeNegocioException("AGUARDE_NOVO_CODIGO", "Aguarde para pedir novo código",
                 "Aguarde 60 segundos entre os pedidos de código.", 429);
+        }
+
+        // Limite por número: impede usar a plataforma para encher de SMS o telefone de terceiros com várias contas.
+        if (await codigos.ContarEnviosParaTelefoneAsync(usuario.Telefone, agora - LimiteTelefoneJanela, cancellationToken) >= LimiteTelefoneEnvios)
+        {
+            throw new RegraDeNegocioException("LIMITE_EXCEDIDO", "Limite de códigos para este telefone",
+                "Este telefone já recebeu códigos demais na última hora. Tente novamente mais tarde.", 429);
         }
 
         await codigos.InvalidarPendentesAsync(usuario.Id, cancellationToken);

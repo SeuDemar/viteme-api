@@ -79,12 +79,14 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 
 > **Concluída.** E32–E39 implementados: `InteresseService`, `CaixaNotificacoesService`, `DenunciaService`, `CertificadoService`, `CancelamentoEventoService` (RN14 compartilhada), canal SMS (`NotificacaoSmsSender` + `EnvioSmsService` + `EnvioSmsWorker`), `LembretesService` + `LembretesWorker` (15 min) e `CertificadoPdfGerador` (PDF próprio, D34). CT42–CT46 e CT52–CT57 passando em PostgreSQL real; 270 testes; bug #3 encontrado e corrigido. Decisões D34–D42; pendências P36–P39 (P3, P24, P27 resolvidas).
 
-## Etapa 6 — Fechamento
+## Etapa 6 — Fechamento  ✅ concluída (exceto itens que dependem de decisão da equipe)
 
 - Revisão da matriz de rastreabilidade e das lacunas de cobertura ([testes.md](testes.md), seção 6).
 - Cobertura ≥ 70% em Services.
 - Revisão de segurança (matriz de acesso, rate limiting, logs sem dados sensíveis).
 - OpenAPI completo; README e guia de deploy; escolha e implementação do provedor de SMS real e do adaptador Asaas, se a equipe decidir.
+
+> **Concluída.** Segurança: matriz de acesso testada, renovação de refresh sem corrida (P15), JWT com `IRelogio` (P18), limite de códigos por telefone (P20), CORS e cabeçalhos de segurança. Cobertura de Services 93,4% (P21). Guia de publicação em [docs/deploy.md](../../docs/deploy.md). 281 testes. **Fica para decisão da equipe:** adaptador Asaas (P1, P2, P30) e provedor de SMS real (P4), pois exigem conta e escolha de fornecedor.
 
 ## Etapa 7 — Frontend (exigido pela Entrega 3)
 

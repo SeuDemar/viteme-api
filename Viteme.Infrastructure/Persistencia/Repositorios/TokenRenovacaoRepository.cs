@@ -21,5 +21,10 @@ public class TokenRenovacaoRepository(VitemeDbContext contexto) : ITokenRenovaca
         }
     }
 
+    public async Task<bool> TentarRevogarAsync(Guid tokenId, DateTime agora, CancellationToken cancellationToken = default) =>
+        await contexto.TokensRenovacao
+            .Where(t => t.Id == tokenId && t.RevogadoEm == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevogadoEm, agora), cancellationToken) == 1;
+
     public void Adicionar(TokenRenovacao token) => contexto.TokensRenovacao.Add(token);
 }

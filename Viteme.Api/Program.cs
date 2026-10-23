@@ -34,6 +34,18 @@ if (confiarNoProxy)
     });
 }
 
+// CORS: só a origem do frontend, com credenciais (o refresh token vai em cookie). Sem origem configurada, nada é liberado.
+var origemFrontend = builder.Configuration["Cors:OrigemFrontend"];
+if (!string.IsNullOrWhiteSpace(origemFrontend))
+{
+    builder.Services.AddCors(opcoes => opcoes.AddDefaultPolicy(politica => politica
+        .WithOrigins(origemFrontend.TrimEnd('/'))
+        .AllowAnyMethod()
+        .WithHeaders("Authorization", "Content-Type", "If-Match")
+        .WithExposedHeaders("ETag", "Content-Disposition")
+        .AllowCredentials()));
+}
+
 var app = builder.Build();
 
 if (confiarNoProxy)
@@ -41,6 +53,7 @@ if (confiarNoProxy)
     app.UseForwardedHeaders();
 }
 
+app.UseMiddleware<CabecalhosDeSegurancaMiddleware>();
 app.UseMiddleware<TratamentoExcecoesMiddleware>();
 
 if (!app.Environment.IsDevelopment())
@@ -51,6 +64,11 @@ if (!app.Environment.IsDevelopment())
 app.UseDocumentacaoApi();
 
 app.UseHttpsRedirection();
+if (!string.IsNullOrWhiteSpace(origemFrontend))
+{
+    app.UseCors();
+}
+
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
