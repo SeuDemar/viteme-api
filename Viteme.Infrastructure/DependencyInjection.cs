@@ -39,6 +39,9 @@ public static class DependencyInjection
         servicos.AddScoped<IInscricaoRepository, InscricaoRepository>();
         servicos.AddScoped<IInteresseRepository, InteresseRepository>();
         servicos.AddScoped<INotificacaoRepository, NotificacaoRepository>();
+        servicos.AddScoped<IDenunciaRepository, DenunciaRepository>();
+        servicos.AddScoped<ICertificadoRepository, CertificadoRepository>();
+        servicos.AddScoped<IEnvioSmsRepository, EnvioSmsRepository>();
 
         // Gateway de pagamento ainda não escolhido na época da spec; hoje é um stub. O adaptador do Asaas o substituirá.
         servicos.Configure<GatewayStubOptions>(configuracao.GetSection(GatewayStubOptions.Secao));
@@ -46,8 +49,12 @@ public static class DependencyInjection
         servicos.AddSingleton<IGatewayPagamento>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
         servicos.AddSingleton<ISimuladorGateway>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
 
-        // Canais de notificação (RN16): hoje só o site; o SMS entra como mais uma implementação.
+        // Canais de notificação (RN16): o site sempre; o SMS só registra o envio, que uma tarefa entrega depois.
         servicos.AddScoped<INotificationSender, NotificacaoSiteSender>();
+        servicos.AddScoped<INotificationSender, NotificacaoSmsSender>();
+
+        servicos.Configure<CertificadosOptions>(configuracao.GetSection(CertificadosOptions.Secao));
+        servicos.AddSingleton<ICertificadoPdfGerador, CertificadoPdfGerador>();
 
         servicos.Configure<JwtOptions>(configuracao.GetSection(JwtOptions.Secao));
         servicos.AddSingleton<ISenhaHasher, SenhaHasherPbkdf2>();
@@ -62,6 +69,8 @@ public static class DependencyInjection
         servicos.Configure<TarefasOptions>(configuracao.GetSection(TarefasOptions.Secao));
         servicos.AddHostedService<EncerrarEventosWorker>();
         servicos.AddHostedService<ReservasEEstornosWorker>();
+        servicos.AddHostedService<EnvioSmsWorker>();
+        servicos.AddHostedService<LembretesWorker>();
 
         return servicos;
     }

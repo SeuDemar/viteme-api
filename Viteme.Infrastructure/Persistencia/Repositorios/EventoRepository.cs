@@ -207,4 +207,14 @@ public class EventoRepository(VitemeDbContext contexto) : IEventoRepository
 
     private static string EscaparLike(string texto) =>
         texto.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
+
+    public async Task<IReadOnlyList<Evento>> ListarComInicioAteAsync(DateTime agora, DateTime limite, CancellationToken cancellationToken = default) =>
+        await contexto.Eventos.AsNoTracking()
+            .Where(e => e.Status == StatusEvento.Publicado && e.DataInicio > agora && e.DataInicio <= limite)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Evento>> ListarComFimDeInscricaoAteAsync(DateTime agora, DateTime limite, CancellationToken cancellationToken = default) =>
+        await contexto.Eventos.AsNoTracking()
+            .Where(e => e.Status == StatusEvento.Publicado && e.InscricaoFim > agora && e.InscricaoFim <= limite)
+            .ToListAsync(cancellationToken);
 }

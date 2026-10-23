@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Viteme.Domain.Entities;
 using Viteme.Domain.Enums;
 
@@ -111,6 +112,28 @@ public sealed class AmbienteApi : IDisposable
         return await LoginAsync(email);
     }
 
+    /// <summary>Cadastra um usuário com telefone verificado e aceite de SMS ativo (RN16).</summary>
+    public async Task<Sessao> NovaSessaoComSmsAsync()
+    {
+        var telefone = $"+55449{Random.Shared.Next(10000000, 99999999)}";
+        var sessao = await NovaSessaoAsync(telefone);
+        (await PostAsync("/api/v1/usuarios/me/telefone/codigo", token: sessao.Token)).EnsureSuccessStatusCode();
+        (await PostAsync("/api/v1/usuarios/me/telefone/verificar", new { codigo = Sms.UltimoCodigo() }, sessao.Token)).EnsureSuccessStatusCode();
+        (await PutAsync("/api/v1/usuarios/me/preferencias-sms", new { aceitaSms = true }, sessao.Token)).EnsureSuccessStatusCode();
+        Sms.Enviados.Clear();
+        return sessao;
+    }
+
+    /// <summary>Executa algo com os serviços da aplicação, em um escopo próprio (ex.: tarefas periódicas).</summary>
+    public async Task<T> ExecutarAsync<T>(Func<IServiceProvider, Task<T>> acao)
+    {
+        using var escopo = Servicos.CreateScope();
+        return await acao(escopo.ServiceProvider);
+    }
+
+    public Task<HttpResponseMessage> PatchAsync(string rota, string? token = null) =>
+        EnviarAsync(HttpMethod.Patch, rota, null, token);
+
     // ---- Eventos ----------------------------------------------------------------------------------
 
     /// <summary>Data sem frações de segundo (o banco guarda microssegundos).</summary>
@@ -119,7 +142,7 @@ public sealed class AmbienteApi : IDisposable
     /// <summary>Corpo válido de evento, com datas relativas ao relógio do teste.</summary>
     public object CorpoEvento(
         string? titulo = null, decimal preco = 0, int? capacidade = null, string local = "Auditório",
-        string categoria = "palestra", TimeSpan? inicioEm = null, TimeSpan? duracao = null)
+        string categoria = "palestra", TimeSpan? inicioEm = null, TimeSpan? duracao = null, short? cargaHoraria = 8)
     {
         var agora = Truncar(Relogio.UtcAgora);
         var inicio = agora + (inicioEm ?? TimeSpan.FromDays(10));
@@ -135,7 +158,7 @@ public sealed class AmbienteApi : IDisposable
             inscricaoFim = inicio.AddHours(-1),
             capacidade,
             preco,
-            cargaHoraria = (short?)8,
+            cargaHoraria,
         };
     }
 

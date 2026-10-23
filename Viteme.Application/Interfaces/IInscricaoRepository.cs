@@ -22,6 +22,12 @@ public interface IInscricaoRepository
     /// <summary>Todas as inscrições ativas do evento, com rastreamento (cancelamento do evento, RN14).</summary>
     Task<IReadOnlyList<Inscricao>> ListarAtivasAsync(Guid eventoId, CancellationToken cancellationToken = default);
 
+    /// <summary>Usuários com inscrição ativa (confirmada ou pendente) no evento.</summary>
+    Task<IReadOnlyList<Guid>> ListarUsuariosAtivosAsync(Guid eventoId, CancellationToken cancellationToken = default);
+
+    /// <summary>Usuários com inscrição confirmada no evento (lembrete de início, RN17).</summary>
+    Task<IReadOnlyList<Guid>> ListarUsuariosConfirmadosAsync(Guid eventoId, CancellationToken cancellationToken = default);
+
     Task<bool> ExisteAtivaAsync(Guid eventoId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<InscricaoComEvento>> ListarDoUsuarioAsync(

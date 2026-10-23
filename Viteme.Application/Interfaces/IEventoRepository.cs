@@ -60,6 +60,12 @@ public interface IEventoRepository
 
     Task<AtividadeProgramacao?> ObterAtividadeAsync(Guid eventoId, Guid atividadeId, CancellationToken cancellationToken = default);
 
+    /// <summary>Eventos publicados que começam depois de <paramref name="agora"/> e até <paramref name="limite"/> (RN17).</summary>
+    Task<IReadOnlyList<Evento>> ListarComInicioAteAsync(DateTime agora, DateTime limite, CancellationToken cancellationToken = default);
+
+    /// <summary>Eventos publicados cujas inscrições terminam depois de <paramref name="agora"/> e até <paramref name="limite"/> (RN17).</summary>
+    Task<IReadOnlyList<Evento>> ListarComFimDeInscricaoAteAsync(DateTime agora, DateTime limite, CancellationToken cancellationToken = default);
+
     /// <summary>Eventos publicados cujo término já passou (RN22).</summary>
     Task<IReadOnlyList<Evento>> ListarVencidosParaEncerrarAsync(DateTime agora, CancellationToken cancellationToken = default);
 

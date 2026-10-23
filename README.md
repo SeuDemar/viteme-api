@@ -84,7 +84,9 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | `Gateway__Stub__SegredoWebhook` | Segredo do HMAC dos webhooks do gateway stub (vazio = segredo efêmero, só o simulador interno assina) |
 | `Gateway__Stub__HabilitarSimulador` | `true` só em demonstração/desenvolvimento: liga o simulador de pagamento. **Nunca em produção** |
 | `Tarefas__IntervaloReservasMinutos` | Padrão 1. Expira reservas vencidas e repete estornos pendentes |
-| `RateLimiting__Habilitar` | Padrão `true`. Limites: login 5/min e cadastro 10/min por IP; código SMS 5/min por usuário |
+| `Tarefas__IntervaloSmsMinutos`, `Tarefas__IntervaloLembretesMinutos` | Padrões 1 e 15. Entrega de SMS (com novas tentativas) e lembretes de 24 h |
+| `Certificados__UrlValidacao` | Endereço da página pública de validação, impresso no PDF do certificado |
+| `RateLimiting__Habilitar` | Padrão `true`. Limites: login 5/min e cadastro 10/min por IP; código SMS 5/min e denúncias 5/min por usuário; validação de certificado 30/min por IP |
 | `Proxy__ConfiarEmCabecalhosEncaminhados` | `true` atrás de proxy/CDN, para o rate limiting ver o IP real |
 | `Gateway__Asaas__ApiKey`, `Gateway__Asaas__WebhookToken` | Gateway de pagamento (quando houver adaptador real) |
 | `Cors__OrigemFrontend` | Origem permitida do frontend |
@@ -99,10 +101,12 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | Programação e equipe | `POST/PUT/DELETE /eventos/{id}/atividades[/{atividadeId}]`, `GET/POST /eventos/{id}/colaboradores`, `DELETE /eventos/{id}/colaboradores/{usuarioId}` |
 | Inscrições | `POST /eventos/{id}/inscricoes`, `GET /eventos/{id}/inscricoes` (inscritos), `GET /inscricoes/minhas`, `POST /inscricoes/{id}/cancelar`, `POST /eventos/{id}/checkin` |
 | Pagamentos | `POST/GET /inscricoes/{id}/pagamento`, `POST /pagamentos/webhook` (gateway), `POST /simulador/pagamentos/{idTransacao}/{aprovar\|recusar\|expirar}` (só demonstração) |
+| Interesse e notificações | `POST/DELETE /eventos/{id}/interesse`, `GET /notificacoes`, `PATCH /notificacoes/{id}/lida`, `PATCH /notificacoes/lidas` |
+| Denúncias e certificados | `POST /eventos/{id}/denuncias`, `GET /inscricoes/{id}/certificado` (PDF), `GET /certificados/{codigo}/validacao` (público) |
 | Infra | `GET /api/v1/saude` |
 
-Documentação interativa completa em `/swagger`. Os demais (E32–E39: interesse, notificações, denúncias e certificados) seguem o [roadmap](.claude/planning/roadmap.md).
+Documentação interativa completa em `/swagger`. Os 39 endpoints da spec (E01–E39) estão implementados.
 
 ## Estado
 
-Etapas 0–4 concluídas (scaffold, domínio/banco/Swagger, autenticação, eventos, inscrições e pagamentos com gateway stub). Próximo: etapa 5 (interesse, notificações, denúncias e certificados). Ver [roadmap](.claude/planning/roadmap.md).
+Etapas 0–5 concluídas (scaffold, domínio/banco/Swagger, autenticação, eventos, inscrições e pagamentos com gateway stub, interesse, notificações com SMS, denúncias e certificados). Próximo: etapa 6 (fechamento) e etapa 7 (frontend). Ver [roadmap](.claude/planning/roadmap.md).

@@ -47,6 +47,13 @@ public class EnvioSms
         UltimoErro = null;
     }
 
+    /// <summary>Encerra o envio sem tentar de novo (ex.: o usuário revogou o aceite ou trocou o telefone).</summary>
+    public void Descartar(string motivo)
+    {
+        Status = StatusSms.Falhou;
+        UltimoErro = motivo.Length > 300 ? motivo[..300] : motivo;
+    }
+
     /// <summary>O status só vira FALHOU quando as tentativas se esgotam; antes disso continua PENDENTE para reenvio.</summary>
     public void RegistrarFalha(string erro)
     {

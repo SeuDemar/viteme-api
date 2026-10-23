@@ -19,6 +19,13 @@ public static class DependencyInjection
         servicos.AddScoped<PagamentoService>();
         servicos.AddScoped<InscricaoService>();
         servicos.AddScoped<ExpiracaoReservasService>();
+        servicos.AddScoped<CancelamentoEventoService>();
+        servicos.AddScoped<InteresseService>();
+        servicos.AddScoped<CaixaNotificacoesService>();
+        servicos.AddScoped<DenunciaService>();
+        servicos.AddScoped<CertificadoService>();
+        servicos.AddScoped<EnvioSmsService>();
+        servicos.AddScoped<LembretesService>();
         return servicos;
     }
 }

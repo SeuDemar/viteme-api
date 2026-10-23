@@ -38,4 +38,7 @@ public class Notificacao
     public EnvioSms? EnvioSms { get; private set; }
 
     public void MarcarComoLida() => Lida = true;
+
+    /// <summary>RN16: registra o envio por SMS desta notificação (feito depois, por tarefa, com novas tentativas se falhar).</summary>
+    public void AgendarSms(string telefone) => EnvioSms ??= new EnvioSms(Id, telefone);
 }

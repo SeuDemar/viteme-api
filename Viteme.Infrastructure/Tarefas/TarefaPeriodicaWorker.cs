@@ -18,6 +18,12 @@ public class TarefasOptions
 
     /// <summary>Intervalo da expiração de reservas (RN11) e do reenvio de estornos pendentes.</summary>
     public int IntervaloReservasMinutos { get; set; } = 1;
+
+    /// <summary>Intervalo da entrega de SMS pendentes e das novas tentativas (RN16).</summary>
+    public int IntervaloSmsMinutos { get; set; } = 1;
+
+    /// <summary>Intervalo da geração de lembretes (RN17).</summary>
+    public int IntervaloLembretesMinutos { get; set; } = 15;
 }
 
 /// <summary>
@@ -117,6 +123,50 @@ public class ReservasEEstornosWorker(IServiceScopeFactory escopos, IOptions<Tare
         if (expiradas > 0 || estornados > 0)
         {
             _logger.LogInformation("{Expiradas} reserva(s) expirada(s); {Estornados} estorno(s) concluído(s).", expiradas, estornados);
+        }
+    }
+}
+
+/// <summary>Entrega os SMS registrados e repete os que falharam, a cada minuto (RN16).</summary>
+public class EnvioSmsWorker(IServiceScopeFactory escopos, IOptions<TarefasOptions> opcoes, ILogger<EnvioSmsWorker> logger)
+    : TarefaPeriodicaWorker(escopos, logger)
+{
+    private readonly ILogger _logger = logger;
+
+    protected override string Nome => "envio de SMS";
+
+    protected override bool Habilitada => opcoes.Value.Habilitar;
+
+    protected override TimeSpan Intervalo => TimeSpan.FromMinutes(Math.Max(1, opcoes.Value.IntervaloSmsMinutos));
+
+    protected override async Task ExecutarAsync(IServiceProvider servicos, CancellationToken cancellationToken)
+    {
+        var enviados = await servicos.GetRequiredService<EnvioSmsService>().EnviarPendentesAsync(cancellationToken);
+        if (enviados > 0)
+        {
+            _logger.LogInformation("{Quantidade} SMS enviado(s).", enviados);
+        }
+    }
+}
+
+/// <summary>Gera os lembretes de 24 horas (RN17), a cada 15 minutos.</summary>
+public class LembretesWorker(IServiceScopeFactory escopos, IOptions<TarefasOptions> opcoes, ILogger<LembretesWorker> logger)
+    : TarefaPeriodicaWorker(escopos, logger)
+{
+    private readonly ILogger _logger = logger;
+
+    protected override string Nome => "lembretes";
+
+    protected override bool Habilitada => opcoes.Value.Habilitar;
+
+    protected override TimeSpan Intervalo => TimeSpan.FromMinutes(Math.Max(1, opcoes.Value.IntervaloLembretesMinutos));
+
+    protected override async Task ExecutarAsync(IServiceProvider servicos, CancellationToken cancellationToken)
+    {
+        var gerados = await servicos.GetRequiredService<LembretesService>().EnviarAsync(cancellationToken);
+        if (gerados > 0)
+        {
+            _logger.LogInformation("{Quantidade} lembrete(s) gerado(s).", gerados);
         }
     }
 }

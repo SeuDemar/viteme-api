@@ -70,12 +70,14 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 
 **Depois (fora do stub):** adaptador Asaas, resolvendo antes o ponto aberto sobre CPF/CNPJ do pagador e a validação do webhook ([decisoes.md](decisoes.md)).
 
-## Etapa 5 — Interesse, notificações, denúncias, certificados (E32–E39)
+## Etapa 5 — Interesse, notificações, denúncias, certificados (E32–E39)  ✅ concluída
 
 - Interesse (E32/E33), notificações do sino (E34–E36), lembretes (RN17), reenvio de SMS (RN16).
 - Denúncias com ocultação (5) e cancelamento automático após republicação (RN19), reutilizando RN14.
 - Certificados: emissão em PDF, código de validação público (RN21) — decidir biblioteca de PDF.
 - Testes: CT42–CT46, CT52–CT57.
+
+> **Concluída.** E32–E39 implementados: `InteresseService`, `CaixaNotificacoesService`, `DenunciaService`, `CertificadoService`, `CancelamentoEventoService` (RN14 compartilhada), canal SMS (`NotificacaoSmsSender` + `EnvioSmsService` + `EnvioSmsWorker`), `LembretesService` + `LembretesWorker` (15 min) e `CertificadoPdfGerador` (PDF próprio, D34). CT42–CT46 e CT52–CT57 passando em PostgreSQL real; 270 testes; bug #3 encontrado e corrigido. Decisões D34–D42; pendências P36–P39 (P3, P24, P27 resolvidas).
 
 ## Etapa 6 — Fechamento
 

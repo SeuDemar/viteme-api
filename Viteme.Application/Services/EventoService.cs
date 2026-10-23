@@ -14,10 +14,9 @@ public class EventoService(
     IUsuarioRepository usuarios,
     IInscricaoRepository inscricoes,
     IInteresseRepository interesses,
-    IPagamentoRepository pagamentos,
+    CancelamentoEventoService cancelamento,
     EstornoService estornos,
     AlteracaoEventoRegistrador registrador,
-    NotificacaoService notificacoes,
     IUnitOfWork unitOfWork,
     IRelogio relogio)
 {
@@ -150,27 +149,8 @@ public class EventoService(
     {
         var evento = await eventos.ObterPorIdAsync(eventoId, cancellationToken) ?? throw EventoNaoEncontrado();
 
-        evento.Cancelar();
-
-        var destinatarios = (await eventos.ListarDestinatariosAsync(evento.Id, incluirColaboradores: true, cancellationToken))
-            .Where(id => id != usuarioId)
-            .ToList();
-
-        foreach (var inscricao in await inscricoes.ListarAtivasAsync(evento.Id, cancellationToken))
-        {
-            inscricao.Cancelar();
-        }
-
-        foreach (var pendente in await pagamentos.ListarPendentesDoEventoAsync(evento.Id, cancellationToken))
-        {
-            pendente.Expirar();
-        }
-
-        await notificacoes.NotificarAsync(
-            destinatarios, evento.Id, TipoNotificacao.Cancelamento,
-            "Evento cancelado",
-            $"O evento \"{evento.Titulo}\" foi cancelado. Motivo: {requisicao.Motivo.Trim()}",
-            cancellationToken);
+        await cancelamento.CancelarAsync(
+            evento, $"O evento \"{evento.Titulo}\" foi cancelado. Motivo: {requisicao.Motivo.Trim()}", usuarioId, cancellationToken);
 
         await unitOfWork.SalvarAsync(cancellationToken);
 

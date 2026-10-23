@@ -13,6 +13,7 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | 2026-10-22 | etapa 2 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 97 | 97 | 0 | +33 testes de API em PostgreSQL real (E01–E09: CT01–CT13 e variações). 1 falha durante o desenvolvimento (bug #1, corrigido). Sem `VITEME_TESTES_DB`: 50 passam e 47 são ignorados. Evidência: [docs/evidencias/etapa-2-dotnet-test.txt](../../docs/evidencias/etapa-2-dotnet-test.txt) |
 | 2026-10-23 | etapa 3 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 157 | 157 | 0 | +60 testes de API (E10–E23): CT14–CT22, CT39–CT41, CT47–CT48 e variações. 2 falhas durante o desenvolvimento: bug #2 (corrigido) e dois erros de expectativa nos próprios testes. Sem `VITEME_TESTES_DB`: 50 passam e 107 são ignorados. Evidência: [docs/evidencias/etapa-3-dotnet-test.txt](../../docs/evidencias/etapa-3-dotnet-test.txt) |
 | 2026-10-23 | etapa 4 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 229 | 229 | 0 | +72 testes (E24–E31, check-in, expiração, estornos, gateway stub). Falhas durante o desenvolvimento: só defeitos dos próprios testes (isolamento, cenário, token errado); nenhum bug de produto. **Mutação manual:** sem o `FOR UPDATE` do evento, CT26 e a disputa em evento pago falham (5–6 inscrições aceitas para 2 vagas). Concorrência rodada 6× sem falha. Sem `VITEME_TESTES_DB`: 65 passam e 164 são ignorados. Evidência: [docs/evidencias/etapa-4-dotnet-test.txt](../../docs/evidencias/etapa-4-dotnet-test.txt) |
+| 2026-10-23 | etapa 5 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 270 | 270 | 0 | +41 testes (E32–E39, canal SMS, lembretes, PDF). Falhas durante o desenvolvimento: **bug #3** (500 ao gerar o PDF: `CultureInfo.GetCultureInfo("pt-BR")` falha em ambiente com globalização invariante; corrigido com formato explícito) e defeitos dos próprios testes (banco compartilhado entre testes da classe, relógio fixo nas denúncias, 404 esperado para quem não vê o evento oculto). PDF aberto e conferido com `pdftotext`/`pdftoppm`. Sem `VITEME_TESTES_DB`: 71 passam e 199 são ignorados. Evidência: [docs/evidencias/etapa-5-dotnet-test.txt](../../docs/evidencias/etapa-5-dotnet-test.txt) |
 
 ## Casos de teste
 
@@ -59,15 +60,22 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | CT39 | Alteração de local notifica inscritos e interessados e registra histórico | Integração | Passou | 2026-10-23 | idem | |
 | CT40 | Alteração de data sem motivo (422 MOTIVO_OBRIGATORIO) | Integração | Passou | 2026-10-23 | idem | |
 | CT41 | Preço com inscrição pendente (422 PRECO_BLOQUEADO) | Integração | Passou | 2026-10-23 | idem | |
-| CT42–CT44 | SMS de notificações (aceite, falha e reenvio) | Integração | Pendente | | | |
+| CT42 | Usuário com telefone verificado e aceite recebe a notificação por SMS | Integração | Passou | 2026-10-23 | [etapa-5](../../docs/evidencias/etapa-5-dotnet-test.txt) | |
+| CT43 | Sem telefone verificado ou sem aceite: só o sino, nenhum SMS | Integração | Passou | 2026-10-23 | idem | |
+| CT44 | Provedor fora do ar: 3 novas tentativas, depois FALHOU, sem afetar a operação; aceite revogado descarta o envio | Integração | Passou | 2026-10-23 | idem | |
 | CT45 | Cancelamento do evento: inscrições canceladas, estornos solicitados e envolvidos notificados | Integração | Passou | 2026-10-23 | [etapa-4](../../docs/evidencias/etapa-4-dotnet-test.txt) | |
-| CT46 | Lembrete de evento | Integração | Pendente | | | |
+| CT46 | Lembrete 24 h antes do início (confirmados) e do fim das inscrições (interessados), sem repetir | Integração | Passou | 2026-10-23 | idem | |
 | CT47 | Adicionar colaborador (201, notificado, vê a lista) | Integração | Corrigido | 2026-10-23 | idem | #2 (500 na listagem) |
 | CT48 | Organizador como colaborador (422) | Integração | Passou | 2026-10-23 | idem | |
 | CT49 | Check-in válido (200, presença registrada) | Integração | Passou | 2026-10-23 | idem | |
 | CT50 | Check-in repetido (409; simultâneos: só um vale) | Integração | Passou | 2026-10-23 | idem | |
 | CT51 | Check-in por participante comum (403) | Integração | Passou | 2026-10-23 | idem | |
-| CT52–CT57 | Denúncias e certificados | Unit/Integração | Pendente | | | |
+| CT52 | Denúncia válida (201) fica registrada | Integração | Passou | 2026-10-23 | idem | |
+| CT53 | Denúncia repetida (409 DENUNCIA_EXISTENTE) | Integração | Passou | 2026-10-23 | idem | |
+| CT54 | 5.ª denúncia oculta o evento e avisa inscritos e organizador (também com denúncias simultâneas) | Integração | Passou | 2026-10-23 | idem | |
+| CT55 | Republicado e denunciado de novo: cancelamento automático com estorno | Integração | Passou | 2026-10-23 | idem | |
+| CT56 | Certificado em PDF com o mesmo código a cada download; validação pública | Unit/Integração | Corrigido | 2026-10-23 | idem | #3 (500 por cultura pt-BR ausente) |
+| CT57 | Certificado indisponível (sem presença, evento não encerrado ou sem carga horária: 422) | Integração | Passou | 2026-10-23 | idem | |
 | CT58–CT63 | Frontend | Componente | Pendente | | | |
 
 > Quando um caso for executado, abrir uma linha por CT (CT01, CT02…) em vez da faixa.

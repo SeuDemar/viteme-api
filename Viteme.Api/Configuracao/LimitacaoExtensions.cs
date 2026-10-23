@@ -7,13 +7,16 @@ namespace Viteme.Api.Configuracao;
 
 /// <summary>
 /// Rate limiting do ASP.NET Core. Seção <c>RateLimiting</c>: <c>Habilitar</c> (padrão true),
-/// <c>LoginPorMinuto</c> (5), <c>CadastroPorMinuto</c> (10), <c>CodigoSmsPorMinuto</c> (5).
+/// <c>LoginPorMinuto</c> (5), <c>CadastroPorMinuto</c> (10), <c>CodigoSmsPorMinuto</c> (5),
+/// <c>DenunciasPorMinuto</c> (5), <c>ValidacaoCertificadoPorMinuto</c> (30).
 /// </summary>
 public static class LimitacaoExtensions
 {
     public const string Login = "login";
     public const string Cadastro = "cadastro";
     public const string CodigoSms = "codigo-sms";
+    public const string Denuncias = "denuncias";
+    public const string ValidacaoCertificado = "validacao-certificado";
 
     public static IServiceCollection AddLimitacaoDeRequisicoes(this IServiceCollection servicos)
     {
@@ -28,6 +31,8 @@ public static class LimitacaoExtensions
             opcoes.AddPolicy(Login, c => Janela(c, Login, "LoginPorMinuto", 5, PorIp(c)));
             opcoes.AddPolicy(Cadastro, c => Janela(c, Cadastro, "CadastroPorMinuto", 10, PorIp(c)));
             opcoes.AddPolicy(CodigoSms, c => Janela(c, CodigoSms, "CodigoSmsPorMinuto", 5, PorUsuario(c)));
+            opcoes.AddPolicy(Denuncias, c => Janela(c, Denuncias, "DenunciasPorMinuto", 5, PorUsuario(c)));
+            opcoes.AddPolicy(ValidacaoCertificado, c => Janela(c, ValidacaoCertificado, "ValidacaoCertificadoPorMinuto", 30, PorIp(c)));
         });
 
         return servicos;

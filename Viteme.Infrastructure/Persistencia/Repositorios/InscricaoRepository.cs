@@ -26,6 +26,19 @@ public class InscricaoRepository(VitemeDbContext contexto) : IInscricaoRepositor
                 && (i.Status == StatusInscricao.Confirmada || i.Status == StatusInscricao.PendentePagamento))
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Guid>> ListarUsuariosAtivosAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
+        await contexto.Inscricoes.AsNoTracking()
+            .Where(i => i.EventoId == eventoId
+                && (i.Status == StatusInscricao.Confirmada || i.Status == StatusInscricao.PendentePagamento))
+            .Select(i => i.UsuarioId)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Guid>> ListarUsuariosConfirmadosAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
+        await contexto.Inscricoes.AsNoTracking()
+            .Where(i => i.EventoId == eventoId && i.Status == StatusInscricao.Confirmada)
+            .Select(i => i.UsuarioId)
+            .ToListAsync(cancellationToken);
+
     public Task<bool> ExisteAtivaAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
         contexto.Inscricoes.AnyAsync(
             i => i.EventoId == eventoId
