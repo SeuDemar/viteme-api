@@ -18,5 +18,17 @@ public class GeradorAleatorio : IGeradorAleatorio
         return codigo.ToString();
     }
 
+    // Sem 0/O e 1/I para o código ser ditado ou digitado sem confusão.
+    private const string AlfabetoCodigo = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    public string GerarCodigoAlfanumerico(int tamanho) =>
+        string.Create(tamanho, AlfabetoCodigo, static (destino, alfabeto) =>
+        {
+            for (var i = 0; i < destino.Length; i++)
+            {
+                destino[i] = alfabeto[RandomNumberGenerator.GetInt32(alfabeto.Length)];
+            }
+        });
+
     public string GerarTokenOpaco(int bytes) => Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(bytes));
 }

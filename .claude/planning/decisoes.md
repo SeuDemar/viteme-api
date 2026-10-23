@@ -39,6 +39,16 @@
 | D21 | Enums saem no JSON como texto em maiúsculas com sublinhado (`PENDENTE_PAGAMENTO`, `ORGANIZADOR`) e entram do mesmo jeito | Mesmo formato dos enums do banco e dos exemplos da spec |
 | D22 | Filtros `dataDe`/`dataAte` do mural comparam a data de início do evento por **dia em UTC**, com `dataAte` inclusivo | Simples; ver P26 para o fuso de Brasília |
 | D23 | Políticas por papel respondem **404** (não 403) quando o usuário não pode nem ver o evento (rascunho de outra pessoa, ou evento oculto sem inscrição) e **403** quando pode ver mas não tem o papel | Spec: "404 para quem não pode ver (não revela a existência de rascunhos)" |
+| D24 | **Gateway = stub** (`GatewayPagamentoStub`) atrás de `IGatewayPagamento`: cria cobrança idempotente (id `stub_{pagamentoId}`), aceita estorno e valida webhook por **HMAC-SHA256** no cabeçalho `X-Viteme-Assinatura`. O formato do webhook é o neutro da spec (`{ idTransacao, referenciaExterna, status, valor, metodo? }`); o adaptador do Asaas traduzirá o formato real em `InterpretarWebhook` | Escolha do fornecedor ficou para depois (D6) |
+| D25 | **Simulador de pagamento** `POST /api/v1/simulador/pagamentos/{idTransacao}/{aprovar|recusar|expirar}` para a demonstração, desligado por padrão (`Gateway:Stub:HabilitarSimulador`, ligado só em Development). Monta e assina o webhook e o processa pelo mesmo caminho do E31 | Sem ele a banca não conseguiria concluir um pagamento sem gateway real (P14). Remover/desligar quando o Asaas entrar |
+| D26 | `xmin` também em `inscricao` e `pagamento` como token de concorrência (migration `VersaoInscricaoPagamento`, sem SQL novo) | Webhook, expiração de reserva, cancelamento e check-in alteram as mesmas linhas; o conflito é detectado e reavaliado em vez de sobrescrever |
+| D27 | Inscrição usa **transação curta** com `SELECT ... FOR UPDATE` no evento (RI10); a chamada ao gateway é feita **depois** do commit, com o id do pagamento como referência e idempotência | Spec 1.4. Validado por mutação: sem o lock os testes de disputa falham |
+| D28 | Recursos pessoais de outro usuário (inscrição, pagamento) respondem **404**, nunca 403 | Spec 4.3 e 4.5: "404 para recursos alheios" |
+| D29 | Evento oculto ou rascunho que o usuário não pode ver responde **404** também na inscrição | Não revelar a existência (D23) |
+| D30 | **Estorno com retentativa:** se o gateway recusar, o pagamento fica APROVADO com inscrição não confirmada e a tarefa de 1 min (`ReservasEEstornosWorker`) repete até conseguir. Vale para cancelamento do evento (RN14), cancelamento da inscrição (RN15) e aprovação tardia (RN23) | O dinheiro nunca fica esquecido; a regra "APROVADO + inscrição não confirmada = devolver" é única |
+| D31 | `estornoSolicitado` em E26 é `true` quando havia pagamento aprovado, mesmo que o gateway esteja fora (a devolução fica enfileirada pela tarefa) | O participante não precisa repetir o pedido |
+| D32 | Código de check-in: 12 caracteres sem `0/O/1/I` (alfabeto de 32 símbolos), gerado com RNG criptográfico | Spec pede 12 alfanuméricos; evita confusão ao digitar. Colisão trata-se regenerando (UNIQUE) |
+| D33 | O código de check-in só é devolvido no E24 quando a inscrição já está CONFIRMADA; o E25 sempre o devolve | Evita usar o código antes do pagamento (RN20 já bloqueia, mas não vaza) |
 | D10 | Desenvolvimento na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito | |
 
 ### Nota sobre Supabase + Npgsql
@@ -97,3 +107,7 @@ Surgiram ao implementar o domínio. Manter a spec e o código alinhados: se a eq
 | `VERSAO_INVALIDA` (400) | E13 com `If-Match` que não é um ETag | Entrada malformada |
 | `ACESSO_NEGADO` (403) | Políticas por papel | Código estável para 403 |
 | `ATIVIDADE_NAO_ENCONTRADA` (404), `COLABORADOR_NAO_ENCONTRADO` (404) | E19/E20, E23 | Recursos filhos inexistentes |
+| `WEBHOOK_INVALIDO` (400) | E31 | Corpo que não é JSON ou sem os campos obrigatórios |
+| `CONFLITO_CONCORRENCIA` (409) | E26, E31 | Inscrição/pagamento alterados por outra operação durante o processamento |
+| `PAGAMENTO_NAO_ENCONTRADO` (404) | E30 | Inscrição sem cobrança (evento gratuito) |
+| `INSCRICAO_NAO_ATIVA`, `INSCRICAO_NAO_PENDENTE`, `PAGAMENTO_NAO_PENDENTE`, `PAGAMENTO_NAO_APROVADO` (409) | Domínio | Transições de estado inválidas (rede de segurança) |

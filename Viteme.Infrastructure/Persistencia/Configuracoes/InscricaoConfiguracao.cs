@@ -14,6 +14,7 @@ public class InscricaoConfiguracao : IEntityTypeConfiguration<Inscricao>
         b.Property(i => i.Id).ValueGeneratedNever();
         b.Property(i => i.CodigoCheckin).HasMaxLength(12).IsRequired();
         b.Property(i => i.PresencaConfirmada).HasDefaultValue(false);
+        b.Property(i => i.Versao).IsRowVersion();
         b.Ignore(i => i.Ativa);
 
         b.HasOne<Evento>().WithMany().HasForeignKey(i => i.EventoId).OnDelete(DeleteBehavior.Restrict);

@@ -82,11 +82,17 @@ O SMS só é enviado com **consentimento explícito e telefone confirmado**:
 | Exposição de informação | Erros 500 sem detalhes internos; logs **sem** senhas, tokens, códigos ou telefones completos; segredos (chave JWT, credenciais do gateway e do SMS, connection string) em variáveis de ambiente |
 | Privacidade (LGPD) | Coleta mínima, consentimento de SMS registrado, revogação do aceite, exclusão de conta por anonimização em versão futura |
 
+## 5.1 Webhook do gateway (E31)
+
+- Sem JWT e sem rate limiting; autenticidade pela **assinatura do corpo exato**. No stub: HMAC-SHA256 (hex, comparação em tempo constante) no cabeçalho `X-Viteme-Assinatura`; sem segredo configurado o stub gera um efêmero, então nada de fora consegue assinar.
+- Processamento idempotente, valor conferido contra o registrado, corpo limitado a 64 KB e transações protegidas por `xmin` (D26).
+- O **simulador de pagamento** (D25) é só para demonstração: exige login, só age sobre cobranças do próprio usuário e fica desligado por padrão.
+
 ## 6. Checklist de segredos (nunca no repositório)
 
 - `ConnectionStrings__Default` (Supabase; conexão direta ou session pooler, porta 5432)
 - `Jwt__Chave`, `Jwt__Emissor`, `Jwt__Audiencia`
-- `Gateway__Asaas__ApiKey`, `Gateway__Asaas__WebhookToken` (quando houver adaptador real)
+- `Gateway__Stub__SegredoWebhook` (opcional) e, quando houver adaptador real, `Gateway__Asaas__ApiKey` e `Gateway__Asaas__WebhookToken`
 - `Sms__*` (quando houver provedor real)
 - `Cors__OrigemFrontend`
 

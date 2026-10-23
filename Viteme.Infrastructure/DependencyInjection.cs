@@ -33,11 +33,18 @@ public static class DependencyInjection
         servicos.AddScoped<IUsuarioRepository, UsuarioRepository>();
         servicos.AddScoped<ICodigoVerificacaoRepository, CodigoVerificacaoRepository>();
         servicos.AddScoped<ITokenRenovacaoRepository, TokenRenovacaoRepository>();
+        servicos.AddScoped<IPagamentoRepository, PagamentoRepository>();
         servicos.AddScoped<IEventoRepository, EventoRepository>();
         servicos.AddScoped<IColaboradorRepository, ColaboradorRepository>();
         servicos.AddScoped<IInscricaoRepository, InscricaoRepository>();
         servicos.AddScoped<IInteresseRepository, InteresseRepository>();
         servicos.AddScoped<INotificacaoRepository, NotificacaoRepository>();
+
+        // Gateway de pagamento ainda não escolhido na época da spec; hoje é um stub. O adaptador do Asaas o substituirá.
+        servicos.Configure<GatewayStubOptions>(configuracao.GetSection(GatewayStubOptions.Secao));
+        servicos.AddSingleton<GatewayPagamentoStub>();
+        servicos.AddSingleton<IGatewayPagamento>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
+        servicos.AddSingleton<ISimuladorGateway>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
 
         // Canais de notificação (RN16): hoje só o site; o SMS entra como mais uma implementação.
         servicos.AddScoped<INotificationSender, NotificacaoSiteSender>();
@@ -54,6 +61,7 @@ public static class DependencyInjection
 
         servicos.Configure<TarefasOptions>(configuracao.GetSection(TarefasOptions.Secao));
         servicos.AddHostedService<EncerrarEventosWorker>();
+        servicos.AddHostedService<ReservasEEstornosWorker>();
 
         return servicos;
     }

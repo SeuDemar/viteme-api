@@ -12,6 +12,7 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | 2026-10-22 | etapa 1 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 64 | 64 | 0 | 3 scaffold + 43 domínio + 14 persistência (PostgreSQL 16 real) + 4 Swagger. Evidência: [docs/evidencias/etapa-1-dotnet-test.txt](../../docs/evidencias/etapa-1-dotnet-test.txt). Ainda não são casos CT |
 | 2026-10-22 | etapa 2 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 97 | 97 | 0 | +33 testes de API em PostgreSQL real (E01–E09: CT01–CT13 e variações). 1 falha durante o desenvolvimento (bug #1, corrigido). Sem `VITEME_TESTES_DB`: 50 passam e 47 são ignorados. Evidência: [docs/evidencias/etapa-2-dotnet-test.txt](../../docs/evidencias/etapa-2-dotnet-test.txt) |
 | 2026-10-23 | etapa 3 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 157 | 157 | 0 | +60 testes de API (E10–E23): CT14–CT22, CT39–CT41, CT47–CT48 e variações. 2 falhas durante o desenvolvimento: bug #2 (corrigido) e dois erros de expectativa nos próprios testes. Sem `VITEME_TESTES_DB`: 50 passam e 107 são ignorados. Evidência: [docs/evidencias/etapa-3-dotnet-test.txt](../../docs/evidencias/etapa-3-dotnet-test.txt) |
+| 2026-10-23 | etapa 4 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 229 | 229 | 0 | +72 testes (E24–E31, check-in, expiração, estornos, gateway stub). Falhas durante o desenvolvimento: só defeitos dos próprios testes (isolamento, cenário, token errado); nenhum bug de produto. **Mutação manual:** sem o `FOR UPDATE` do evento, CT26 e a disputa em evento pago falham (5–6 inscrições aceitas para 2 vagas). Concorrência rodada 6× sem falha. Sem `VITEME_TESTES_DB`: 65 passam e 164 são ignorados. Evidência: [docs/evidencias/etapa-4-dotnet-test.txt](../../docs/evidencias/etapa-4-dotnet-test.txt) |
 
 ## Casos de teste
 
@@ -39,17 +40,33 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | CT20 | Edição por colaborador (403) | Integração | Passou | 2026-10-23 | idem | |
 | CT21 | Duas edições com a mesma versão (200 e 412) | Integração | Passou | 2026-10-23 | idem | |
 | CT22 | Encerramento automático (tarefa muda para ENCERRADO) | Integração | Passou | 2026-10-23 | idem | |
-| CT23–CT30 | Inscrições | Unit/Integração | Pendente | | | |
-| CT31–CT38 | Pagamentos | Unit/Integração | Pendente | | | |
+| CT23 | Inscrição gratuita (201 CONFIRMADA, código de check-in) | Integração (PostgreSQL real) | Passou | 2026-10-23 | [etapa-4](../../docs/evidencias/etapa-4-dotnet-test.txt) | |
+| CT24 | Inscrição duplicada (409) | Integração | Passou | 2026-10-23 | idem | |
+| CT25 | Evento lotado (422 SEM_VAGAS) | Integração | Passou | 2026-10-23 | idem | |
+| CT26 | Disputa pela última vaga: 8 simultâneas, 1 vence (também em evento pago) | Integração (concorrência) | Passou | 2026-10-23 | idem | validado por mutação: sem o `FOR UPDATE` o teste falha |
+| CT27 | Inscrição fora do período (422 INSCRICOES_ENCERRADAS) | Integração | Passou | 2026-10-23 | idem | |
+| CT28 | Organizador/colaborador se inscreve (422 PAPEL_NAO_PERMITE_INSCRICAO) | Integração | Passou | 2026-10-23 | idem | |
+| CT29 | Cancelamento no prazo (200, vaga liberada) | Integração | Passou | 2026-10-23 | idem | |
+| CT30 | Cancelamento a menos de 24 h (422) | Integração | Passou | 2026-10-23 | idem | |
+| CT31 | Inscrição paga (201 PENDENTE_PAGAMENTO, cobrança de R$ 50,00, reserva de 30 min) | Integração | Passou | 2026-10-23 | idem | |
+| CT32 | Webhook aprovado (pagamento APROVADO, inscrição CONFIRMADA, notificação) | Integração | Passou | 2026-10-23 | idem | |
+| CT33 | Webhook repetido (200 nas duas, processado uma vez; também simultâneos) | Integração | Passou | 2026-10-23 | idem | |
+| CT34 | Assinatura inválida (401, nada alterado) | Integração | Passou | 2026-10-23 | idem | |
+| CT35 | Reserva sem pagamento expira (EXPIRADA, vaga liberada) | Integração | Passou | 2026-10-23 | idem | |
+| CT36 | Aprovação após expiração (200, estorno automático, não confirma) | Integração | Passou | 2026-10-23 | idem | |
+| CT37 | Estorno ao cancelar inscrição paga (`estornoSolicitado: true`) | Integração | Passou | 2026-10-23 | idem | |
+| CT38 | Gateway fora do ar (502, inscrição EXPIRADA, vaga liberada) | Integração | Passou | 2026-10-23 | idem | |
 | CT39 | Alteração de local notifica inscritos e interessados e registra histórico | Integração | Passou | 2026-10-23 | idem | |
 | CT40 | Alteração de data sem motivo (422 MOTIVO_OBRIGATORIO) | Integração | Passou | 2026-10-23 | idem | |
 | CT41 | Preço com inscrição pendente (422 PRECO_BLOQUEADO) | Integração | Passou | 2026-10-23 | idem | |
 | CT42–CT44 | SMS de notificações (aceite, falha e reenvio) | Integração | Pendente | | | |
-| CT45 | Cancelamento do evento: inscrições canceladas e envolvidos notificados (estornos na etapa de pagamentos) | Integração | Parcial | 2026-10-23 | idem | |
+| CT45 | Cancelamento do evento: inscrições canceladas, estornos solicitados e envolvidos notificados | Integração | Passou | 2026-10-23 | [etapa-4](../../docs/evidencias/etapa-4-dotnet-test.txt) | |
 | CT46 | Lembrete de evento | Integração | Pendente | | | |
 | CT47 | Adicionar colaborador (201, notificado, vê a lista) | Integração | Corrigido | 2026-10-23 | idem | #2 (500 na listagem) |
 | CT48 | Organizador como colaborador (422) | Integração | Passou | 2026-10-23 | idem | |
-| CT49–CT51 | Check-in | Integração | Pendente | | | |
+| CT49 | Check-in válido (200, presença registrada) | Integração | Passou | 2026-10-23 | idem | |
+| CT50 | Check-in repetido (409; simultâneos: só um vale) | Integração | Passou | 2026-10-23 | idem | |
+| CT51 | Check-in por participante comum (403) | Integração | Passou | 2026-10-23 | idem | |
 | CT52–CT57 | Denúncias e certificados | Unit/Integração | Pendente | | | |
 | CT58–CT63 | Frontend | Componente | Pendente | | | |
 

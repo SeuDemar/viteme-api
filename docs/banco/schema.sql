@@ -269,3 +269,9 @@ VALUES ('20261022202353_Inicial', '10.0.13');
 
 COMMIT;
 
+START TRANSACTION;
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20261023125306_VersaoInscricaoPagamento', '10.0.13');
+
+COMMIT;
+

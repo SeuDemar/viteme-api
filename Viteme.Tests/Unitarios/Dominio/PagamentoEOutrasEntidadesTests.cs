@@ -38,6 +38,27 @@ public class PagamentoEOutrasEntidadesTests
     }
 
     [Fact]
+    public void Aprovacao_de_pagamento_recusado_e_aceita_pois_o_dinheiro_entrou()
+    {
+        var pagamento = new Pagamento(Guid.NewGuid(), 50m);
+        pagamento.Recusar();
+
+        pagamento.Aprovar("PIX");
+
+        Assert.Equal(StatusPagamento.Aprovado, pagamento.Status);
+    }
+
+    [Fact]
+    public void Aprovar_pagamento_ja_estornado_falha()
+    {
+        var pagamento = new Pagamento(Guid.NewGuid(), 50m);
+        pagamento.Aprovar(null);
+        pagamento.Estornar();
+
+        Assert.Throws<RegraDeNegocioException>(() => pagamento.Aprovar(null));
+    }
+
+    [Fact]
     public void Estornar_exige_pagamento_aprovado()
     {
         Assert.Throws<RegraDeNegocioException>(() => new Pagamento(Guid.NewGuid(), 50m).Estornar());

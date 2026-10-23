@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Viteme.Domain.Entities;
@@ -25,7 +26,7 @@ public sealed class AmbienteApi : IDisposable
     public AmbienteApi(BancoFixture banco, ApiFactory api, bool limitacao = false)
     {
         Banco = banco;
-        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, limitacao);
+        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, Gateway, limitacao);
         Cliente = _fabrica.CreateClient(new WebApplicationFactoryClientOptions
         {
             HandleCookies = false,
@@ -38,6 +39,8 @@ public sealed class AmbienteApi : IDisposable
     public RelogioFixo Relogio { get; } = new(DateTime.UtcNow);
 
     public SmsEmMemoria Sms { get; } = new();
+
+    public GatewayEmMemoria Gateway { get; } = new();
 
     public HttpClient Cliente { get; }
 
@@ -193,6 +196,52 @@ public sealed class AmbienteApi : IDisposable
         contexto.Add(new InteresseEvento(usuarioId, eventoId));
         await contexto.SaveChangesAsync();
     }
+
+    // ---- Inscrições e pagamentos ------------------------------------------------------------------
+
+    public Task<HttpResponseMessage> InscreverAsync(Sessao participante, Guid eventoId) =>
+        PostAsync($"/api/v1/eventos/{eventoId}/inscricoes", token: participante.Token);
+
+    /// <summary>Inscreve e exige sucesso. Retorna o id da inscrição.</summary>
+    public async Task<Guid> InscreverComSucessoAsync(Sessao participante, Guid eventoId)
+    {
+        var resposta = await InscreverAsync(participante, eventoId);
+        resposta.EnsureSuccessStatusCode();
+        return (await CorpoAsync(resposta)).GetProperty("id").GetGuid();
+    }
+
+    /// <summary>Inscrição em evento pago: retorna a inscrição, o pagamento e o id de transação do gateway.</summary>
+    public async Task<(Guid InscricaoId, Guid PagamentoId, string IdTransacao, decimal Valor)> InscreverEmEventoPagoAsync(
+        Sessao participante, Guid eventoId)
+    {
+        var resposta = await InscreverAsync(participante, eventoId);
+        resposta.EnsureSuccessStatusCode();
+        var corpo = await CorpoAsync(resposta);
+        var pagamento = corpo.GetProperty("pagamento");
+        var pagamentoId = pagamento.GetProperty("id").GetGuid();
+        return (corpo.GetProperty("id").GetGuid(), pagamentoId, $"stub_{pagamentoId:N}", pagamento.GetProperty("valor").GetDecimal());
+    }
+
+    /// <summary>Envia um webhook ao endpoint do gateway, assinado como o gateway de teste (ou com a assinatura informada).</summary>
+    public async Task<HttpResponseMessage> WebhookAsync(
+        string idTransacao, Guid referenciaExterna, string status, decimal valor, string? assinatura = null, string? corpoBruto = null)
+    {
+        var corpo = corpoBruto ?? System.Text.Json.JsonSerializer.Serialize(
+            new { idTransacao, referenciaExterna, status, valor, metodo = "PIX" });
+
+        var requisicao = new HttpRequestMessage(HttpMethod.Post, "/api/v1/pagamentos/webhook")
+        {
+            Content = new StringContent(corpo, Encoding.UTF8, "application/json"),
+        };
+        requisicao.Headers.Add("X-Viteme-Assinatura", assinatura ?? Gateway.Assinar(corpo));
+        return await Cliente.SendAsync(requisicao);
+    }
+
+    public Task<HttpResponseMessage> WebhookDeAsync((Guid InscricaoId, Guid PagamentoId, string IdTransacao, decimal Valor) pagamento, string status) =>
+        WebhookAsync(pagamento.IdTransacao, pagamento.PagamentoId, status, pagamento.Valor);
+
+    public async Task<string> StatusDoPagamentoAsync(Sessao dono, Guid inscricaoId) =>
+        (await CorpoAsync(await GetAsync($"/api/v1/inscricoes/{inscricaoId}/pagamento", dono.Token))).GetProperty("status").GetString()!;
 
     public static string? ExtrairRefresh(HttpResponseMessage resposta)
     {

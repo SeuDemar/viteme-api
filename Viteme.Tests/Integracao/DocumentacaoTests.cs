@@ -22,6 +22,8 @@ public class DocumentacaoTests(ApiFactory fabrica) : IClassFixture<ApiFactory>
         {
             "/api/v1/saude", "/api/v1/auth/login", "/api/v1/usuarios/me", "/api/v1/eventos", "/api/v1/eventos/{id}",
             "/api/v1/eventos/{id}/atividades/{atividadeId}", "/api/v1/eventos/{id}/colaboradores",
+            "/api/v1/eventos/{id}/inscricoes", "/api/v1/inscricoes/minhas", "/api/v1/inscricoes/{id}/pagamento",
+            "/api/v1/pagamentos/webhook", "/api/v1/eventos/{id}/checkin",
         })
         {
             Assert.True(caminhos.TryGetProperty(caminho, out _), $"faltou {caminho} no OpenAPI");

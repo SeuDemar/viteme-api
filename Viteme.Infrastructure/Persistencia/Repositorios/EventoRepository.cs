@@ -13,6 +13,14 @@ public class EventoRepository(VitemeDbContext contexto) : IEventoRepository
     public Task<Evento?> ObterPorIdAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
         contexto.Eventos.FirstOrDefaultAsync(e => e.Id == eventoId, cancellationToken);
 
+    // SELECT ... FOR UPDATE: a linha fica bloqueada até o fim da transação. "e.xmin" é a coluna de sistema usada como versão.
+    public async Task<Evento?> ObterBloqueadoAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
+        (await contexto.Eventos
+            .FromSqlInterpolated($"SELECT e.*, e.xmin FROM evento e WHERE e.id = {eventoId} FOR UPDATE")
+            .AsNoTracking()
+            .ToListAsync(cancellationToken))
+        .FirstOrDefault();
+
     public Task<Evento?> ObterComAtividadesAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
         contexto.Eventos.Include(e => e.Atividades).FirstOrDefaultAsync(e => e.Id == eventoId, cancellationToken);
 

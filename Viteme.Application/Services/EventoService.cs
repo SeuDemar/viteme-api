@@ -14,6 +14,8 @@ public class EventoService(
     IUsuarioRepository usuarios,
     IInscricaoRepository inscricoes,
     IInteresseRepository interesses,
+    IPagamentoRepository pagamentos,
+    EstornoService estornos,
     AlteracaoEventoRegistrador registrador,
     NotificacaoService notificacoes,
     IUnitOfWork unitOfWork,
@@ -140,8 +142,8 @@ public class EventoService(
     }
 
     /// <summary>
-    /// E15 (RN14). Cancela o evento e as inscrições ativas e avisa os envolvidos.
-    /// O estorno dos pagamentos aprovados entra com o gateway (etapa de pagamentos).
+    /// E15 (RN14). Cancela o evento e as inscrições ativas, expira as cobranças pendentes, solicita o estorno dos
+    /// pagamentos aprovados e avisa os envolvidos. Se o gateway falhar, o estorno fica pendente e a tarefa periódica repete.
     /// </summary>
     public async Task<StatusEventoResponse> CancelarAsync(
         Guid eventoId, Guid usuarioId, CancelarEventoRequest requisicao, CancellationToken cancellationToken = default)
@@ -159,6 +161,11 @@ public class EventoService(
             inscricao.Cancelar();
         }
 
+        foreach (var pendente in await pagamentos.ListarPendentesDoEventoAsync(evento.Id, cancellationToken))
+        {
+            pendente.Expirar();
+        }
+
         await notificacoes.NotificarAsync(
             destinatarios, evento.Id, TipoNotificacao.Cancelamento,
             "Evento cancelado",
@@ -166,6 +173,9 @@ public class EventoService(
             cancellationToken);
 
         await unitOfWork.SalvarAsync(cancellationToken);
+
+        // Depois do commit: chamadas ao gateway nunca ficam dentro da transação do banco.
+        await estornos.ProcessarPendentesAsync(evento.Id, cancellationToken);
         return new StatusEventoResponse(evento.Status);
     }
 

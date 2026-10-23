@@ -16,6 +16,7 @@ public class PagamentoConfiguracao : IEntityTypeConfiguration<Pagamento>
         b.Property(p => p.Metodo).HasMaxLength(30);
         b.Property(p => p.IdTransacaoGateway).HasMaxLength(100);
         b.Property(p => p.UrlPagamento).HasMaxLength(500);
+        b.Property(p => p.Versao).IsRowVersion();
 
         // RI07: UNIQUE aceita vários nulos, então o pagamento é gravado antes de o gateway devolver o id.
         b.HasIndex(p => p.IdTransacaoGateway).IsUnique();

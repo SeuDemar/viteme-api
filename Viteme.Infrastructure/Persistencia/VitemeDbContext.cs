@@ -71,6 +71,17 @@ public class VitemeDbContext(DbContextOptions<VitemeDbContext> options, IRelogio
         }
     }
 
+    /// <summary>Transação explícita: commit ao terminar e rollback se a operação lançar exceção.</summary>
+    public async Task<T> ExecutarEmTransacaoAsync<T>(Func<CancellationToken, Task<T>> operacao, CancellationToken cancellationToken = default)
+    {
+        await using var transacao = await Database.BeginTransactionAsync(cancellationToken);
+        var resultado = await operacao(cancellationToken);
+        await transacao.CommitAsync(cancellationToken);
+        return resultado;
+    }
+
+    public void LimparRastreamento() => ChangeTracker.Clear();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         PreencherDatasAutomaticas();

@@ -46,6 +46,9 @@ public class Inscricao
 
     public DateTime AtualizadoEm { get; private set; }
 
+    /// <summary>Coluna de sistema <c>xmin</c>: impede que webhook, expiração e cancelamento sobrescrevam um ao outro.</summary>
+    public uint Versao { get; private set; }
+
     public ICollection<Pagamento> Pagamentos { get; } = new List<Pagamento>();
 
     /// <summary>RN10: em evento gratuito a inscrição é confirmada na solicitação.</summary>

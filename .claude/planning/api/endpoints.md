@@ -158,6 +158,7 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 ### 2.4 Inscrições e check-in
 
 **E24 — POST /eventos/{id}/inscricoes** (Autenticado) · RN08–RN12
+- Nota: `codigoCheckin` só vem preenchido quando a inscrição já está CONFIRMADA (D33). Rascunho/oculto que o usuário não pode ver responde 404 (D29).
 - Saída: `201 { id, status, codigoCheckin?, reservadaAte?, pagamento?: { id, valor, urlPagamento } }`. Gratuito → CONFIRMADA; pago → PENDENTE_PAGAMENTO + URL de pagamento.
 - Contagem de vagas + gravação da inscrição e do pagamento em **uma transação curta** com bloqueio da linha do evento; chamada ao gateway **depois** da confirmação, com o id do pagamento como referência externa e chave de idempotência.
 - Erros: 401; 404; 409 `INSCRICAO_EXISTENTE`; 422 `EVENTO_INDISPONIVEL`, `INSCRICOES_ENCERRADAS`, `SEM_VAGAS`, `PAPEL_NAO_PERMITE_INSCRICAO`; 502 `GATEWAY_INDISPONIVEL` (inscrição pendente passa a EXPIRADA e a vaga é liberada).
@@ -186,9 +187,11 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Erros: 401; 403; 404; 409 `PAGAMENTO_JA_APROVADO`; 422 `RESERVA_EXPIRADA`, `EVENTO_GRATUITO`; 502 `GATEWAY_INDISPONIVEL`.
 
 **E30 — GET /inscricoes/{id}/pagamento** (Dono) · RN11
+- Nota: inscrição sem cobrança (evento gratuito) responde 404 `PAGAMENTO_NAO_ENCONTRADO`; inscrição de outro usuário responde 404 (D28).
 - Saída: `200 { status, valor, metodo, atualizadoEm, statusInscricao }` (usado pelo frontend ao voltar do gateway). Erros: 401; 403; 404.
 
 **E31 — POST /pagamentos/webhook** (Gateway) · RN11, RN14, RN15, RN23
+- Nota: no stub a assinatura é o HMAC-SHA256 (hex) do corpo, no cabeçalho `X-Viteme-Assinatura` (D24). Resposta `200 { processado }`: `false` quando o status já havia sido tratado. Erros acrescentados: 400 `WEBHOOK_INVALIDO`, 409 `CONFLITO_CONCORRENCIA`.
 - Cabeçalho com a assinatura do gateway. Entrada: `{ idTransacao, referenciaExterna, status, valor, ... }`.
 - Saída: `200` (processado ou já processado antes).
 - Validações: assinatura válida (ver [../decisoes.md](../decisoes.md), ponto em aberto sobre HMAC vs token do Asaas); pagamento localizado pela **referência externa** (id do pagamento); valor igual ao registrado. **Não usa JWT nem passa pelo rate limiting.**

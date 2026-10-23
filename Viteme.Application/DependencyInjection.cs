@@ -15,6 +15,10 @@ public static class DependencyInjection
         servicos.AddScoped<ProgramacaoService>();
         servicos.AddScoped<ColaboradorService>();
         servicos.AddScoped<EncerramentoEventosService>();
+        servicos.AddScoped<EstornoService>();
+        servicos.AddScoped<PagamentoService>();
+        servicos.AddScoped<InscricaoService>();
+        servicos.AddScoped<ExpiracaoReservasService>();
         return servicos;
     }
 }

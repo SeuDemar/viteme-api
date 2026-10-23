@@ -33,6 +33,12 @@ public interface IEventoRepository
 
     Task<Evento?> ObterPorIdAsync(Guid eventoId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Lê o evento com bloqueio de linha (<c>SELECT ... FOR UPDATE</c>): inscrições simultâneas no mesmo evento
+    /// ficam em fila e a contagem de vagas é consistente (RI10). Exige transação aberta.
+    /// </summary>
+    Task<Evento?> ObterBloqueadoAsync(Guid eventoId, CancellationToken cancellationToken = default);
+
     Task<PermissaoEvento> ObterPermissaoAsync(Guid eventoId, Guid? usuarioId, CancellationToken cancellationToken = default);
 
     /// <summary>Eventos publicados e ainda não encerrados, com filtros e paginação.</summary>

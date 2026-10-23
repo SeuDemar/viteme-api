@@ -42,16 +42,22 @@ public class Pagamento
 
     public DateTime AtualizadoEm { get; private set; }
 
+    /// <summary>Coluna de sistema <c>xmin</c> (concorrência otimista entre webhook, expiração e estorno).</summary>
+    public uint Versao { get; private set; }
+
     public void RegistrarCobranca(string idTransacaoGateway, string urlPagamento)
     {
         IdTransacaoGateway = idTransacaoGateway;
         UrlPagamento = urlPagamento;
     }
 
-    /// <summary>Aprovação tardia (pagamento já expirado) também é registrada; o estorno é tratado pelo service (RN23).</summary>
+    /// <summary>
+    /// Aprovação tardia (pagamento já expirado ou recusado) também é registrada, pois o dinheiro entrou;
+    /// o estorno é tratado pelo service (RN23).
+    /// </summary>
     public void Aprovar(string? metodo)
     {
-        if (Status is not (StatusPagamento.Pendente or StatusPagamento.Expirado))
+        if (Status is not (StatusPagamento.Pendente or StatusPagamento.Expirado or StatusPagamento.Recusado))
         {
             throw new RegraDeNegocioException("PAGAMENTO_NAO_PENDENTE", "Pagamento não pendente",
                 "Somente um pagamento pendente pode ser aprovado.", 409);

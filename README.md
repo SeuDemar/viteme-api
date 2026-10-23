@@ -81,6 +81,9 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | `Jwt__Emissor`, `Jwt__Audiencia` | Opcionais (padrões `viteme-api` e `viteme-web`) |
 | `Sms__LogarConteudo` | `true` só em desenvolvimento: o SMS stub mostra o código no log |
 | `Tarefas__Habilitar` | Padrão `true`. Liga o encerramento automático de eventos (a cada 15 min, `Tarefas__IntervaloEncerramentoMinutos`) |
+| `Gateway__Stub__SegredoWebhook` | Segredo do HMAC dos webhooks do gateway stub (vazio = segredo efêmero, só o simulador interno assina) |
+| `Gateway__Stub__HabilitarSimulador` | `true` só em demonstração/desenvolvimento: liga o simulador de pagamento. **Nunca em produção** |
+| `Tarefas__IntervaloReservasMinutos` | Padrão 1. Expira reservas vencidas e repete estornos pendentes |
 | `RateLimiting__Habilitar` | Padrão `true`. Limites: login 5/min e cadastro 10/min por IP; código SMS 5/min por usuário |
 | `Proxy__ConfiarEmCabecalhosEncaminhados` | `true` atrás de proxy/CDN, para o rate limiting ver o IP real |
 | `Gateway__Asaas__ApiKey`, `Gateway__Asaas__WebhookToken` | Gateway de pagamento (quando houver adaptador real) |
@@ -94,10 +97,12 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | Conta | `GET/PUT /api/v1/usuarios/me`, `POST /usuarios/me/telefone/codigo`, `POST /usuarios/me/telefone/verificar`, `PUT /usuarios/me/preferencias-sms` |
 | Eventos | `GET /api/v1/eventos` (mural), `GET /eventos/meus`, `GET/PUT /eventos/{id}`, `POST /eventos`, `POST /eventos/{id}/publicar`, `POST /eventos/{id}/cancelar`, `GET /eventos/{id}/alteracoes` |
 | Programação e equipe | `POST/PUT/DELETE /eventos/{id}/atividades[/{atividadeId}]`, `GET/POST /eventos/{id}/colaboradores`, `DELETE /eventos/{id}/colaboradores/{usuarioId}` |
+| Inscrições | `POST /eventos/{id}/inscricoes`, `GET /eventos/{id}/inscricoes` (inscritos), `GET /inscricoes/minhas`, `POST /inscricoes/{id}/cancelar`, `POST /eventos/{id}/checkin` |
+| Pagamentos | `POST/GET /inscricoes/{id}/pagamento`, `POST /pagamentos/webhook` (gateway), `POST /simulador/pagamentos/{idTransacao}/{aprovar\|recusar\|expirar}` (só demonstração) |
 | Infra | `GET /api/v1/saude` |
 
-Documentação interativa completa em `/swagger`. Os demais (E24–E39: inscrições, pagamentos, notificações, denúncias e certificados) seguem o [roadmap](.claude/planning/roadmap.md).
+Documentação interativa completa em `/swagger`. Os demais (E32–E39: interesse, notificações, denúncias e certificados) seguem o [roadmap](.claude/planning/roadmap.md).
 
 ## Estado
 
-Etapas 0 (scaffold), 1 (domínio, banco e Swagger), 2 (autenticação e conta, E01–E09) e 3 (eventos e programação, E10–E23) concluídas. Próximo: etapa 4 (inscrições e pagamentos). Ver [roadmap](.claude/planning/roadmap.md).
+Etapas 0–4 concluídas (scaffold, domínio/banco/Swagger, autenticação, eventos, inscrições e pagamentos com gateway stub). Próximo: etapa 5 (interesse, notificações, denúncias e certificados). Ver [roadmap](.claude/planning/roadmap.md).

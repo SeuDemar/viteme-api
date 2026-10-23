@@ -501,6 +501,12 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("usuario_id");
 
+                    b.Property<uint>("Versao")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_inscricao");
 
@@ -643,6 +649,12 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("valor");
+
+                    b.Property<uint>("Versao")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id")
                         .HasName("pk_pagamento");

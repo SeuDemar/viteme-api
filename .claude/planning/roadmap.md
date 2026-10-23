@@ -59,12 +59,14 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 
 > **Concluída.** E10–E23 implementados: `EventoService`, `ProgramacaoService`, `ColaboradorService`, `NotificacaoService` (canal site), registro de alterações, `EncerramentoEventosService` + `EncerrarEventosWorker` (a cada 15 min), políticas `OrganizadorDoEvento`/`OrganizadorOuColaborador` (404 vs 403), ETag/`If-Match` pelo `xmin`. CT14–CT22, CT39–CT41, CT47–CT48 passando em PostgreSQL real; 157 testes. Pendências novas: P23–P28; decisões D18–D23.
 
-## Etapa 4 — Inscrições e pagamentos (E24–E31)
+## Etapa 4 — Inscrições e pagamentos (E24–E31)  ✅ concluída
 
 - `InscricaoService` com transação curta + `FOR UPDATE` (RI10), vagas (RN09), gratuito vs pago (RN10/RN11).
 - `IGatewayPagamento` + **stub** (cobrança fictícia, simulador de webhook), `PagamentoService`, webhook idempotente (RN23).
 - Cancelamento com estorno (RN14/RN15), tarefa de expiração de reservas (RN11), check-in (RN20), inscritos (E27).
 - Testes: CT23–CT38, CT49–CT51. Concorrência (CT26) em teste de integração.
+
+> **Concluída.** `InscricaoService` (transação curta + `FOR UPDATE`, E24–E28), `PagamentoService` (cobrança, status e webhook idempotente, E29–E31), `EstornoService` (RN14/RN15/RN23 com retentativa), `ExpiracaoReservasService` e `ReservasEEstornosWorker` (1 min), gateway stub com HMAC e **simulador de pagamento para a demonstração**, `xmin` em inscrição e pagamento. CT23–CT38, CT45 e CT49–CT51 passando; concorrência validada por mutação; 229 testes. **Fica para o adaptador Asaas:** CPF do pagador (P1), formato/assinatura reais do webhook (P2), reconciliação (P29) e idempotência de estorno (P30). Decisões D24–D33; pendências P29–P35.
 
 **Depois (fora do stub):** adaptador Asaas, resolvendo antes o ponto aberto sobre CPF/CNPJ do pagador e a validação do webhook ([decisoes.md](decisoes.md)).
 

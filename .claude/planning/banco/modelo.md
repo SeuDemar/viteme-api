@@ -2,7 +2,7 @@
 
 PostgreSQL (Supabase), acessado por EF Core + Npgsql. Esquema versionado por migrations.
 
-> Implementado em `Viteme.Infrastructure/Persistencia` (migration `Inicial`). Script SQL completo: [`docs/banco/schema.sql`](../../../docs/banco/schema.sql). O índice único `lower(email)` (RI02) é criado por SQL dentro da migration, porque o EF Core não modela índices por expressão. `xmin` é mapeado como `Versao` (`IsRowVersion`) e **não** gera coluna.
+> Implementado em `Viteme.Infrastructure/Persistencia` (migration `Inicial`). Script SQL completo: [`docs/banco/schema.sql`](../../../docs/banco/schema.sql). O índice único `lower(email)` (RI02) é criado por SQL dentro da migration, porque o EF Core não modela índices por expressão. `xmin` é mapeado como `Versao` (`IsRowVersion`) em `evento`, `inscricao` e `pagamento` e **não** gera coluna (migration `VersaoInscricaoPagamento` só atualiza o modelo).
 
 ## 1. Convenções
 

@@ -33,4 +33,5 @@ Viteme centraliza divulgação, inscrição e acompanhamento dos eventos da facu
 - Spec lida por completo e transcrita nesta pasta.
 - Etapa 2 concluída: autenticação e conta (E01–E09), CT01–CT13 passando; 97 testes.
 - Etapa 3 concluída: eventos, programação e colaboradores (E10–E23); 157 testes passando.
-- Próximo passo: etapa 4 do [roadmap.md](roadmap.md) (Inscrições e pagamentos, E24–E31).
+- Etapa 4 concluída: inscrições, pagamentos (gateway stub), webhook, estornos e check-in (E24–E31); 229 testes passando.
+- Próximo passo: etapa 5 do [roadmap.md](roadmap.md) (interesse, notificações, denúncias e certificados, E32–E39).
