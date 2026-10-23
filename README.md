@@ -80,6 +80,7 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | `Jwt__Chave` | Chave HS256 (≥ 32 caracteres). Também deriva a chave do HMAC dos refresh tokens e códigos |
 | `Jwt__Emissor`, `Jwt__Audiencia` | Opcionais (padrões `viteme-api` e `viteme-web`) |
 | `Sms__LogarConteudo` | `true` só em desenvolvimento: o SMS stub mostra o código no log |
+| `Tarefas__Habilitar` | Padrão `true`. Liga o encerramento automático de eventos (a cada 15 min, `Tarefas__IntervaloEncerramentoMinutos`) |
 | `RateLimiting__Habilitar` | Padrão `true`. Limites: login 5/min e cadastro 10/min por IP; código SMS 5/min por usuário |
 | `Proxy__ConfiarEmCabecalhosEncaminhados` | `true` atrás de proxy/CDN, para o rate limiting ver o IP real |
 | `Gateway__Asaas__ApiKey`, `Gateway__Asaas__WebhookToken` | Gateway de pagamento (quando houver adaptador real) |
@@ -91,10 +92,12 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 |---|---|
 | Autenticação | `POST /api/v1/auth/cadastro`, `login`, `renovar`, `logout` |
 | Conta | `GET/PUT /api/v1/usuarios/me`, `POST /usuarios/me/telefone/codigo`, `POST /usuarios/me/telefone/verificar`, `PUT /usuarios/me/preferencias-sms` |
+| Eventos | `GET /api/v1/eventos` (mural), `GET /eventos/meus`, `GET/PUT /eventos/{id}`, `POST /eventos`, `POST /eventos/{id}/publicar`, `POST /eventos/{id}/cancelar`, `GET /eventos/{id}/alteracoes` |
+| Programação e equipe | `POST/PUT/DELETE /eventos/{id}/atividades[/{atividadeId}]`, `GET/POST /eventos/{id}/colaboradores`, `DELETE /eventos/{id}/colaboradores/{usuarioId}` |
 | Infra | `GET /api/v1/saude` |
 
-Documentação interativa completa em `/swagger`. Os demais (E10–E39) seguem o [roadmap](.claude/planning/roadmap.md).
+Documentação interativa completa em `/swagger`. Os demais (E24–E39: inscrições, pagamentos, notificações, denúncias e certificados) seguem o [roadmap](.claude/planning/roadmap.md).
 
 ## Estado
 
-Etapas 0 (scaffold), 1 (domínio, banco e Swagger) e 2 (autenticação e conta, E01–E09) concluídas. Próximo: etapa 3 (eventos e programação). Ver [roadmap](.claude/planning/roadmap.md).
+Etapas 0 (scaffold), 1 (domínio, banco e Swagger), 2 (autenticação e conta, E01–E09) e 3 (eventos e programação, E10–E23) concluídas. Próximo: etapa 4 (inscrições e pagamentos). Ver [roadmap](.claude/planning/roadmap.md).

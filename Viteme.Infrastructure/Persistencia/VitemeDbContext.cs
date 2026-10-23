@@ -54,7 +54,7 @@ public class VitemeDbContext(DbContextOptions<VitemeDbContext> options, IRelogio
             })
             .UseSnakeCaseNamingConvention();
 
-    /// <summary>Confirma as alterações; violações de UNIQUE viram <see cref="ViolacaoDeUnicidadeException"/> para os services tratarem.</summary>
+    /// <summary>Confirma as alterações; violações de UNIQUE e de concorrência viram exceções de Application para os services tratarem.</summary>
     public async Task<int> SalvarAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -64,6 +64,10 @@ public class VitemeDbContext(DbContextOptions<VitemeDbContext> options, IRelogio
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg)
         {
             throw new ViolacaoDeUnicidadeException(pg.ConstraintName, ex);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConflitoDeConcorrenciaException(ex);
         }
     }
 

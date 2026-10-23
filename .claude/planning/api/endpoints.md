@@ -113,7 +113,7 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Validações: título 5–150; descrição ≤ 5000; preço 0–99.999,99 (2 casas); capacidade e carga horária > 0 quando informadas; `imagemUrl` https; datas conforme RN05. Erros: 400; 401.
 
 **E13 — PUT /eventos/{id}** (Organizador) · RN05, RN07, RN13
-- Cabeçalho `If-Match` com a versão. Entrada: campos de E12 + `motivoAlteracao` (obrigatório quando RN13 se aplica; 10–300).
+- Cabeçalho `If-Match` com a versão (ETag recebido em E11/E12; sem o cabeçalho a API responde 428 `VERSAO_OBRIGATORIA`). Entrada: campos de E12 + `motivoAlteracao` (obrigatório quando RN13 se aplica; 10–300).
 - Saída: `200` evento atualizado.
 - Erros: 400; 401; 403; 404; 409 `EVENTO_FINALIZADO` (cancelado/encerrado); 412 `VERSAO_DESATUALIZADA`; 422 `PRECO_BLOQUEADO`, `CAPACIDADE_ABAIXO_DAS_VAGAS_OCUPADAS`, `MOTIVO_OBRIGATORIO`.
 
@@ -132,7 +132,7 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Saída: `200 [{ campo, valorAnterior, valorNovo, motivo, criadoEm }]`, da mais recente para a mais antiga. Mesma visibilidade de E11. Erros: 404.
 
 **E18 — POST /eventos/{id}/atividades** (Organizador) · RN05, RN07, RN13
-- Entrada: `{ titulo, palestrante?, local?, inicio, fim }`. Saída: `201` atividade criada.
+- Entrada: `{ titulo, palestrante?, local?, inicio, fim, motivoAlteracao? }` (o motivo é obrigatório em evento publicado; acréscimo à spec, ver D20). Saída: `201` atividade criada.
 - Validações: título 3–150; `fim > inicio`; período dentro do evento. Erros: 400; 401; 403; 404; 422 `ATIVIDADE_FORA_DO_PERIODO`.
 
 **E19 — PUT /eventos/{id}/atividades/{atividadeId}** (Organizador) · RN05, RN07, RN13

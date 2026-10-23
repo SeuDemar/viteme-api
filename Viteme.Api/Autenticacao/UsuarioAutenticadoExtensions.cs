@@ -13,4 +13,8 @@ public static class UsuarioAutenticadoExtensions
             ? id
             : throw new RegraDeNegocioException("NAO_AUTENTICADO", "Não autenticado", "Token inválido.", 401);
     }
+
+    /// <summary>Id do usuário se houver token válido; nulo para visitantes (endpoints públicos com dados extras para logados).</summary>
+    public static Guid? ObterUsuarioIdOuNull(this ClaimsPrincipal usuario) =>
+        usuario.Identity?.IsAuthenticated == true ? usuario.ObterUsuarioId() : null;
 }

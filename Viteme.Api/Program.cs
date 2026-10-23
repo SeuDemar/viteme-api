@@ -1,5 +1,8 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Viteme.Api.Autenticacao;
+using Viteme.Api.Autorizacao;
 using Viteme.Api.Configuracao;
 using Viteme.Api.Documentacao;
 using Viteme.Api.Middlewares;
@@ -8,11 +11,14 @@ using Viteme.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Enums como texto em maiúsculas com sublinhado (PENDENTE_PAGAMENTO), como na spec.
+builder.Services.AddControllers().AddJsonOptions(opcoes =>
+    opcoes.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper)));
 builder.Services.AddRespostasDeErro();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddAutenticacaoJwt();
+builder.Services.AddAutorizacaoPorEvento();
 builder.Services.AddLimitacaoDeRequisicoes();
 builder.Services.AddDocumentacaoApi();
 

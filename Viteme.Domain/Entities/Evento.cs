@@ -217,7 +217,8 @@ public class Evento
         return true;
     }
 
-    private void GarantirNaoFinalizado()
+    /// <summary>Evento cancelado ou encerrado não aceita mais alterações (409 EVENTO_FINALIZADO).</summary>
+    public void GarantirNaoFinalizado()
     {
         if (Finalizado)
         {

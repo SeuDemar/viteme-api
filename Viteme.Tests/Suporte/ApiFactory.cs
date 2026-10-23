@@ -18,6 +18,9 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("Jwt:Chave", ChaveJwt);
         builder.UseSetting("RateLimiting:Habilitar", "false");
+
+        // Tarefas em segundo plano ficam desligadas: os testes as executam de forma explícita.
+        builder.UseSetting("Tarefas:Habilitar", "false");
     }
 
     /// <summary>Aplicação ligada ao banco temporário, com relógio e SMS controláveis.</summary>

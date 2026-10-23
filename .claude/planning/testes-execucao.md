@@ -11,6 +11,7 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | 2026-10-22 | etapa 0 | `dotnet test Viteme.sln` | 3 | 3 | 0 | Scaffold (health check e middleware de erros). Ainda não são casos CT |
 | 2026-10-22 | etapa 1 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 64 | 64 | 0 | 3 scaffold + 43 domínio + 14 persistência (PostgreSQL 16 real) + 4 Swagger. Evidência: [docs/evidencias/etapa-1-dotnet-test.txt](../../docs/evidencias/etapa-1-dotnet-test.txt). Ainda não são casos CT |
 | 2026-10-22 | etapa 2 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 97 | 97 | 0 | +33 testes de API em PostgreSQL real (E01–E09: CT01–CT13 e variações). 1 falha durante o desenvolvimento (bug #1, corrigido). Sem `VITEME_TESTES_DB`: 50 passam e 47 são ignorados. Evidência: [docs/evidencias/etapa-2-dotnet-test.txt](../../docs/evidencias/etapa-2-dotnet-test.txt) |
+| 2026-10-23 | etapa 3 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 157 | 157 | 0 | +60 testes de API (E10–E23): CT14–CT22, CT39–CT41, CT47–CT48 e variações. 2 falhas durante o desenvolvimento: bug #2 (corrigido) e dois erros de expectativa nos próprios testes. Sem `VITEME_TESTES_DB`: 50 passam e 107 são ignorados. Evidência: [docs/evidencias/etapa-3-dotnet-test.txt](../../docs/evidencias/etapa-3-dotnet-test.txt) |
 
 ## Casos de teste
 
@@ -29,11 +30,26 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | CT11 | 6ª tentativa (TENTATIVAS_EXCEDIDAS, código invalidado) | Integração | Passou | 2026-10-22 | idem | |
 | CT12 | Aceite de SMS sem telefone verificado (422) | Integração | Passou | 2026-10-22 | idem | |
 | CT13 | Troca de telefone zera verificação e aceite | Integração | Passou | 2026-10-22 | idem | |
-| CT14–CT22 | Eventos | Unit/Integração | Pendente | | | |
+| CT14 | Criação de evento (201, RASCUNHO, criador é organizador) | Integração (PostgreSQL real) | Passou | 2026-10-23 | [etapa-3](../../docs/evidencias/etapa-3-dotnet-test.txt) | |
+| CT15 | Término antes do início (400, erro em `dataFim`) | Integração | Passou | 2026-10-23 | idem | |
+| CT16 | Inscrições depois do início (400, erro em `inscricaoFim`) | Integração | Passou | 2026-10-23 | idem | |
+| CT17 | Publicação válida (200, aparece no mural) | Integração | Passou | 2026-10-23 | idem | |
+| CT18 | Publicação com data de início passada (422) | Integração | Passou | 2026-10-23 | idem | |
+| CT19 | Rascunho invisível a outro usuário (404, fora do mural) | Integração | Passou | 2026-10-23 | idem | |
+| CT20 | Edição por colaborador (403) | Integração | Passou | 2026-10-23 | idem | |
+| CT21 | Duas edições com a mesma versão (200 e 412) | Integração | Passou | 2026-10-23 | idem | |
+| CT22 | Encerramento automático (tarefa muda para ENCERRADO) | Integração | Passou | 2026-10-23 | idem | |
 | CT23–CT30 | Inscrições | Unit/Integração | Pendente | | | |
 | CT31–CT38 | Pagamentos | Unit/Integração | Pendente | | | |
-| CT39–CT46 | Alterações, cancelamento, notificações | Unit/Integração | Pendente | | | |
-| CT47–CT51 | Colaboradores e check-in | Unit/Integração | Pendente | | | |
+| CT39 | Alteração de local notifica inscritos e interessados e registra histórico | Integração | Passou | 2026-10-23 | idem | |
+| CT40 | Alteração de data sem motivo (422 MOTIVO_OBRIGATORIO) | Integração | Passou | 2026-10-23 | idem | |
+| CT41 | Preço com inscrição pendente (422 PRECO_BLOQUEADO) | Integração | Passou | 2026-10-23 | idem | |
+| CT42–CT44 | SMS de notificações (aceite, falha e reenvio) | Integração | Pendente | | | |
+| CT45 | Cancelamento do evento: inscrições canceladas e envolvidos notificados (estornos na etapa de pagamentos) | Integração | Parcial | 2026-10-23 | idem | |
+| CT46 | Lembrete de evento | Integração | Pendente | | | |
+| CT47 | Adicionar colaborador (201, notificado, vê a lista) | Integração | Corrigido | 2026-10-23 | idem | #2 (500 na listagem) |
+| CT48 | Organizador como colaborador (422) | Integração | Passou | 2026-10-23 | idem | |
+| CT49–CT51 | Check-in | Integração | Pendente | | | |
 | CT52–CT57 | Denúncias e certificados | Unit/Integração | Pendente | | | |
 | CT58–CT63 | Frontend | Componente | Pendente | | | |
 

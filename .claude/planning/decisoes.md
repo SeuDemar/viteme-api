@@ -33,6 +33,12 @@
 | D15 | Rate limiting nativo do ASP.NET Core: login 5/min e cadastro 10/min por IP; envio de código SMS 5/min por usuário; tudo configurável em `RateLimiting:*` (desligável em testes) | Spec 4.5. Contadores em memória (uma instância) |
 | D16 | `Proxy:ConfiarEmCabecalhosEncaminhados=true` liga `X-Forwarded-For/Proto` | Para o rate limiting enxergar o IP real atrás de proxy/CDN (P6) |
 | D17 | Refresh token e código de verificação guardados com **HMAC-SHA256** (chave derivada de `Jwt:Chave`), não SHA-256 puro | Código de 6 dígitos tem só 10^6 possibilidades; sem a chave um vazamento do banco não permite reverter |
+| D18 | O **preço** só pode mudar se o evento não tiver nenhuma inscrição ativa (confirmada ou pendente de pagamento) | A spec (RN13) diz "paga ou pendente"; ficou mais estrito para não cobrar de quem se inscreveu em evento gratuito. Atende CT41 |
+| D19 | Evento **OCULTO** é tratado como publicado nas regras de alteração (RN13): mudar título, data ou local exige motivo e avisa os inscritos | Inscritos continuam vendo o evento oculto (RN19) |
+| D20 | Mudar a **programação** de evento publicado (E18, E19, E20) exige motivo, gera histórico (campo `programacao`) e avisa os inscritos | RN13 cita programação, mas a tabela do E18 não listava `motivoAlteracao`; adicionado como campo opcional (obrigatório se publicado) |
+| D21 | Enums saem no JSON como texto em maiúsculas com sublinhado (`PENDENTE_PAGAMENTO`, `ORGANIZADOR`) e entram do mesmo jeito | Mesmo formato dos enums do banco e dos exemplos da spec |
+| D22 | Filtros `dataDe`/`dataAte` do mural comparam a data de início do evento por **dia em UTC**, com `dataAte` inclusivo | Simples; ver P26 para o fuso de Brasília |
+| D23 | Políticas por papel respondem **404** (não 403) quando o usuário não pode nem ver o evento (rascunho de outra pessoa, ou evento oculto sem inscrição) e **403** quando pode ver mas não tem o papel | Spec: "404 para quem não pode ver (não revela a existência de rascunhos)" |
 | D10 | Desenvolvimento na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito | |
 
 ### Nota sobre Supabase + Npgsql
@@ -87,3 +93,7 @@ Surgiram ao implementar o domínio. Manter a spec e o código alinhados: se a eq
 | `LIMITE_EXCEDIDO` (429) | Rate limiting | Código estável para 429 |
 | `SMS_INDISPONIVEL` (502) | `UsuarioService.EnviarCodigoTelefoneAsync` | Falha do provedor ao enviar o código (a spec não previa) |
 | `USUARIO_NAO_ENCONTRADO` (401) | `UsuarioService` | Token válido de usuário que não existe mais |
+| `VERSAO_OBRIGATORIA` (428) | E13 sem cabeçalho `If-Match` | A spec só define 412 para versão desatualizada |
+| `VERSAO_INVALIDA` (400) | E13 com `If-Match` que não é um ETag | Entrada malformada |
+| `ACESSO_NEGADO` (403) | Políticas por papel | Código estável para 403 |
+| `ATIVIDADE_NAO_ENCONTRADA` (404), `COLABORADOR_NAO_ENCONTRADO` (404) | E19/E20, E23 | Recursos filhos inexistentes |

@@ -32,4 +32,5 @@ Viteme centraliza divulgação, inscrição e acompanhamento dos eventos da facu
 - Etapa 1 concluída: entidades, enums, DbContext, migration inicial (`docs/banco/schema.sql`) e Swagger UI. 64 testes passando.
 - Spec lida por completo e transcrita nesta pasta.
 - Etapa 2 concluída: autenticação e conta (E01–E09), CT01–CT13 passando; 97 testes.
-- Próximo passo: etapa 3 do [roadmap.md](roadmap.md) (Eventos e programação, E10–E23).
+- Etapa 3 concluída: eventos, programação e colaboradores (E10–E23); 157 testes passando.
+- Próximo passo: etapa 4 do [roadmap.md](roadmap.md) (Inscrições e pagamentos, E24–E31).

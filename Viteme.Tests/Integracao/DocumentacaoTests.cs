@@ -17,7 +17,16 @@ public class DocumentacaoTests(ApiFactory fabrica) : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
         Assert.Equal("Viteme API", documento.GetProperty("info").GetProperty("title").GetString());
-        Assert.True(documento.GetProperty("paths").TryGetProperty("/api/v1/saude", out _));
+        var caminhos = documento.GetProperty("paths");
+        foreach (var caminho in new[]
+        {
+            "/api/v1/saude", "/api/v1/auth/login", "/api/v1/usuarios/me", "/api/v1/eventos", "/api/v1/eventos/{id}",
+            "/api/v1/eventos/{id}/atividades/{atividadeId}", "/api/v1/eventos/{id}/colaboradores",
+        })
+        {
+            Assert.True(caminhos.TryGetProperty(caminho, out _), $"faltou {caminho} no OpenAPI");
+        }
+
         Assert.Equal("bearer", documento.GetProperty("components").GetProperty("securitySchemes")
             .GetProperty("Bearer").GetProperty("scheme").GetString());
     }

@@ -2,10 +2,15 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Viteme.Domain.Entities;
+using Viteme.Domain.Enums;
 
 namespace Viteme.Tests.Suporte;
 
-public record Sessao(string Token, string Refresh, JsonElement Corpo);
+public record Sessao(string Token, string Refresh, JsonElement Corpo)
+{
+    public Guid UsuarioId => Corpo.GetProperty("usuario").GetProperty("id").GetGuid();
+}
 
 /// <summary>
 /// API em memória ligada a um banco temporário, com relógio e SMS controlados pelo teste.
@@ -36,10 +41,13 @@ public sealed class AmbienteApi : IDisposable
 
     public HttpClient Cliente { get; }
 
+    /// <summary>Contêiner de serviços da aplicação, para executar serviços (ex.: tarefas) dentro de um escopo.</summary>
+    public IServiceProvider Servicos => _fabrica.Services;
+
     public static string EmailNovo() => $"{Guid.NewGuid():N}@exemplo.com";
 
     public Task<HttpResponseMessage> EnviarAsync(
-        HttpMethod metodo, string rota, object? corpo = null, string? token = null, string? refresh = null)
+        HttpMethod metodo, string rota, object? corpo = null, string? token = null, string? refresh = null, string? ifMatch = null)
     {
         var requisicao = new HttpRequestMessage(metodo, rota);
         if (corpo is not null)
@@ -57,6 +65,11 @@ public sealed class AmbienteApi : IDisposable
             requisicao.Headers.Add("Cookie", $"refresh_token={refresh}");
         }
 
+        if (ifMatch is not null)
+        {
+            requisicao.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+        }
+
         return Cliente.SendAsync(requisicao);
     }
 
@@ -66,8 +79,11 @@ public sealed class AmbienteApi : IDisposable
     public Task<HttpResponseMessage> GetAsync(string rota, string? token = null) =>
         EnviarAsync(HttpMethod.Get, rota, null, token);
 
-    public Task<HttpResponseMessage> PutAsync(string rota, object corpo, string? token = null) =>
-        EnviarAsync(HttpMethod.Put, rota, corpo, token);
+    public Task<HttpResponseMessage> PutAsync(string rota, object corpo, string? token = null, string? ifMatch = null) =>
+        EnviarAsync(HttpMethod.Put, rota, corpo, token, null, ifMatch);
+
+    public Task<HttpResponseMessage> DeleteAsync(string rota, string? token = null) =>
+        EnviarAsync(HttpMethod.Delete, rota, null, token);
 
     public async Task<string> CadastrarAsync(string? telefone = null, string? email = null)
     {
@@ -90,6 +106,92 @@ public sealed class AmbienteApi : IDisposable
     {
         var email = await CadastrarAsync(telefone);
         return await LoginAsync(email);
+    }
+
+    // ---- Eventos ----------------------------------------------------------------------------------
+
+    /// <summary>Data sem frações de segundo (o banco guarda microssegundos).</summary>
+    public static DateTime Truncar(DateTime d) => new(d.Ticks - (d.Ticks % TimeSpan.TicksPerSecond), DateTimeKind.Utc);
+
+    /// <summary>Corpo válido de evento, com datas relativas ao relógio do teste.</summary>
+    public object CorpoEvento(
+        string? titulo = null, decimal preco = 0, int? capacidade = null, string local = "Auditório",
+        string categoria = "palestra", TimeSpan? inicioEm = null, TimeSpan? duracao = null)
+    {
+        var agora = Truncar(Relogio.UtcAgora);
+        var inicio = agora + (inicioEm ?? TimeSpan.FromDays(10));
+        return new
+        {
+            titulo = titulo ?? $"Evento {Guid.NewGuid():N}",
+            descricao = "Palestras e oficinas para a comunidade acadêmica.",
+            categoria,
+            local,
+            dataInicio = inicio,
+            dataFim = inicio + (duracao ?? TimeSpan.FromHours(8)),
+            inscricaoInicio = agora.AddDays(-1),
+            inscricaoFim = inicio.AddHours(-1),
+            capacidade,
+            preco,
+            cargaHoraria = (short?)8,
+        };
+    }
+
+    /// <summary>Corpo de edição montado a partir do detalhe lido, com as mudanças informadas.</summary>
+    public static Dictionary<string, object?> CorpoDeEdicao(JsonElement detalhe, params (string Campo, object? Valor)[] mudancas)
+    {
+        string[] campos =
+        [
+            "titulo", "descricao", "categoria", "local", "imagemUrl", "dataInicio", "dataFim",
+            "inscricaoInicio", "inscricaoFim", "capacidade", "preco", "cargaHoraria",
+        ];
+
+        var corpo = campos.ToDictionary(c => c, c => (object?)detalhe.GetProperty(c).Clone());
+        foreach (var (campo, valor) in mudancas)
+        {
+            corpo[campo] = valor;
+        }
+
+        return corpo;
+    }
+
+    /// <summary>Cria um evento (rascunho) e, se pedido, publica. Retorna o id.</summary>
+    public async Task<Guid> CriarEventoAsync(Sessao organizador, object? corpo = null, bool publicar = false)
+    {
+        var resposta = await PostAsync("/api/v1/eventos", corpo ?? CorpoEvento(), organizador.Token);
+        resposta.EnsureSuccessStatusCode();
+        var id = (await CorpoAsync(resposta)).GetProperty("id").GetGuid();
+
+        if (publicar)
+        {
+            var publicacao = await PostAsync($"/api/v1/eventos/{id}/publicar", token: organizador.Token);
+            publicacao.EnsureSuccessStatusCode();
+        }
+
+        return id;
+    }
+
+    public async Task<(JsonElement Corpo, string Etag)> DetalheAsync(Guid eventoId, string? token = null)
+    {
+        var resposta = await GetAsync($"/api/v1/eventos/{eventoId}", token);
+        resposta.EnsureSuccessStatusCode();
+        return (await CorpoAsync(resposta), resposta.Headers.ETag!.ToString());
+    }
+
+    public async Task InscreverNoBancoAsync(Guid eventoId, Guid usuarioId, StatusInscricao status = StatusInscricao.Confirmada)
+    {
+        await using var contexto = Banco.CriarContexto(Relogio);
+        var codigo = Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+        contexto.Add(status == StatusInscricao.PendentePagamento
+            ? Inscricao.CriarPendentePagamento(eventoId, usuarioId, codigo, Relogio.UtcAgora)
+            : Inscricao.CriarGratuita(eventoId, usuarioId, codigo));
+        await contexto.SaveChangesAsync();
+    }
+
+    public async Task InteresseNoBancoAsync(Guid eventoId, Guid usuarioId)
+    {
+        await using var contexto = Banco.CriarContexto(Relogio);
+        contexto.Add(new InteresseEvento(usuarioId, eventoId));
+        await contexto.SaveChangesAsync();
     }
 
     public static string? ExtrairRefresh(HttpResponseMessage resposta)

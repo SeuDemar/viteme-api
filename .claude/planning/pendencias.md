@@ -26,3 +26,9 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P20 | Envio de código SMS para qualquer telefone informado pelo usuário permite abuso contra terceiros (SMS bombing). Hoje: 60 s entre códigos por usuário + 5/min. Considerar limite por número de telefone antes de usar provedor real | Dev | Antes do SMS real (P4) | Aberta |
 | P21 | Medir cobertura de linhas de `Application/Services` (meta ≥ 70%, critério de aceite) e acrescentar testes unitários com mocks (NSubstitute) onde faltar. Hoje a cobertura vem dos testes de integração | Dev | Etapa 8 | Aberta |
 | P22 | Ambiente de desenvolvimento: o PostgreSQL local usado nos testes não sobe sozinho em sessão nova (`pg_ctlcluster 16 main start`) e `VITEME_TESTES_DB` precisa estar definida | Dev | — | Informativa |
+| P23 | Estorno ao cancelar evento (RN14): hoje o cancelamento cancela as inscrições e notifica, mas não solicita estorno dos pagamentos aprovados porque o gateway ainda não existe | Dev | Etapa 4 (pagamentos) | Aberta |
+| P24 | RN19: republicar evento oculto só uma vez e cancelamento automático na segunda ocultação não estão implementados (dependem das denúncias) | Dev | Etapa 5 | Aberta |
+| P25 | Avisos de alteração e cancelamento são gravados um a um na mesma transação; para eventos com muitos inscritos considerar lotes ou fila | Dev | Se escalar | Aceita |
+| P26 | Filtros de data do mural usam o dia em UTC, não o fuso de Brasília (UTC−3); eventos à noite podem cair no dia seguinte | Equipe | Etapa 7 (frontend) | Aberta |
+| P27 | Os avisos de alteração/cancelamento só vão ao sino do site; o canal SMS (RN16: aceite e telefone verificado) entra com o `NotificacaoSmsSender` | Dev | Etapa 5 | Aberta |
+| P28 | E16, E17 e E21 retornam listas sem paginação (a spec não pede). Reavaliar se o volume crescer | Dev | — | Aceita |

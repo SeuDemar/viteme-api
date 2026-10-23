@@ -48,7 +48,7 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 
 > **Concluída.** E01–E09 implementados (AuthService, UsuarioService, repositórios, JWT HS256 com `sub/name/email/jti/iat/exp/iss/aud`, refresh rotativo com detecção de reuso em cookie `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, bloqueio de login, rate limiting, ProblemDetails com `errors` por campo, SMS em stub). CT01–CT13 passando em PostgreSQL real; 97 testes. Biblioteca de validação decidida: DataAnnotations (D14). Pendências novas: P15–P22. As **políticas por papel no evento** (`OrganizadorDoEvento`, `OrganizadorOuColaborador`) entram na etapa 3, junto com os endpoints de eventos.
 
-## Etapa 3 — Eventos e programação (E10–E23)
+## Etapa 3 — Eventos e programação (E10–E23)  ✅ concluída
 
 - `EventoService`: criação, edição com `If-Match`/ETag, publicar, cancelar (sem estornos reais ainda), listagem com filtros e paginação, "meus eventos", histórico de alterações.
 - Atividades (E18–E20) e colaboradores (E21–E23).
@@ -56,6 +56,8 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 - Notificação por site (`NotificacaoSiteSender`) e esqueleto de `NotificacaoService` (RN16).
 - Tarefa de encerramento (RN22).
 - Testes: CT14–CT22, CT47, CT48, CT39–CT41.
+
+> **Concluída.** E10–E23 implementados: `EventoService`, `ProgramacaoService`, `ColaboradorService`, `NotificacaoService` (canal site), registro de alterações, `EncerramentoEventosService` + `EncerrarEventosWorker` (a cada 15 min), políticas `OrganizadorDoEvento`/`OrganizadorOuColaborador` (404 vs 403), ETag/`If-Match` pelo `xmin`. CT14–CT22, CT39–CT41, CT47–CT48 passando em PostgreSQL real; 157 testes. Pendências novas: P23–P28; decisões D18–D23.
 
 ## Etapa 4 — Inscrições e pagamentos (E24–E31)
 
