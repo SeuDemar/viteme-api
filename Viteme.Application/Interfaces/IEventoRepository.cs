@@ -24,7 +24,7 @@ public sealed record PermissaoEvento(bool Existe, StatusEvento Status, PapelEven
 
 public sealed record EventoListado(Evento Evento, int VagasOcupadas, bool AlteradoRecentemente);
 
-public sealed record EventoDoUsuario(Evento Evento, PapelEvento Papel);
+public sealed record EventoDoUsuario(Evento Evento, PapelEvento Papel, int VagasOcupadas);
 
 public interface IEventoRepository
 {
@@ -46,7 +46,7 @@ public interface IEventoRepository
         MuralFiltro filtro, DateTime agora, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<EventoDoUsuario>> ListarDoUsuarioAsync(
-        Guid usuarioId, PapelEvento? papel, StatusEvento? status, CancellationToken cancellationToken = default);
+        Guid usuarioId, PapelEvento? papel, StatusEvento? status, DateTime agora, CancellationToken cancellationToken = default);
 
     /// <summary>Vagas ocupadas: inscrições confirmadas mais as pendentes com reserva válida (RN09).</summary>
     Task<int> ContarVagasOcupadasAsync(Guid eventoId, DateTime agora, CancellationToken cancellationToken = default);

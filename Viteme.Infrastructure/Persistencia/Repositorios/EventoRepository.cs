@@ -118,19 +118,14 @@ public class EventoRepository(VitemeDbContext contexto) : IEventoRepository
     }
 
     public async Task<IReadOnlyList<EventoDoUsuario>> ListarDoUsuarioAsync(
-        Guid usuarioId, PapelEvento? papel, StatusEvento? status, CancellationToken cancellationToken = default)
+        Guid usuarioId, PapelEvento? papel, StatusEvento? status, DateTime agora, CancellationToken cancellationToken = default)
     {
         var resultado = new List<EventoDoUsuario>();
 
         if (papel is null or PapelEvento.Organizador)
         {
             var consulta = contexto.Eventos.AsNoTracking().Where(e => e.OrganizadorId == usuarioId);
-            if (status is { } s)
-            {
-                consulta = consulta.Where(e => e.Status == s);
-            }
-
-            resultado.AddRange((await consulta.ToListAsync(cancellationToken)).Select(e => new EventoDoUsuario(e, PapelEvento.Organizador)));
+            resultado.AddRange(await ComVagasOcupadasAsync(consulta, status, PapelEvento.Organizador, agora, cancellationToken));
         }
 
         if (papel is null or PapelEvento.Colaborador)
@@ -138,15 +133,31 @@ public class EventoRepository(VitemeDbContext contexto) : IEventoRepository
             var consulta = contexto.Colaboradores.AsNoTracking()
                 .Where(c => c.UsuarioId == usuarioId)
                 .Join(contexto.Eventos.AsNoTracking(), c => c.EventoId, e => e.Id, (_, e) => e);
-            if (status is { } s)
-            {
-                consulta = consulta.Where(e => e.Status == s);
-            }
-
-            resultado.AddRange((await consulta.ToListAsync(cancellationToken)).Select(e => new EventoDoUsuario(e, PapelEvento.Colaborador)));
+            resultado.AddRange(await ComVagasOcupadasAsync(consulta, status, PapelEvento.Colaborador, agora, cancellationToken));
         }
 
         return resultado.OrderByDescending(r => r.Evento.DataInicio).ToList();
+    }
+
+    private async Task<IEnumerable<EventoDoUsuario>> ComVagasOcupadasAsync(
+        IQueryable<Evento> consulta, StatusEvento? status, PapelEvento papel, DateTime agora, CancellationToken cancellationToken)
+    {
+        if (status is { } s)
+        {
+            consulta = consulta.Where(e => e.Status == s);
+        }
+
+        var itens = await consulta
+            .Select(e => new
+            {
+                Evento = e,
+                Ocupadas = contexto.Inscricoes.Count(i => i.EventoId == e.Id
+                    && (i.Status == StatusInscricao.Confirmada
+                        || (i.Status == StatusInscricao.PendentePagamento && i.ReservadaAte > agora))),
+            })
+            .ToListAsync(cancellationToken);
+
+        return itens.Select(i => new EventoDoUsuario(i.Evento, papel, i.Ocupadas));
     }
 
     public Task<int> ContarVagasOcupadasAsync(Guid eventoId, DateTime agora, CancellationToken cancellationToken = default) =>

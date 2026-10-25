@@ -130,13 +130,15 @@ public sealed class CancelarEventoRequest
 
 public sealed record StatusEventoResponse(StatusEvento Status);
 
+/// <param name="InscricoesAbertas">Evento publicado e dentro do período de inscrições (não considera vagas; veja <c>VagasRestantes</c>).</param>
 public sealed record EventoResumoResponse(
     Guid Id, string Titulo, string Categoria, string Local, DateTime DataInicio, decimal Preco,
-    int? VagasRestantes, string? ImagemUrl, bool AlteradoRecentemente);
+    int? VagasRestantes, string? ImagemUrl, bool AlteradoRecentemente, bool InscricoesAbertas);
 
+/// <param name="Inscritos">Vagas ocupadas: inscrições confirmadas e pendentes de pagamento com reserva válida (RN09).</param>
 public sealed record EventoMeuResponse(
     Guid Id, string Titulo, string Categoria, string Local, DateTime DataInicio, DateTime DataFim,
-    decimal Preco, StatusEvento Status, PapelEvento Papel, string? ImagemUrl);
+    decimal Preco, StatusEvento Status, PapelEvento Papel, string? ImagemUrl, int? Capacidade, int Inscritos);
 
 public sealed record OrganizadorResumo(Guid Id, string Nome);
 

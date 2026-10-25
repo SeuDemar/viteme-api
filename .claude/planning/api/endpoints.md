@@ -99,8 +99,8 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 
 **E10 — GET /eventos** (Público) · RN06, RN09
 - Query: `busca`, `categoria`, `dataDe`, `dataAte`, `gratuito`, `pagina` (padrão 1), `tamanhoPagina` (padrão 20, máx. 50).
-- Saída: `200 { itens: [{ id, titulo, categoria, local, dataInicio, preco, vagasRestantes, imagemUrl, alteradoRecentemente }], pagina, tamanhoPagina, total }`.
-- `dataDe ≤ dataAte`; só eventos PUBLICADO ainda não encerrados; `alteradoRecentemente` = houve alteração nas últimas **72 h**. Erros: 400.
+- Saída: `200 { itens: [{ id, titulo, categoria, local, dataInicio, preco, vagasRestantes, imagemUrl, alteradoRecentemente, inscricoesAbertas }], pagina, tamanhoPagina, total }`.
+- `dataDe ≤ dataAte`; só eventos PUBLICADO ainda não encerrados; `alteradoRecentemente` = houve alteração nas últimas **72 h**; `inscricoesAbertas` = agora está dentro do período de inscrições (não considera vagas: veja `vagasRestantes`, `null` = ilimitado). Erros: 400.
 
 **E11 — GET /eventos/{id}** (Público) · RN06, RN09, RN19
 - Saída: `200` dados completos + `atividades`, `ultimasAlteracoes`, `vagasRestantes`, `organizador { id, nome }` e, se autenticado, `minhaInscricao`, `souOrganizador`, `souColaborador`, `interessado`.
@@ -126,7 +126,7 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Erros: 400; 401; 403; 404; 409 `EVENTO_JA_CANCELADO`; 422 `EVENTO_ENCERRADO`.
 
 **E16 — GET /eventos/meus** (Autenticado) · RN04
-- Query: `papel` (organizador | colaborador), `status`. Saída: `200` lista de eventos resumidos com o campo `papel`. Erros: 400; 401.
+- Query: `papel` (organizador | colaborador), `status`. Saída: `200 [{ id, titulo, categoria, local, dataInicio, dataFim, preco, status, papel, imagemUrl, capacidade, inscritos }]`, do início mais recente para o mais antigo. `capacidade` `null` = ilimitada; `inscritos` = vagas ocupadas (confirmadas + pendentes com reserva válida, RN09). Erros: 400; 401.
 
 **E17 — GET /eventos/{id}/alteracoes** (Público) · RN13
 - Saída: `200 [{ campo, valorAnterior, valorNovo, motivo, criadoEm }]`, da mais recente para a mais antiga. Mesma visibilidade de E11. Erros: 404.
