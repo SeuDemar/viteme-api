@@ -1,0 +1,15 @@
+# Cobertura de linhas (coverlet, `dotnet test --collect:"XPlat Code Coverage"`, 278 testes, PostgreSQL real)
+# Critério de aceite: Application/Services >= 70%  ->  ATENDIDO (93,4%)
+
+Camada                         Linhas cobertas / total   %
+Application (total)            1425 / 1520               93,8
+  Application/Services         1160 / 1242               93,4
+Domain/Entities                514 / 546                 94,1
+Infrastructure/Persistencia    3906 / 3963               98,6
+Infrastructure/Externos        194 / 216                 89,8
+Infrastructure/Seguranca       65 / 68                   95,6
+Infrastructure/Tarefas         23 / 83                   27,7   (workers ficam desligados nos testes; os serviços que executam são testados direto)
+Api/Controllers                165 / 169                 97,6
+Api (sem código gerado em obj/)  459 / 482               95,2
+
+Menores coberturas em Application/Services: ExpiracaoReservasService 74%, EstornoService 78%, CertificadoService 88%.

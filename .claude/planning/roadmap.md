@@ -1,0 +1,111 @@
+# Roadmap de implementação (API)
+
+Ordem combinada: scaffold → Domain + DbContext + migration inicial → Auth (E01–E09) → Eventos → Inscrições/Pagamentos → resto.
+
+Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e SMS em **stub**, sem Docker/compose. Frontend: etapa 7 (exigido pela Entrega 3, ver [entrega-3.md](entrega-3.md)). Cada etapa fecha com `dotnet build` e `dotnet test` verdes (sem subir a aplicação nem conectar ao banco).
+
+## Etapa 0 — Scaffold
+
+- `Viteme.sln` com `Viteme.Domain`, `Viteme.Application`, `Viteme.Infrastructure`, `Viteme.Api`, `Viteme.Tests` e as referências da regra de dependência.
+- `global.json`/`Directory.Build.props` (net10.0, nullable, warnings como erros onde fizer sentido), `.editorconfig`, `.gitignore` para .NET.
+- Pacotes base: EF Core + Npgsql, JWT Bearer, OpenAPI/Swagger, xUnit + NSubstitute (ou Moq), FluentValidation (a decidir).
+- Estrutura de pastas do [arquitetura.md](arquitetura.md).
+- `Program.cs` mínimo: DI, ProblemDetails, middleware de exceções, versionamento `/api/v1`, `GET /api/v1/saude` (health).
+- Configuração por variáveis de ambiente/user-secrets (ver checklist em [seguranca.md](seguranca.md)).
+- README do repositório com como rodar e como configurar segredos.
+- CI (GitHub Actions): build + testes unitários a cada push.
+
+**Pronto quando:** compila, 1 teste de exemplo passa, CI verde.
+
+> **Concluída.** `dotnet build` sem warnings e 3 testes passando (health check e middleware de erros). Ficaram para depois: FluentValidation (decidir na etapa 2) e Swagger UI (por ora só o OpenAPI nativo em desenvolvimento).
+
+## Etapa 1 — Domain + DbContext + migration inicial  ✅ concluída
+
+- 14 entidades e 6 enums (com comportamento: `Evento.Publicar()`, `Inscricao.Confirmar()` etc.).
+- `VitemeDbContext`, configurações Fluent API (snake_case, enums nativos, `xmin`, índices e CHECKs de [banco/modelo.md](banco/modelo.md)).
+- Migration inicial.
+- `IUnitOfWork` e repositories base; `IRelogio` (+ implementação de sistema).
+- Testes unitários das entidades (invariantes).
+
+**Pronto quando:** migration gerada e revisada (SQL conferido contra RI01–RI12); testes de entidade passando.
+
+> **Concluída.** 14 entidades com comportamento, 6 enums nativos, `VitemeDbContext` (snake_case, `criado_em`/`atualizado_em` automáticos, `xmin` como ETag), migration `Inicial` com RI01–RI12 (o índice `lower(email)` entra por SQL na migration), `IRelogio` e `IUnitOfWork`. Script SQL em `docs/banco/schema.sql`. 64 testes (domínio, persistência em PostgreSQL real e Swagger). Os **repositories** e interfaces como `IEventoRepository` entram junto com os services que os usam (etapas 2 em diante), para não criar código sem uso.
+
+> **Swagger UI** (antecipado da etapa 2) também está pronto: `/swagger`.
+
+## Etapa 2 — Autenticação e conta (E01–E09)  ✅ concluída
+
+- `AuthService`, `ITokenService` (JWT HS256, refresh com hash, rotação e detecção de reuso), PasswordHasher.
+- Cookie de refresh (`HttpOnly; Secure; SameSite=Strict`, path `/api/v1/auth`), CORS com credenciais.
+- Bloqueio de login (RN03), rate limiting (login 5/min), ProblemDetails com `codigo`.
+- ~~**Swagger UI**~~ ✅ já feito na etapa 1 (esquema Bearer, cadeado só nos endpoints `[Authorize]`). Falta documentar os erros (`ProducesResponseType` + ProblemDetails) em cada controller conforme forem criados.
+- Decidir biblioteca de validação (FluentValidation ou DataAnnotations).
+- `UsuarioService`: perfil, telefone, código de verificação (hash, 10 min, 5 tentativas, 60 s entre envios), aceite de SMS (RN18).
+- `INotificationSender` + **stub de SMS**.
+- Testes: CT01–CT13.
+
+**Pronto quando:** CT01–CT13 passando; revisão de segurança da seção 1–2 de [seguranca.md](seguranca.md).
+
+> **Concluída.** E01–E09 implementados (AuthService, UsuarioService, repositórios, JWT HS256 com `sub/name/email/jti/iat/exp/iss/aud`, refresh rotativo com detecção de reuso em cookie `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, bloqueio de login, rate limiting, ProblemDetails com `errors` por campo, SMS em stub). CT01–CT13 passando em PostgreSQL real; 97 testes. Biblioteca de validação decidida: DataAnnotations (D14). Pendências novas: P15–P22. As **políticas por papel no evento** (`OrganizadorDoEvento`, `OrganizadorOuColaborador`) entram na etapa 3, junto com os endpoints de eventos.
+
+## Etapa 3 — Eventos e programação (E10–E23)  ✅ concluída
+
+- `EventoService`: criação, edição com `If-Match`/ETag, publicar, cancelar (sem estornos reais ainda), listagem com filtros e paginação, "meus eventos", histórico de alterações.
+- Atividades (E18–E20) e colaboradores (E21–E23).
+- Políticas `OrganizadorDoEvento` e `OrganizadorOuColaborador`.
+- Notificação por site (`NotificacaoSiteSender`) e esqueleto de `NotificacaoService` (RN16).
+- Tarefa de encerramento (RN22).
+- Testes: CT14–CT22, CT47, CT48, CT39–CT41.
+
+> **Concluída.** E10–E23 implementados: `EventoService`, `ProgramacaoService`, `ColaboradorService`, `NotificacaoService` (canal site), registro de alterações, `EncerramentoEventosService` + `EncerrarEventosWorker` (a cada 15 min), políticas `OrganizadorDoEvento`/`OrganizadorOuColaborador` (404 vs 403), ETag/`If-Match` pelo `xmin`. CT14–CT22, CT39–CT41, CT47–CT48 passando em PostgreSQL real; 157 testes. Pendências novas: P23–P28; decisões D18–D23.
+
+## Etapa 4 — Inscrições e pagamentos (E24–E31)  ✅ concluída
+
+- `InscricaoService` com transação curta + `FOR UPDATE` (RI10), vagas (RN09), gratuito vs pago (RN10/RN11).
+- `IGatewayPagamento` + **stub** (cobrança fictícia, simulador de webhook), `PagamentoService`, webhook idempotente (RN23).
+- Cancelamento com estorno (RN14/RN15), tarefa de expiração de reservas (RN11), check-in (RN20), inscritos (E27).
+- Testes: CT23–CT38, CT49–CT51. Concorrência (CT26) em teste de integração.
+
+> **Concluída.** `InscricaoService` (transação curta + `FOR UPDATE`, E24–E28), `PagamentoService` (cobrança, status e webhook idempotente, E29–E31), `EstornoService` (RN14/RN15/RN23 com retentativa), `ExpiracaoReservasService` e `ReservasEEstornosWorker` (1 min), gateway stub com HMAC e **simulador de pagamento para a demonstração**, `xmin` em inscrição e pagamento. CT23–CT38, CT45 e CT49–CT51 passando; concorrência validada por mutação; 229 testes. **Fica para o adaptador Asaas:** CPF do pagador (P1), formato/assinatura reais do webhook (P2), reconciliação (P29) e idempotência de estorno (P30). Decisões D24–D33; pendências P29–P35.
+
+**Depois (fora do stub):** adaptador Asaas, resolvendo antes o ponto aberto sobre CPF/CNPJ do pagador e a validação do webhook ([decisoes.md](decisoes.md)).
+
+## Etapa 5 — Interesse, notificações, denúncias, certificados (E32–E39)  ✅ concluída
+
+- Interesse (E32/E33), notificações do sino (E34–E36), lembretes (RN17), reenvio de SMS (RN16).
+- Denúncias com ocultação (5) e cancelamento automático após republicação (RN19), reutilizando RN14.
+- Certificados: emissão em PDF, código de validação público (RN21) — decidir biblioteca de PDF.
+- Testes: CT42–CT46, CT52–CT57.
+
+> **Concluída.** E32–E39 implementados: `InteresseService`, `CaixaNotificacoesService`, `DenunciaService`, `CertificadoService`, `CancelamentoEventoService` (RN14 compartilhada), canal SMS (`NotificacaoSmsSender` + `EnvioSmsService` + `EnvioSmsWorker`), `LembretesService` + `LembretesWorker` (15 min) e `CertificadoPdfGerador` (PDF próprio, D34). CT42–CT46 e CT52–CT57 passando em PostgreSQL real; 270 testes; bug #3 encontrado e corrigido. Decisões D34–D42; pendências P36–P39 (P3, P24, P27 resolvidas).
+
+## Etapa 6 — Fechamento  ✅ concluída (exceto itens que dependem de decisão da equipe)
+
+- Revisão da matriz de rastreabilidade e das lacunas de cobertura ([testes.md](testes.md), seção 6).
+- Cobertura ≥ 70% em Services.
+- Revisão de segurança (matriz de acesso, rate limiting, logs sem dados sensíveis).
+- OpenAPI completo; README e guia de deploy; escolha e implementação do provedor de SMS real e do adaptador Asaas, se a equipe decidir.
+
+> **Concluída.** Segurança: matriz de acesso testada, renovação de refresh sem corrida (P15), JWT com `IRelogio` (P18), limite de códigos por telefone (P20), CORS e cabeçalhos de segurança. Cobertura de Services 93,4% (P21). Guia de publicação em [docs/deploy.md](../../docs/deploy.md). 281 testes. **Fica para decisão da equipe:** adaptador Asaas (P1, P2, P30) e provedor de SMS real (P4), pois exigem conta e escolha de fornecedor.
+
+## Etapa 7 — Frontend (exigido pela Entrega 3)
+
+- Repositório/pasta `viteme-web` (React + TypeScript + Vite), conforme seção 5 do PDF: telas T01–T12, navegação, fluxos, formulários com Zod, cliente Axios com renovação automática de token, TanStack Query.
+- Fluxo mínimo da demonstração: cadastro → login → mural → inscrição (gratuita e paga) → minhas inscrições → criar/publicar evento → check-in → certificado.
+- Testes CT58–CT63 (Vitest + RTL + MSW).
+- Decidir antes a hospedagem (mesmo site para API e frontend por causa do cookie `SameSite=Strict`).
+
+## Etapa 8 — Fechamento da Entrega 3
+
+- Rodar **todos** os testes e preencher [testes-execucao.md](testes-execucao.md) com resultado e evidência; [bugs.md](bugs.md) completo.
+- Seed de dados e script SQL (`dotnet ef migrations script`) para demonstrar o banco.
+- Documentação final em `docs/` e README completo (descrição, como executar, tecnologias, estrutura, ambiente, endpoints, banco, autenticação, guia de uso).
+- Conferir [entrega-3.md](entrega-3.md) item a item.
+
+## Convenções de trabalho por etapa
+
+- Uma etapa = uma sequência de commits pequenos na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito.
+- A banca avalia a participação de cada integrante: cada um commita com nome/e-mail próprios e, preferencialmente, via branch + PR (ver [entrega-3.md](entrega-3.md), seção 6).
+- Registrar testes executados e bugs durante o desenvolvimento, não no fim.
+- Atualizar estes documentos quando uma decisão mudar.
+- Não rodar a aplicação nem acessar o banco; validar com `dotnet build` e `dotnet test`.
