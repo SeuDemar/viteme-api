@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Viteme.Api.Autenticacao;
 using Viteme.Domain.Entities;
 using Viteme.Domain.Enums;
 
@@ -68,6 +69,9 @@ public sealed class AmbienteApi : IDisposable
         {
             requisicao.Headers.Add("Cookie", $"refresh_token={refresh}");
         }
+
+        // Como o navegador do frontend: E03 e E04 exigem esse cabeçalho (proteção contra CSRF).
+        requisicao.Headers.Add(ExigirRequisicaoDoFrontendAttribute.Cabecalho, ExigirRequisicaoDoFrontendAttribute.ValorCabecalho);
 
         if (ifMatch is not null)
         {

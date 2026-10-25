@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Viteme.Api.Autenticacao;
 using Viteme.Api.Configuracao;
 using Viteme.Application.DTOs.Auth;
 using Viteme.Application.Services;
@@ -58,9 +59,12 @@ public class AuthController(AuthService auth) : ControllerBase
     /// <remarks>Reutilizar um refresh token já revogado revoga todos os tokens do usuário.</remarks>
     /// <response code="200">Novo token de acesso e novo cookie.</response>
     /// <response code="401"><c>TOKEN_INVALIDO</c>.</response>
+    /// <response code="403"><c>REQUISICAO_NAO_PERMITIDA</c>: faltou o cabeçalho <c>X-Requested-With: viteme-web</c> ou a origem não é a do frontend.</response>
     [HttpPost("renovar")]
+    [ExigirRequisicaoDoFrontend]
     [ProducesResponseType<RenovarResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     public async Task<IActionResult> Renovar(CancellationToken cancellationToken)
     {
         var resultado = await auth.RenovarAsync(Request.Cookies[CookieRefresh], cancellationToken);
@@ -71,8 +75,11 @@ public class AuthController(AuthService auth) : ControllerBase
 
     /// <summary>Encerra a sessão (E04). Não exige token de acesso e é idempotente: sempre 204.</summary>
     /// <response code="204">Sessão encerrada e cookie removido.</response>
+    /// <response code="403"><c>REQUISICAO_NAO_PERMITIDA</c>: faltou o cabeçalho <c>X-Requested-With: viteme-web</c> ou a origem não é a do frontend.</response>
     [HttpPost("logout")]
+    [ExigirRequisicaoDoFrontend]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         await auth.LogoutAsync(Request.Cookies[CookieRefresh], cancellationToken);
@@ -88,7 +95,7 @@ public class AuthController(AuthService auth) : ControllerBase
     {
         HttpOnly = true,
         Secure = true,
-        SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.None, // frontend e API podem estar em sites diferentes; CSRF em E03/E04: ExigirRequisicaoDoFrontend
         Path = RotaCookie,
         IsEssential = true,
         Expires = expiraEm is null ? null : new DateTimeOffset(DateTime.SpecifyKind(expiraEm.Value, DateTimeKind.Utc)),

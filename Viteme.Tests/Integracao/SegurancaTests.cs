@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Viteme.Tests.Suporte;
 
 namespace Viteme.Tests.Integracao;
@@ -210,6 +211,92 @@ public class SegurancaTests(BancoFixture banco, ApiFactory api) : IClassFixture<
         Assert.Equal("https://app.viteme.test", permitida.Headers.GetValues("Access-Control-Allow-Origin").Single());
         Assert.Equal("true", permitida.Headers.GetValues("Access-Control-Allow-Credentials").Single());
         Assert.False(negada.Headers.Contains("Access-Control-Allow-Origin"));
+    }
+
+    /// <summary>
+    /// API com a origem do frontend configurada. A conexão aponta para um banco inexistente: os casos aqui não chegam
+    /// ao banco (a proteção responde antes, ou não há cookie de renovação).
+    /// </summary>
+    private static WebApplicationFactory<Program> FabricaComFrontend() => new ApiFactory().WithWebHostBuilder(b =>
+    {
+        b.UseSetting("Cors:OrigemFrontend", "https://app.viteme.test");
+        b.UseSetting("ConnectionStrings:Default", "Host=localhost;Port=1;Database=inexistente;Username=x;Password=x");
+    });
+
+    private static HttpRequestMessage Auth(string rota, string? requestedWith, string? origem)
+    {
+        var requisicao = new HttpRequestMessage(HttpMethod.Post, rota);
+        if (requestedWith is not null)
+        {
+            requisicao.Headers.Add("X-Requested-With", requestedWith);
+        }
+
+        if (origem is not null)
+        {
+            requisicao.Headers.Add("Origin", origem);
+        }
+
+        return requisicao;
+    }
+
+    [Theory]
+    [InlineData("/api/v1/auth/renovar")]
+    [InlineData("/api/v1/auth/logout")]
+    public async Task Renovar_e_logout_sem_o_cabecalho_do_frontend_retornam_403(string rota)
+    {
+        using var fabrica = FabricaComFrontend();
+        using var cliente = fabrica.CreateClient();
+
+        var semCabecalho = await cliente.SendAsync(Auth(rota, null, "https://app.viteme.test"));
+        var valorErrado = await cliente.SendAsync(Auth(rota, "XMLHttpRequest", "https://app.viteme.test"));
+
+        Assert.Equal(HttpStatusCode.Forbidden, semCabecalho.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, valorErrado.StatusCode);
+        Assert.Equal("REQUISICAO_NAO_PERMITIDA", await AmbienteApi.CodigoErroAsync(semCabecalho));
+    }
+
+    [Theory]
+    [InlineData("/api/v1/auth/renovar")]
+    [InlineData("/api/v1/auth/logout")]
+    public async Task Renovar_e_logout_de_origem_diferente_da_do_frontend_retornam_403(string rota)
+    {
+        using var fabrica = FabricaComFrontend();
+        using var cliente = fabrica.CreateClient();
+
+        var outraOrigem = await cliente.SendAsync(Auth(rota, "viteme-web", "https://malicioso.test"));
+
+        Assert.Equal(HttpStatusCode.Forbidden, outraOrigem.StatusCode);
+        Assert.Equal("REQUISICAO_NAO_PERMITIDA", await AmbienteApi.CodigoErroAsync(outraOrigem));
+    }
+
+    [Fact]
+    public async Task Renovar_com_cabecalho_e_origem_do_frontend_passa_pela_protecao_e_cai_na_regra_normal()
+    {
+        using var fabrica = FabricaComFrontend();
+        using var cliente = fabrica.CreateClient();
+
+        var doFrontend = await cliente.SendAsync(Auth("/api/v1/auth/renovar", "viteme-web", "https://app.viteme.test/"));
+        var semOrigem = await cliente.SendAsync(Auth("/api/v1/auth/renovar", "viteme-web", null));
+        var logout = await cliente.SendAsync(Auth("/api/v1/auth/logout", "viteme-web", "https://app.viteme.test"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, doFrontend.StatusCode); // sem cookie: TOKEN_INVALIDO
+        Assert.Equal(HttpStatusCode.Unauthorized, semOrigem.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+    }
+
+    [Fact]
+    public async Task Cors_permite_o_cabecalho_x_requested_with_do_frontend()
+    {
+        using var fabrica = FabricaComFrontend();
+        using var cliente = fabrica.CreateClient();
+        var requisicao = new HttpRequestMessage(HttpMethod.Options, "/api/v1/auth/renovar")
+        {
+            Headers = { { "Origin", "https://app.viteme.test" }, { "Access-Control-Request-Method", "POST" }, { "Access-Control-Request-Headers", "x-requested-with" } },
+        };
+
+        var resposta = await cliente.SendAsync(requisicao);
+
+        Assert.Contains("x-requested-with", resposta.Headers.GetValues("Access-Control-Allow-Headers").Single().ToLowerInvariant());
     }
 
     [Fact]

@@ -25,7 +25,13 @@ Segredos nunca vão para o repositório. Para a demonstração com o gateway e o
 
 ## 3. Cookie de sessão
 
-O refresh token vai em cookie `HttpOnly; Secure; SameSite=Strict`. Por isso frontend e API precisam estar no **mesmo site** (ex.: `app.exemplo.com` e `api.exemplo.com`) e em HTTPS. Em domínios diferentes o navegador não envia o cookie e a sessão não é renovada.
+O refresh token vai em cookie `HttpOnly; Secure; SameSite=None`, restrito a `/api/v1/auth`. Com isso frontend e API **podem ficar em sites diferentes**, mas é preciso:
+
+- **HTTPS** nos dois (o cookie é `Secure`);
+- `Cors__OrigemFrontend` com a origem exata do frontend (CORS com credenciais; nunca `*`);
+- o frontend enviando `withCredentials: true` e o cabeçalho `X-Requested-With: viteme-web` em `/auth/renovar` e `/auth/logout`. Sem o cabeçalho, ou com `Origin` diferente de `Cors__OrigemFrontend`, a API responde **403 `REQUISICAO_NAO_PERMITIDA`** (proteção contra CSRF, já que `SameSite=None` envia o cookie também em requisições de outros sites).
+
+Atenção: navegadores que bloqueiam cookies entre sites (Safari, Firefox estrito, Chrome com bloqueio de cookies de terceiros) podem **não enviar** o cookie quando frontend e API estão em sites diferentes, e a sessão não restaura ao recarregar a página. Para a demonstração, o mais seguro é hospedar os dois sob o mesmo domínio registrável (ex.: `app.exemplo.com` e `api.exemplo.com`); o `SameSite=None` também funciona assim. Chamadas de `/auth/renovar` feitas pelo Swagger UI da própria API são recusadas (a origem é a da API, não a do frontend).
 
 ## 4. Execução
 

@@ -86,7 +86,7 @@ public class AuthTests(BancoFixture banco, ApiFactory api) : IClassFixture<Banco
         Assert.False(corpo.TryGetProperty("refreshToken", out _));
         Assert.Contains("httponly", cookie);
         Assert.Contains("secure", cookie);
-        Assert.Contains("samesite=strict", cookie);
+        Assert.Contains("samesite=none", cookie);
         Assert.Contains("path=/api/v1/auth", cookie);
     }
 

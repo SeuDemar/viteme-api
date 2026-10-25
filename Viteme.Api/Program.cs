@@ -41,7 +41,7 @@ if (!string.IsNullOrWhiteSpace(origemFrontend))
     builder.Services.AddCors(opcoes => opcoes.AddDefaultPolicy(politica => politica
         .WithOrigins(origemFrontend.TrimEnd('/'))
         .AllowAnyMethod()
-        .WithHeaders("Authorization", "Content-Type", "If-Match")
+        .WithHeaders("Authorization", "Content-Type", "If-Match", "X-Requested-With")
         .WithExposedHeaders("ETag", "Content-Disposition")
         .AllowCredentials()));
 }

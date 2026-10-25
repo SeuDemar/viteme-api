@@ -62,6 +62,7 @@
 | D44 | O JWT é validado com o `IRelogio` da aplicação (`LifetimeValidator`), mantendo tolerância de 30 s | Testar a expiração do token (P18) e manter um único relógio |
 | D45 | Código de verificação: no máximo 5 por hora por telefone (somadas todas as contas) → 429 `LIMITE_EXCEDIDO` | Evita usar o Viteme para enviar SMS a terceiros (P20) |
 | D46 | CORS só com `Cors:OrigemFrontend` configurada (origem única, credenciais permitidas, cabeçalhos `Authorization`, `Content-Type`, `If-Match`; expõe `ETag` e `Content-Disposition`). Cabeçalhos de segurança e `Cache-Control: no-store` em todas as respostas da API | Necessário ao frontend e ao cookie de refresh; respostas têm dados pessoais |
+| D47 | Cookie do refresh token passa a `SameSite=None; Secure; HttpOnly; Path=/api/v1/auth` (antes `Strict`). Para compensar a perda da proteção contra CSRF, E03 e E04 exigem `X-Requested-With: viteme-web` e, havendo `Origin`, ele deve ser igual a `Cors:OrigemFrontend` (filtro `ExigirRequisicaoDoFrontend`, 403 `REQUISICAO_NAO_PERMITIDA`). O CORS passa a permitir o cabeçalho `X-Requested-With`. **Desvio da spec** (4.1, Quadro 64 e Quadro 66, que previam `Strict` e mesmo site) | Pedido da equipe: não exigir mesmo site na hospedagem (resolve P8 e P11). Limitação: navegadores que bloqueiam cookies entre sites podem não enviar o cookie; ver `docs/deploy.md` |
 | D10 | Desenvolvimento na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito | |
 
 ### Nota sobre Supabase + Npgsql
@@ -89,7 +90,7 @@ Itens que a spec não resolve ou que dependem de confirmação antes da implemen
 4. **Provedor de SMS real.** Pendente (D7). Se for AWS SNS, atenção ao sandbox, ao registro de sender ID no Brasil e a limites de gasto.
 5. **Fuso horário.** Datas em UTC no banco e na API; conversão para Brasília é só na exibição (frontend). Regras com "24 horas antes" etc. usam `IRelogio` em UTC.
 6. **Rate limiting por IP atrás de proxy.** Se a API rodar atrás de proxy/CDN, configurar `ForwardedHeaders` para o IP correto, senão o limite por IP e o bloqueio de RN03 ficam ineficazes.
-7. **Cookie do refresh token e domínios.** `SameSite=Strict` exige frontend e API no mesmo site (ex.: `viteme.app` e `api.viteme.app`). Relevante só quando o frontend existir; manter a configuração parametrizável.
+7. **Cookie do refresh token e domínios.** Resolvido em D47: `SameSite=None` com proteção CSRF por cabeçalho e `Origin`. Resta o risco de navegadores que bloqueiam cookies entre sites (ver `docs/deploy.md`).
 8. **Coerência da spec.** Verificações feitas na leitura: 14 entidades listadas e detalhadas; 39 endpoints; RN01–RN23 todas na matriz de rastreabilidade; `envio_sms.tentativas ≤ 4` é consistente com RN16 (1 envio + até 3 novas tentativas). Nenhuma contradição encontrada; revisar se surgir dúvida durante a implementação.
 
 ## 5. Convenções de trabalho

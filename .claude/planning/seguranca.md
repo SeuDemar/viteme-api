@@ -8,7 +8,7 @@
   2. API verifica bloqueio (RN03) → se bloqueada, **423**.
   3. Compara a senha com o hash. Erro: incrementa `tentativas_login`, bloqueia na 5ª tentativa e responde **401** com mensagem genérica (igual para e-mail inexistente).
   4. Sucesso: zera tentativas e emite token de acesso (JWT) e token de renovação.
-  5. Token de acesso volta no corpo e fica **em memória** no frontend; token de renovação vai em cookie `HttpOnly; Secure; SameSite=Strict`, restrito à rota `/api/v1/auth`.
+  5. Token de acesso volta no corpo e fica **em memória** no frontend; token de renovação vai em cookie `HttpOnly; Secure; SameSite=None`, restrito à rota `/api/v1/auth` (ver D47).
   6. Ao expirar o acesso, o frontend chama E03: recebe novo par e o refresh anterior é **revogado** (rotação).
   7. Ao abrir/recarregar o site, o frontend chama E03 para restaurar a sessão.
   8. Logout (E04): revoga o refresh e remove o cookie.
@@ -23,7 +23,7 @@
 | Validações na API | Assinatura, emissor (`iss`), audiência (`aud`), expiração (tolerância de 30 s) e algoritmo esperado |
 | Refresh token | Valor aleatório de 64 bytes; no banco só o **hash** (`token_renovacao`). Reuso de token já revogado ⇒ **revoga todos os tokens do usuário** (indício de roubo) |
 | Armazenamento no frontend | Acesso em memória (não em localStorage, para reduzir risco de XSS); refresh só no cookie HttpOnly |
-| Domínios/cookies | Frontend e API no **mesmo site** (ex.: `viteme.app` e `api.viteme.app`) para o `SameSite=Strict` ser enviado. E02, E03, E04 usam `withCredentials`; CORS com `AllowCredentials` e origem do frontend **explícita (nunca `*`)** |
+| Domínios/cookies | Cookie `SameSite=None; Secure` (D47): frontend e API podem estar em sites diferentes, sempre em HTTPS. E02, E03, E04 usam `withCredentials`; CORS com `AllowCredentials` e origem do frontend **explícita (nunca `*`)**. Divergência da spec (que previa `Strict` e mesmo site) |
 
 ## 3. Autorização e controle de acesso
 
@@ -74,7 +74,7 @@ O SMS só é enviado com **consentimento explícito e telefone confirmado**:
 | Acesso indevido a dados de outro usuário | Autorização por política em todo endpoint protegido; recursos pessoais filtrados pelo `sub`; 404 para alheios |
 | Injeção de SQL | Somente EF Core com parâmetros; nenhuma concatenação de SQL com dados do usuário |
 | XSS | Descrição do evento é **texto puro** (sem HTML); frontend escapa por padrão; Content-Security-Policy no frontend |
-| CSRF | API usa cabeçalho `Authorization` (não cookies) para autenticar; cookie de renovação é `SameSite=Strict` e restrito à rota de auth |
+| CSRF | API usa cabeçalho `Authorization` (não cookies) para autenticar. O cookie de renovação é `SameSite=None` e restrito à rota de auth; E03 e E04, os únicos que dependem só do cookie, exigem o cabeçalho `X-Requested-With: viteme-web` (força preflight de CORS, que só a origem do frontend passa) e conferem `Origin` contra `Cors:OrigemFrontend` → 403 `REQUISICAO_NAO_PERMITIDA` (D47) |
 | Interceptação | HTTPS obrigatório em produção, com HSTS; CORS só para o domínio do frontend |
 | Webhook falsificado | Validação de assinatura/token do gateway, conferência do valor com o registrado, processamento idempotente (RN23) |
 | Inconsistência de vagas e pagamentos | Transações com bloqueio de linha (RI10), concorrência otimista (RI11), estorno automático de pagamentos fora de contexto (RN23) |
