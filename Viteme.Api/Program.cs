@@ -29,6 +29,11 @@ if (confiarNoProxy)
     builder.Services.Configure<ForwardedHeadersOptions>(opcoes =>
     {
         opcoes.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+        // Quantos proxies acrescentam entradas ao X-Forwarded-For. Com o repasse do Cloudflare Pages na frente do
+        // Azure App Service são 2 (a Function informa o IP do usuário e o Azure acrescenta o da Cloudflare); com 1,
+        // o limite por IP veria só o IP da Cloudflare, compartilhado por muitos usuários.
+        opcoes.ForwardLimit = Math.Max(1, builder.Configuration.GetValue("Proxy:SaltosConfiaveis", 1));
         opcoes.KnownIPNetworks.Clear();
         opcoes.KnownProxies.Clear();
     });

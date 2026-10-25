@@ -24,12 +24,14 @@ public class EventoService(
 
     public async Task<PaginaResponse<EventoResumoResponse>> ListarMuralAsync(MuralFiltro filtro, CancellationToken cancellationToken = default)
     {
-        var (itens, total) = await eventos.ListarMuralAsync(filtro, relogio.UtcAgora, cancellationToken);
+        var agora = relogio.UtcAgora;
+        var (itens, total) = await eventos.ListarMuralAsync(filtro, agora, cancellationToken);
 
         var resumos = itens
             .Select(i => new EventoResumoResponse(
                 i.Evento.Id, i.Evento.Titulo, i.Evento.Categoria, i.Evento.Local, i.Evento.DataInicio, i.Evento.Preco,
-                VagasRestantes(i.Evento, i.VagasOcupadas), i.Evento.ImagemUrl, i.AlteradoRecentemente))
+                VagasRestantes(i.Evento, i.VagasOcupadas), i.Evento.ImagemUrl, i.AlteradoRecentemente,
+                i.Evento.AceitaInscricoes(agora)))
             .ToList();
 
         return new PaginaResponse<EventoResumoResponse>(resumos, filtro.Pagina, filtro.TamanhoPagina, total);
@@ -162,12 +164,12 @@ public class EventoService(
     public async Task<IReadOnlyList<EventoMeuResponse>> ListarMeusAsync(
         Guid usuarioId, PapelEvento? papel, StatusEvento? status, CancellationToken cancellationToken = default)
     {
-        var itens = await eventos.ListarDoUsuarioAsync(usuarioId, papel, status, cancellationToken);
+        var itens = await eventos.ListarDoUsuarioAsync(usuarioId, papel, status, relogio.UtcAgora, cancellationToken);
 
         return itens
             .Select(i => new EventoMeuResponse(
                 i.Evento.Id, i.Evento.Titulo, i.Evento.Categoria, i.Evento.Local, i.Evento.DataInicio, i.Evento.DataFim,
-                i.Evento.Preco, i.Evento.Status, i.Papel, i.Evento.ImagemUrl))
+                i.Evento.Preco, i.Evento.Status, i.Papel, i.Evento.ImagemUrl, i.Evento.Capacidade, i.VagasOcupadas))
             .ToList();
     }
 

@@ -31,7 +31,7 @@ Os códigos (P1, P2…) são os mesmos nos dois arquivos.
 | Prioridade | Cód. | Pendência | Quem decide | Quando |
 |---|---|---|---|---|
 | 🟡 | P11 | Onde publicar API, frontend e banco em HTTPS e como a banca acessa o Supabase. O cookie agora é `SameSite=None` (não exige mesmo site), mas navegadores que bloqueiam cookies entre sites podem não restaurar a sessão; o mais seguro é o mesmo domínio registrável. Guia em [deploy.md](deploy.md) | Equipe | Antes da etapa 7 |
-| 🟡 | P6 | Ativar `Proxy__ConfiarEmCabecalhosEncaminhados=true` na hospedagem (senão o limite por IP vê o IP do proxy) e, se possível, restringir os proxies confiáveis | Dev/Equipe | Na hospedagem |
+| 🟡 | P6 | Ativar `Proxy__ConfiarEmCabecalhosEncaminhados=true` e `Proxy__SaltosConfiaveis=2` (repasse da Cloudflare + Azure) na hospedagem (senão o limite por IP vê o IP do proxy) e, se possível, restringir os proxies confiáveis | Dev/Equipe | Na hospedagem |
 | ✅ | P8 | Cookie `SameSite=None` com proteção CSRF em E03/E04 (cabeçalho `X-Requested-With` e `Origin`); origem configurável por `Cors__OrigemFrontend` | Dev | Resolvida |
 | 🟢 | P22 | Em sessão nova de desenvolvimento, subir o PostgreSQL local (`pg_ctlcluster 16 main start`) e definir `VITEME_TESTES_DB` | Dev | — |
 

@@ -148,6 +148,23 @@ public class MuralTests(BancoFixture banco, ApiFactory api) : IClassFixture<Banc
     }
 
     [FactBanco]
+    public async Task Mural_informa_se_as_inscricoes_estao_abertas()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        var organizador = await ambiente.NovaSessaoAsync();
+        var marca = Guid.NewGuid().ToString("N");
+        await ambiente.CriarEventoAsync(organizador, ambiente.CorpoEvento($"Prazo {marca}"), publicar: true);
+
+        var antes = (await ConsultarAsync(ambiente, $"busca={marca}")).GetProperty("itens")[0];
+        // O prazo de inscrição termina 1 h antes do início (agora + 10 dias); o evento continua no mural.
+        ambiente.Relogio.Avancar(TimeSpan.FromDays(10) - TimeSpan.FromMinutes(30));
+        var depois = (await ConsultarAsync(ambiente, $"busca={marca}")).GetProperty("itens")[0];
+
+        Assert.True(antes.GetProperty("inscricoesAbertas").GetBoolean());
+        Assert.False(depois.GetProperty("inscricoesAbertas").GetBoolean());
+    }
+
+    [FactBanco]
     public async Task Mural_rejeita_parametros_invalidos()
     {
         using var ambiente = new AmbienteApi(banco, api);
@@ -191,6 +208,32 @@ public class MuralTests(BancoFixture banco, ApiFactory api) : IClassFixture<Banc
         Assert.DoesNotContain(doColaborador.EnumerateArray(), e => e.GetProperty("id").GetGuid() == rascunho);
         _ = proprio;
     }
+
+    [FactBanco]
+    public async Task Meus_eventos_informa_capacidade_e_inscritos()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        var organizador = await ambiente.NovaSessaoAsync();
+        var limitado = await ambiente.CriarEventoAsync(organizador, ambiente.CorpoEvento("Limitado", capacidade: 10), publicar: true);
+        var ilimitado = await ambiente.CriarEventoAsync(organizador, ambiente.CorpoEvento("Ilimitado"), publicar: true);
+        await ambiente.InscreverNoBancoAsync(limitado, (await ambiente.NovaSessaoAsync()).UsuarioId);
+        await ambiente.InscreverNoBancoAsync(limitado, (await ambiente.NovaSessaoAsync()).UsuarioId, StatusInscricao.PendentePagamento);
+        await ambiente.InscreverNoBancoAsync(ilimitado, (await ambiente.NovaSessaoAsync()).UsuarioId);
+
+        var antes = await MeusPorIdAsync(ambiente, organizador);
+        ambiente.Relogio.Avancar(TimeSpan.FromMinutes(31));
+        var depois = await MeusPorIdAsync(ambiente, organizador);
+
+        Assert.Equal(10, antes[limitado].GetProperty("capacidade").GetInt32());
+        Assert.Equal(2, antes[limitado].GetProperty("inscritos").GetInt32());
+        Assert.Equal(1, depois[limitado].GetProperty("inscritos").GetInt32());
+        Assert.Equal(JsonValueKind.Null, antes[ilimitado].GetProperty("capacidade").ValueKind);
+        Assert.Equal(1, antes[ilimitado].GetProperty("inscritos").GetInt32());
+    }
+
+    private static async Task<Dictionary<Guid, JsonElement>> MeusPorIdAsync(AmbienteApi ambiente, Sessao sessao) =>
+        (await AmbienteApi.CorpoAsync(await ambiente.GetAsync("/api/v1/eventos/meus", sessao.Token)))
+            .EnumerateArray().ToDictionary(e => e.GetProperty("id").GetGuid());
 
     [FactBanco]
     public async Task Meus_eventos_exige_autenticacao_e_rejeita_papel_invalido()
