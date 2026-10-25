@@ -62,6 +62,7 @@ O workflow foi ajustado para:
 - publicar **somente depois que o CI passa** em um push na `main` (gatilho `workflow_run`), e também à mão em *Actions > Run workflow*;
 - publicar o commit exato que passou no CI e apenas o projeto `Viteme.Api`;
 - fazer uma publicação por vez.
+- apagar a pasta do app antes de copiar (`clean: true`) e fixar o comando de início (`dotnet Viteme.Api.dll`). Sem isso, sobras de publicações antigas (a primeira, gerada pelo Azure, publicou a solução inteira e deixou `Viteme.Tests.runtimeconfig.json`) fazem o Azure avisar *"Expected to find only one file with extension '.runtimeconfig.json'"* e subir a página padrão dele (`hostingstart.dll`) no lugar da API.
 
 Cada publicação reinicia a API. Se o Azure regravar o arquivo (por exemplo, ao refazer a ligação no portal), reaplique os ajustes.
 
