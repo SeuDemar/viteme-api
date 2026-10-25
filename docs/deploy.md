@@ -17,6 +17,7 @@ Guia para a demonstração e para uma publicação simples (uma instância). A A
 | `Jwt__Chave` | `openssl rand -base64 48` (≥ 32 caracteres; trocar invalida as sessões) |
 | `Cors__OrigemFrontend` | Origem do frontend, ex.: `https://app.exemplo.com` (sem ela, o CORS não libera ninguém) |
 | `Proxy__ConfiarEmCabecalhosEncaminhados` | `true` atrás de proxy/CDN (a plataforma de hospedagem), para o limite por IP ver o IP real |
+| `Proxy__SaltosConfiaveis` | Quantos proxies acrescentam entradas ao `X-Forwarded-For` (padrão `1`). Com o repasse do Cloudflare Pages na frente do Azure App Service use `2`; senão o limite de login por IP vê o IP da Cloudflare, compartilhado por muitos usuários. Quem chamar a API direto pelo endereço `azurewebsites.net` consegue forjar o IP nesse modo: é o preço de ter o repasse |
 | `Certificados__UrlValidacao` | Endereço da página de validação, impresso no PDF |
 | `Swagger__Habilitar` | `true` só se quiser a documentação interativa no ar |
 | `Gateway__Stub__HabilitarSimulador` | `true` **só na demonstração**; `false` em produção |
@@ -64,6 +65,6 @@ O workflow foi ajustado para:
 
 Cada publicação reinicia a API. Se o Azure regravar o arquivo (por exemplo, ao refazer a ligação no portal), reaplique os ajustes.
 
-No App Service defina, no mínimo: `ASPNETCORE_ENVIRONMENT=Production`, `ConnectionStrings__Default`, `Jwt__Chave`, `Cors__OrigemFrontend` (o endereço do site na Cloudflare, sem barra final) e `Proxy__ConfiarEmCabecalhosEncaminhados=true`. O plano gratuito "dorme" sem uso: abra `/api/v1/saude` alguns minutos antes de uma demonstração.
+No App Service defina, no mínimo: `ASPNETCORE_ENVIRONMENT=Production`, `ConnectionStrings__Default`, `Jwt__Chave`, `Cors__OrigemFrontend` (o endereço do site na Cloudflare, sem barra final) `Proxy__ConfiarEmCabecalhosEncaminhados=true` e `Proxy__SaltosConfiaveis=2` (por causa do repasse da Cloudflare). O plano gratuito "dorme" sem uso: abra `/api/v1/saude` alguns minutos antes de uma demonstração.
 
 Roteiro completo, do zero (banco no Supabase, assinatura e App Service no Azure, site no Cloudflare Pages): [`passo-a-passo-publicacao.md`](https://github.com/SeuDemar/viteme-web/blob/main/docs/passo-a-passo-publicacao.md) no repositório `viteme-web`.

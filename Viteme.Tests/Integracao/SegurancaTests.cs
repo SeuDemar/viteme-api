@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Viteme.Tests.Suporte;
 
@@ -217,6 +218,36 @@ public class SegurancaTests(BancoFixture banco, ApiFactory api) : IClassFixture<
     /// API com a origem do frontend configurada. A conexão aponta para um banco inexistente: os casos aqui não chegam
     /// ao banco (a proteção responde antes, ou não há cookie de renovação).
     /// </summary>
+    [Theory]
+    [InlineData(1, true)]  // só o IP do último proxy (9.9.9.9): todos dividem o mesmo limite
+    [InlineData(2, false)] // IP do usuário informado pelo repasse: cada um tem o seu limite
+    public async Task Limite_por_ip_respeita_os_saltos_de_proxy_configurados(int saltos, bool outroUsuarioBloqueado)
+    {
+        using var fabrica = new ApiFactory().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("RateLimiting:Habilitar", "true");
+            b.UseSetting("Proxy:ConfiarEmCabecalhosEncaminhados", "true");
+            b.UseSetting("Proxy:SaltosConfiaveis", saltos.ToString());
+            b.UseSetting("ConnectionStrings:Default", "Host=localhost;Port=1;Database=inexistente;Username=x;Password=x");
+        });
+        using var cliente = fabrica.CreateClient();
+
+        // Sem banco a resposta é um erro qualquer; só importa se o limitador (que roda antes) devolve 429.
+        Task<HttpResponseMessage> Login(string ipUsuario) => cliente.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/login")
+        {
+            Headers = { { "X-Forwarded-For", $"{ipUsuario}, 9.9.9.9" } },
+            Content = JsonContent.Create(new { }),
+        });
+
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, (await Login("1.1.1.1")).StatusCode);
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await Login("1.1.1.1")).StatusCode);
+        Assert.Equal(outroUsuarioBloqueado, (await Login("2.2.2.2")).StatusCode == HttpStatusCode.TooManyRequests);
+    }
+
     private static WebApplicationFactory<Program> FabricaComFrontend() => new ApiFactory().WithWebHostBuilder(b =>
     {
         b.UseSetting("Cors:OrigemFrontend", "https://app.viteme.test");
