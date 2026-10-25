@@ -1,0 +1,30 @@
+name: Publicar API no Azure
+
+# Execução manual: Actions > "Publicar API no Azure" > Run workflow.
+# O arquivo precisa estar na branch principal para aparecer na lista de workflows.
+# Requer no repositório (Settings > Secrets and variables > Actions):
+#   - secret   AZURE_WEBAPP_PUBLISH_PROFILE : conteúdo do "perfil de publicação" baixado no portal do Azure
+#   - variable AZURE_WEBAPP_NAME            : nome do App Service (ex.: viteme-api-demo)
+# Passo a passo completo: viteme-web/docs/passo-a-passo-publicacao.md
+on:
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Publicar (Release)
+        run: dotnet publish Viteme.Api/Viteme.Api.csproj -c Release -o publicado
+
+      - name: Enviar para o App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publicado
