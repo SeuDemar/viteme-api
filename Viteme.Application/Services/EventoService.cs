@@ -49,8 +49,14 @@ public class EventoService(
         return await MontarDetalheAsync(eventoId, usuarioId, permissao, cancellationToken);
     }
 
+    /// <summary>E12. RN24: exige CNPJ verificado no perfil.</summary>
     public async Task<EventoDetalheResultado> CriarAsync(Guid usuarioId, EventoRequest requisicao, CancellationToken cancellationToken = default)
     {
+        var organizador = await usuarios.ObterPorIdAsync(usuarioId, cancellationToken)
+            ?? throw new RegraDeNegocioException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado",
+                "O usuário autenticado não existe mais.", 401);
+        organizador.GarantirPodeOrganizar();
+
         var dados = Normalizar(requisicao);
         var evento = new Evento(
             usuarioId, dados.Titulo, dados.Descricao, dados.Categoria, dados.Local, dados.ImagemUrl,
@@ -132,9 +138,12 @@ public class EventoService(
         return await ObterDetalheAsync(evento.Id, usuarioId, cancellationToken);
     }
 
+    /// <summary>E14. RN24: o organizador precisa ter CNPJ verificado (vale também para rascunhos anteriores à regra).</summary>
     public async Task<StatusEventoResponse> PublicarAsync(Guid eventoId, CancellationToken cancellationToken = default)
     {
         var evento = await eventos.ObterPorIdAsync(eventoId, cancellationToken) ?? throw EventoNaoEncontrado();
+        var organizador = await usuarios.ObterPorIdAsync(evento.OrganizadorId, cancellationToken) ?? throw EventoNaoEncontrado();
+        organizador.GarantirPodeOrganizar();
 
         evento.Publicar(relogio.UtcAgora);
         await unitOfWork.SalvarAsync(cancellationToken);

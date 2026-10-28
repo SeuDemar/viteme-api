@@ -12,6 +12,7 @@ public class UsuarioConfiguracao : IEntityTypeConfiguration<Usuario>
         {
             t.HasCheckConstraint("ck_usuario_sms_exige_telefone_verificado", "NOT aceita_sms OR telefone_verificado");
             t.HasCheckConstraint("ck_usuario_telefone_e164", "telefone IS NULL OR telefone ~ '^\\+[1-9][0-9]{7,14}$'");
+            t.HasCheckConstraint("ck_usuario_cnpj_formato", "cnpj IS NULL OR cnpj ~ '^[A-Z0-9]{12}[0-9]{2}$'");
         });
 
         b.HasKey(u => u.Id);
@@ -23,6 +24,9 @@ public class UsuarioConfiguracao : IEntityTypeConfiguration<Usuario>
         b.Property(u => u.TelefoneVerificado).HasDefaultValue(false);
         b.Property(u => u.AceitaSms).HasDefaultValue(false);
         b.Property(u => u.TentativasLogin).HasDefaultValue((short)0);
+        b.Property(u => u.Cnpj).HasMaxLength(14);
+        b.Property(u => u.RazaoSocial).HasMaxLength(200);
+        b.HasIndex(u => u.Cnpj).IsUnique().HasDatabaseName("ux_usuario_cnpj").HasFilter("cnpj IS NOT NULL");
         b.Property(u => u.CriadoEm).IsRequired();
         b.Property(u => u.AtualizadoEm).IsRequired();
 

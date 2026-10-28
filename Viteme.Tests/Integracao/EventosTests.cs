@@ -15,7 +15,7 @@ public class EventosTests(BancoFixture banco, ApiFactory api) : IClassFixture<Ba
     public async Task CT14_criacao_valida_gera_rascunho_e_o_criador_e_o_organizador()
     {
         using var ambiente = new AmbienteApi(banco, api);
-        var organizador = await ambiente.NovaSessaoAsync();
+        var organizador = await ambiente.NovaSessaoOrganizadorAsync();
 
         var resposta = await ambiente.PostAsync("/api/v1/eventos", ambiente.CorpoEvento(preco: 49.9m, capacidade: 30), organizador.Token);
         var corpo = await AmbienteApi.CorpoAsync(resposta);

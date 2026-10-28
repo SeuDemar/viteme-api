@@ -1,4 +1,4 @@
-# Endpoints (E01–E39)
+# Endpoints (E01–E40)
 
 Prefixo `/api/v1`. Convenções e erros: [convencoes-e-erros.md](convencoes-e-erros.md). Regras: [regras-de-negocio.md](regras-de-negocio.md).
 
@@ -47,6 +47,7 @@ Legenda de acesso: **Público** · **Autenticado** · **Organizador** · **Org./
 | E37 | POST | `/eventos/{id}/denuncias` | Autenticado | Denunciar evento |
 | E38 | GET | `/inscricoes/{id}/certificado` | Dono | Emitir (1ª vez) e baixar PDF |
 | E39 | GET | `/certificados/{codigo}/validacao` | Público | Validar autenticidade |
+| E40 | PUT | `/usuarios/me/cnpj` | Autenticado | Cadastrar o CNPJ do organizador (RN24) |
 
 ## 2. Especificação
 
@@ -77,7 +78,7 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Não exige token de acesso (sair mesmo com token expirado); revoga o refresh do cookie, se houver; **idempotente**; nunca retorna erro (sempre 204).
 
 **E05 — GET /usuarios/me** (Autenticado)
-- Saída: `200 { id, nome, email, telefone, telefoneVerificado, aceitaSms, aceiteSmsEm }`. Erros: 401.
+- Saída: `200 { id, nome, email, telefone, telefoneVerificado, aceitaSms, aceiteSmsEm, cnpj, razaoSocial, cnpjVerificadoEm, podeOrganizar }` (campos de CNPJ: E40, RN24). Erros: 401.
 
 **E06 — PUT /usuarios/me** (Autenticado) · RN18
 - Entrada: `{ nome, telefone? }`. Saída: `200` perfil atualizado.
@@ -95,6 +96,11 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Entrada: `{ aceitaSms }` (boolean obrigatório). Saída: `200 { aceitaSms, aceiteSmsEm }`.
 - Erros: 400; 401; 422 `TELEFONE_NAO_VERIFICADO`.
 
+**E40 — PUT /usuarios/me/cnpj** (Autenticado) · RN24
+- Entrada: `{ cnpj }`, com ou sem máscara; aceita o formato alfanumérico. Saída: `200` perfil (E05) com `cnpj`, `razaoSocial`, `cnpjVerificadoEm`, `podeOrganizar: true`.
+- Valida os dígitos verificadores (400), confere que não pertence a outra conta e consulta a BrasilAPI (situação ATIVA). Limite: 5/min por usuário.
+- Erros: 400; 401; 409 `CNPJ_JA_CADASTRADO`; 422 `CNPJ_NAO_ENCONTRADO`, `CNPJ_INATIVO`; 429; 502 `CONSULTA_CNPJ_INDISPONIVEL`.
+
 ### 2.2 Eventos e programação
 
 **E10 — GET /eventos** (Público) · RN06, RN09
@@ -107,19 +113,19 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Rascunho só visível a organizador e colaboradores; OCULTO também visível aos inscritos.
 - Erros: 404 `EVENTO_NAO_ENCONTRADO` (inclusive para quem não pode ver).
 
-**E12 — POST /eventos** (Autenticado) · RN05, RN06, RN12
+**E12 — POST /eventos** (Autenticado com CNPJ verificado) · RN05, RN06, RN12, RN24
 - Entrada: `{ titulo, descricao, categoria, local, imagemUrl?, dataInicio, dataFim, inscricaoInicio, inscricaoFim, capacidade?, preco, cargaHoraria? }`
 - Saída: `201` + `Location`; evento `RASCUNHO`.
-- Validações: título 5–150; descrição ≤ 5000; preço 0–99.999,99 (2 casas); capacidade e carga horária > 0 quando informadas; `imagemUrl` https; datas conforme RN05. Erros: 400; 401.
+- Validações: título 5–150; descrição ≤ 5000; preço 0–99.999,99 (2 casas); capacidade e carga horária > 0 quando informadas; `imagemUrl` https; datas conforme RN05. Erros: 400; 401; 403 `CNPJ_NAO_VERIFICADO`.
 
 **E13 — PUT /eventos/{id}** (Organizador) · RN05, RN07, RN13
 - Cabeçalho `If-Match` com a versão (ETag recebido em E11/E12; sem o cabeçalho a API responde 428 `VERSAO_OBRIGATORIA`). Entrada: campos de E12 + `motivoAlteracao` (obrigatório quando RN13 se aplica; 10–300).
 - Saída: `200` evento atualizado.
 - Erros: 400; 401; 403; 404; 409 `EVENTO_FINALIZADO` (cancelado/encerrado); 412 `VERSAO_DESATUALIZADA`; 422 `PRECO_BLOQUEADO`, `CAPACIDADE_ABAIXO_DAS_VAGAS_OCUPADAS`, `MOTIVO_OBRIGATORIO`.
 
-**E14 — POST /eventos/{id}/publicar** (Organizador) · RN06, RN19
+**E14 — POST /eventos/{id}/publicar** (Organizador) · RN06, RN19, RN24
 - Saída: `200 { status: "PUBLICADO" }`. Status atual RASCUNHO ou OCULTO (republicação registra `reaberto_em`; segunda ocultação cancela — RN19).
-- Erros: 401; 403; 404; 409 `EVENTO_FINALIZADO`; 422 `DADOS_INCOMPLETOS`, `DATA_INICIO_PASSADA`.
+- Erros: 401; 403 (inclusive `CNPJ_NAO_VERIFICADO`); 404; 409 `EVENTO_FINALIZADO`; 422 `DADOS_INCOMPLETOS`, `DATA_INICIO_PASSADA`.
 
 **E15 — POST /eventos/{id}/cancelar** (Organizador) · RN14
 - Entrada: `{ motivo }` (10–300). Saída: `200 { status: "CANCELADO" }`.
@@ -231,4 +237,4 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 
 ## 3. Rate limiting (resumo, ver [../seguranca.md](../seguranca.md))
 
-Por IP e por usuário: login (5/min), envio de código SMS (RN18), denúncias e validação de certificado. O webhook (E31) **não** passa pelo rate limiting.
+Por IP e por usuário: login (5/min), envio de código SMS (RN18), denúncias, validação de certificado e consulta de CNPJ (E40, 5/min por usuário). O webhook (E31) **não** passa pelo rate limiting.

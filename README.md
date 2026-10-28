@@ -86,9 +86,11 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | `Tarefas__IntervaloReservasMinutos` | Padrão 1. Expira reservas vencidas e repete estornos pendentes |
 | `Tarefas__IntervaloSmsMinutos`, `Tarefas__IntervaloLembretesMinutos` | Padrões 1 e 15. Entrega de SMS (com novas tentativas) e lembretes de 24 h |
 | `Certificados__UrlValidacao` | Endereço da página pública de validação, impresso no PDF do certificado |
-| `RateLimiting__Habilitar` | Padrão `true`. Limites: login 5/min e cadastro 10/min por IP; código SMS 5/min e denúncias 5/min por usuário; validação de certificado 30/min por IP |
+| `RateLimiting__Habilitar` | Padrão `true`. Limites: login 5/min e cadastro 10/min por IP; código SMS 5/min, denúncias 5/min e consulta de CNPJ 5/min por usuário; validação de certificado 30/min por IP |
 | `Proxy__ConfiarEmCabecalhosEncaminhados` | `true` atrás de proxy/CDN, para o rate limiting ver o IP real |
-| `Gateway__Asaas__ApiKey`, `Gateway__Asaas__WebhookToken` | Gateway de pagamento (quando houver adaptador real) |
+| `Cnpj__UrlBase`, `Cnpj__TimeoutSegundos` | Consulta de CNPJ do organizador (RN24). Padrão: BrasilAPI, 10 s. A API precisa de saída HTTPS para `brasilapi.com.br` |
+| `Cnpj__UsarStub` | `true` só em desenvolvimento sem internet: aceita qualquer CNPJ com dígitos válidos como ativo. **Nunca em produção** |
+| `Gateway__Asaas__ApiKey`, `Gateway__Asaas__WebhookToken` | Gateway de pagamento (quando houver adaptador real; plano em [pagamentos-asaas.md](.claude/planning/pagamentos-asaas.md)) |
 | `Cors__OrigemFrontend` | Origem permitida do frontend |
 
 ## Endpoints implementados
@@ -96,7 +98,7 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | Grupo | Endpoints |
 |---|---|
 | Autenticação | `POST /api/v1/auth/cadastro`, `login`, `renovar`, `logout` |
-| Conta | `GET/PUT /api/v1/usuarios/me`, `POST /usuarios/me/telefone/codigo`, `POST /usuarios/me/telefone/verificar`, `PUT /usuarios/me/preferencias-sms` |
+| Conta | `GET/PUT /api/v1/usuarios/me`, `POST /usuarios/me/telefone/codigo`, `POST /usuarios/me/telefone/verificar`, `PUT /usuarios/me/preferencias-sms`, `PUT /usuarios/me/cnpj` (CNPJ do organizador) |
 | Eventos | `GET /api/v1/eventos` (mural), `GET /eventos/meus`, `GET/PUT /eventos/{id}`, `POST /eventos`, `POST /eventos/{id}/publicar`, `POST /eventos/{id}/cancelar`, `GET /eventos/{id}/alteracoes` |
 | Programação e equipe | `POST/PUT/DELETE /eventos/{id}/atividades[/{atividadeId}]`, `GET/POST /eventos/{id}/colaboradores`, `DELETE /eventos/{id}/colaboradores/{usuarioId}` |
 | Inscrições | `POST /eventos/{id}/inscricoes`, `GET /eventos/{id}/inscricoes` (inscritos), `GET /inscricoes/minhas`, `POST /inscricoes/{id}/cancelar`, `POST /eventos/{id}/checkin` |
@@ -105,8 +107,8 @@ A API **não inicia a autenticação sem `Jwt:Chave`**. Valores não secretos (e
 | Denúncias e certificados | `POST /eventos/{id}/denuncias`, `GET /inscricoes/{id}/certificado` (PDF), `GET /certificados/{codigo}/validacao` (público) |
 | Infra | `GET /api/v1/saude` |
 
-Documentação interativa completa em `/swagger`. Os 39 endpoints da spec (E01–E39) estão implementados.
+Documentação interativa completa em `/swagger`. Os 39 endpoints da spec (E01–E39) estão implementados, mais o E40 (CNPJ do organizador, RN24): só quem tem CNPJ ativo cria e publica eventos.
 
 ## Estado
 
-Etapas 0–6 concluídas (scaffold, domínio/banco/Swagger, autenticação, eventos, inscrições e pagamentos com gateway stub, interesse, notificações com SMS, denúncias e certificados, fechamento de segurança e cobertura). Próximo: etapa 7 (frontend). Guia de publicação: [docs/deploy.md](docs/deploy.md). Pendências abertas: [docs/pendencias-api.md](docs/pendencias-api.md). Ver [roadmap](.claude/planning/roadmap.md).
+Etapas 0–6 concluídas (scaffold, domínio/banco/Swagger, autenticação, eventos, inscrições e pagamentos com gateway stub, interesse, notificações com SMS, denúncias e certificados, fechamento de segurança e cobertura). Frontend no repositório `viteme-web`. Etapa 9a concluída: CNPJ do organizador. Próximo: pagamentos reais no sandbox do Asaas ([plano](.claude/planning/pagamentos-asaas.md)). Guia de publicação: [docs/deploy.md](docs/deploy.md). Pendências abertas: [docs/pendencias-api.md](docs/pendencias-api.md). Ver [roadmap](.claude/planning/roadmap.md).
