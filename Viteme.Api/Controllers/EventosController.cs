@@ -59,11 +59,13 @@ public class EventosController(EventoService eventos) : ControllerBase
     }
 
     /// <summary>Cria um evento como rascunho (E12). O criador passa a ser o organizador.</summary>
+    /// <response code="403"><c>CNPJ_NAO_VERIFICADO</c>: cadastre um CNPJ ativo no perfil antes (RN24).</response>
     [HttpPost]
     [Authorize]
     [ProducesResponseType<EventoDetalheResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     public async Task<IActionResult> Criar([FromBody] EventoRequest requisicao, CancellationToken cancellationToken)
     {
         var resultado = await eventos.CriarAsync(User.ObterUsuarioId(), requisicao, cancellationToken);
@@ -102,6 +104,7 @@ public class EventosController(EventoService eventos) : ControllerBase
     }
 
     /// <summary>Publica o evento no mural, ou o republica após ocultação (E14).</summary>
+    /// <response code="403">Sem o papel de organizador, ou <c>CNPJ_NAO_VERIFICADO</c> (RN24).</response>
     /// <response code="409"><c>EVENTO_FINALIZADO</c> ou <c>EVENTO_JA_PUBLICADO</c>.</response>
     /// <response code="422"><c>DADOS_INCOMPLETOS</c> ou <c>DATA_INICIO_PASSADA</c>.</response>
     [HttpPost("{id:guid}/publicar")]

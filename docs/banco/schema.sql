@@ -275,3 +275,19 @@ VALUES ('20261023125306_VersaoInscricaoPagamento', '10.0.13');
 
 COMMIT;
 
+START TRANSACTION;
+ALTER TABLE usuario ADD cnpj character varying(14);
+
+ALTER TABLE usuario ADD cnpj_verificado_em timestamp with time zone;
+
+ALTER TABLE usuario ADD razao_social character varying(200);
+
+CREATE UNIQUE INDEX ux_usuario_cnpj ON usuario (cnpj) WHERE cnpj IS NOT NULL;
+
+ALTER TABLE usuario ADD CONSTRAINT ck_usuario_cnpj_formato CHECK (cnpj IS NULL OR cnpj ~ '^[A-Z0-9]{12}[0-9]{2}$');
+
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20261028224208_CnpjUsuario', '10.0.13');
+
+COMMIT;
+

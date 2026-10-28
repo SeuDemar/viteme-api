@@ -1,4 +1,4 @@
-# Regras de negócio (RN01–RN23)
+# Regras de negócio (RN01–RN24)
 
 Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste em [../testes.md](../testes.md) (matriz de rastreabilidade).
 
@@ -27,6 +27,7 @@ Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste
 | RN21 | Certificado | O certificado é emitido para inscrição CONFIRMADA com presença registrada, depois que o evento estiver ENCERRADO e se tiver carga horária informada. Cada certificado tem um código de validação público |
 | RN22 | Evento | Um evento PUBLICADO passa automaticamente a ENCERRADO após a data de término |
 | RN23 | Webhook | O webhook só é processado com assinatura válida e de forma idempotente (a mesma transação e o mesmo status não são processados duas vezes). Pagamento aprovado para inscrição já expirada ou cancelada gera estorno automático |
+| RN24 | Organizador | Só cria e publica eventos (gratuitos ou pagos) quem tem CNPJ verificado no perfil: dígitos verificadores válidos, situação ATIVA na Receita Federal e não vinculado a outra conta. Participar e colaborar não exigem CNPJ |
 
 ## Notas de implementação
 
@@ -35,5 +36,6 @@ Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste
 - **RN11/RN12:** a chamada ao gateway ocorre **fora** da transação, com o id do pagamento como referência externa e chave de idempotência.
 - **RN16:** a falha de SMS nunca propaga erro para a operação de origem; o reenvio é feito pela tarefa de 1 minuto.
 - **RN19:** contar denúncias *após* `reaberto_em` para decidir entre ocultar e cancelar; guardar a contagem de forma coerente com a republicação.
+- **RN24:** a consulta à Receita (BrasilAPI) acontece só ao cadastrar o CNPJ (E40), não a cada evento; reenviar o mesmo CNPJ já verificado não consulta de novo. A publicação também confere o CNPJ, para cobrir rascunhos criados antes da regra.
 - **RN23:** idempotência por (`id_transacao_gateway`, status); aprovação tardia → estorno automático e inscrição permanece não confirmada.
 - **Papéis (RN04):** nunca vão no JWT; o papel é consultado no banco a cada requisição protegida por política.

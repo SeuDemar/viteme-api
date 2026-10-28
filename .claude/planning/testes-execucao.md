@@ -16,6 +16,7 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | 2026-10-23 | etapa 5 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 270 | 270 | 0 | +41 testes (E32–E39, canal SMS, lembretes, PDF). Falhas durante o desenvolvimento: **bug #3** (500 ao gerar o PDF: `CultureInfo.GetCultureInfo("pt-BR")` falha em ambiente com globalização invariante; corrigido com formato explícito) e defeitos dos próprios testes (banco compartilhado entre testes da classe, relógio fixo nas denúncias, 404 esperado para quem não vê o evento oculto). PDF aberto e conferido com `pdftotext`/`pdftoppm`. Sem `VITEME_TESTES_DB`: 71 passam e 199 são ignorados. Evidência: [docs/evidencias/etapa-5-dotnet-test.txt](../../docs/evidencias/etapa-5-dotnet-test.txt) |
 | 2026-10-23 | etapa 6 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 281 | 281 | 0 | +11 testes: matriz de acesso (papel × endpoint), renovação concorrente, expiração do JWT, limite de códigos por telefone, CORS e cabeçalhos de segurança. Ao tornar o JWT dependente do `IRelogio`, 34 testes antigos que avançavam o relógio passaram a receber 401 (comportamento correto); o ambiente de teste agora usa token de longa duração, exceto nos testes de expiração. Cobertura de Services: **93,4%** ([cobertura](../../docs/evidencias/cobertura-etapa-6.txt)). Sem `VITEME_TESTES_DB`: 74 passam e 207 são ignorados. Evidência: [docs/evidencias/etapa-6-dotnet-test.txt](../../docs/evidencias/etapa-6-dotnet-test.txt) |
 | 2026-10-25 | D47 a D49 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 291 | 291 | 0 | Testes do cookie `SameSite=None` e da proteção CSRF de E03/E04 (D47); +2 testes de `inscricoesAbertas` em E10 e de `capacidade`/`inscritos` em E16, incluindo reserva vencida (D48); +2 do limite por IP com 1 e 2 saltos de proxy (D49; sem a configuração o caso de 2 saltos falha) |
+| 2026-10-28 | D50 (RN24) | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 320 | 320 | 0 | +29 testes: CNPJ numérico e alfanumérico (dígitos verificadores), leitura da resposta da BrasilAPI com `HttpMessageHandler` falso e E40/E12/E14 em PostgreSQL real (CT64–CT70). Os testes que criam evento passam a cadastrar o CNPJ do organizador antes (`AmbienteApi.HabilitarOrganizadorAsync`). Script incremental `docs/banco/migracoes/20261028224208_CnpjUsuario.sql` aplicado duas vezes sobre o esquema anterior, sem erro |
 
 ## Casos de teste
 
@@ -78,7 +79,14 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | CT55 | Republicado e denunciado de novo: cancelamento automático com estorno | Integração | Passou | 2026-10-23 | idem | |
 | CT56 | Certificado em PDF com o mesmo código a cada download; validação pública | Unit/Integração | Corrigido | 2026-10-23 | idem | #3 (500 por cultura pt-BR ausente) |
 | CT57 | Certificado indisponível (sem presença, evento não encerrado ou sem carga horária: 422) | Integração | Passou | 2026-10-23 | idem | |
-| CT58–CT63 | Frontend | Componente | Pendente | | | |
+| CT58–CT63 | Frontend | Componente | Ver `viteme-web` | | | |
+| CT64 | CNPJ ativo com máscara (salvo sem máscara, libera organizar) | Integração | Passou | 2026-10-28 | `CnpjTests` | |
+| CT65 | CNPJ com dígito errado (400, sem consultar) | Integração | Passou | 2026-10-28 | idem | |
+| CT66 | CNPJ de outra conta (409) | Integração | Passou | 2026-10-28 | idem | |
+| CT67 | CNPJ desconhecido ou inativo (422) | Integração | Passou | 2026-10-28 | idem | |
+| CT68 | Consulta indisponível (502) | Integração | Passou | 2026-10-28 | idem | |
+| CT69 | Criar evento sem CNPJ (403) | Integração | Passou | 2026-10-28 | idem | |
+| CT70 | Publicar rascunho de organizador sem CNPJ (403) | Integração | Passou | 2026-10-28 | idem | |
 
 > Quando um caso for executado, abrir uma linha por CT (CT01, CT02…) em vez da faixa.
 

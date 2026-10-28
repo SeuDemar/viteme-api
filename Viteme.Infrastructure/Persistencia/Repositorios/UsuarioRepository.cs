@@ -28,5 +28,8 @@ public class UsuarioRepository(VitemeDbContext contexto) : IUsuarioRepository
         return contexto.Usuarios.AnyAsync(u => u.Email.ToLower() == normalizado, cancellationToken);
     }
 
+    public Task<bool> CnpjEmUsoPorOutroAsync(string cnpj, Guid usuarioId, CancellationToken cancellationToken = default) =>
+        contexto.Usuarios.AnyAsync(u => u.Cnpj == cnpj && u.Id != usuarioId, cancellationToken);
+
     public void Adicionar(Usuario usuario) => contexto.Usuarios.Add(usuario);
 }

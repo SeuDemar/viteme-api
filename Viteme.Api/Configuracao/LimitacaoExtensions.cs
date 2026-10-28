@@ -8,7 +8,7 @@ namespace Viteme.Api.Configuracao;
 /// <summary>
 /// Rate limiting do ASP.NET Core. Seção <c>RateLimiting</c>: <c>Habilitar</c> (padrão true),
 /// <c>LoginPorMinuto</c> (5), <c>CadastroPorMinuto</c> (10), <c>CodigoSmsPorMinuto</c> (5),
-/// <c>DenunciasPorMinuto</c> (5), <c>ValidacaoCertificadoPorMinuto</c> (30).
+/// <c>DenunciasPorMinuto</c> (5), <c>ValidacaoCertificadoPorMinuto</c> (30), <c>ConsultaCnpjPorMinuto</c> (5).
 /// </summary>
 public static class LimitacaoExtensions
 {
@@ -17,6 +17,7 @@ public static class LimitacaoExtensions
     public const string CodigoSms = "codigo-sms";
     public const string Denuncias = "denuncias";
     public const string ValidacaoCertificado = "validacao-certificado";
+    public const string ConsultaCnpj = "consulta-cnpj";
 
     public static IServiceCollection AddLimitacaoDeRequisicoes(this IServiceCollection servicos)
     {
@@ -33,6 +34,9 @@ public static class LimitacaoExtensions
             opcoes.AddPolicy(CodigoSms, c => Janela(c, CodigoSms, "CodigoSmsPorMinuto", 5, PorUsuario(c)));
             opcoes.AddPolicy(Denuncias, c => Janela(c, Denuncias, "DenunciasPorMinuto", 5, PorUsuario(c)));
             opcoes.AddPolicy(ValidacaoCertificado, c => Janela(c, ValidacaoCertificado, "ValidacaoCertificadoPorMinuto", 30, PorIp(c)));
+
+            // A consulta de CNPJ chama a BrasilAPI: o limite protege o serviço gratuito de abuso.
+            opcoes.AddPolicy(ConsultaCnpj, c => Janela(c, ConsultaCnpj, "ConsultaCnpjPorMinuto", 5, PorUsuario(c)));
         });
 
         return servicos;

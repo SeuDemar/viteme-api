@@ -102,6 +102,11 @@ Premissas: .NET 10 (LTS), `Viteme.sln` na raiz, PostgreSQL (Supabase), gateway e
 - Documentação final em `docs/` e README completo (descrição, como executar, tecnologias, estrutura, ambiente, endpoints, banco, autenticação, guia de uso).
 - Conferir [entrega-3.md](entrega-3.md) item a item.
 
+## Etapa 9 — Organizador PJ e pagamentos reais (pedido da equipe, 2026-10-28)
+
+- **9a. CNPJ do organizador** ✅ concluída: E40, RN24, D50, migration `CnpjUsuario`, CT64–CT70. Frontend: seção no Perfil e bloqueio de "Criar evento" sem CNPJ.
+- **9b. Adaptador Asaas (sandbox)**, **9c. subconta do organizador**, **9d. Conta Escrow e liberação**: plano em [pagamentos-asaas.md](pagamentos-asaas.md), começando pela Fase 0 (prova no sandbox, sem código de produção).
+
 ## Convenções de trabalho por etapa
 
 - Uma etapa = uma sequência de commits pequenos na branch `claude/wizardly-knuth-9ob62s`; sem PR até pedido explícito.

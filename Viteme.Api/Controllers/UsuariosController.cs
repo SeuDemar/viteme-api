@@ -60,4 +60,21 @@ public class UsuariosController(UsuarioService usuarios) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     public async Task<IActionResult> DefinirPreferenciasSms([FromBody] PreferenciasSmsRequest requisicao, CancellationToken cancellationToken) =>
         Ok(await usuarios.DefinirPreferenciasSmsAsync(User.ObterUsuarioId(), requisicao, cancellationToken));
+
+    /// <summary>Cadastra o CNPJ do organizador (E40), conferindo na Receita se está ativo. Necessário para criar eventos (RN24).</summary>
+    /// <response code="400">CNPJ ausente ou com dígitos verificadores inválidos.</response>
+    /// <response code="409"><c>CNPJ_JA_CADASTRADO</c>: o CNPJ pertence a outra conta.</response>
+    /// <response code="422"><c>CNPJ_NAO_ENCONTRADO</c> ou <c>CNPJ_INATIVO</c>.</response>
+    /// <response code="429">Limite de consultas excedido.</response>
+    /// <response code="502"><c>CONSULTA_CNPJ_INDISPONIVEL</c>.</response>
+    [HttpPut("cnpj")]
+    [EnableRateLimiting(LimitacaoExtensions.ConsultaCnpj)]
+    [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status502BadGateway, "application/problem+json")]
+    public async Task<IActionResult> DefinirCnpj([FromBody] DefinirCnpjRequest requisicao, CancellationToken cancellationToken) =>
+        Ok(await usuarios.DefinirCnpjAsync(User.ObterUsuarioId(), requisicao, cancellationToken));
 }

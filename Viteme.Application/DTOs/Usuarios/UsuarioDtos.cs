@@ -3,9 +3,10 @@ using Viteme.Application.Validacoes;
 
 namespace Viteme.Application.DTOs.Usuarios;
 
-/// <summary>E05 — perfil do usuário autenticado.</summary>
+/// <summary>E05 — perfil do usuário autenticado. <c>PodeOrganizar</c> diz se o CNPJ já foi verificado (RN24).</summary>
 public sealed record PerfilResponse(
-    Guid Id, string Nome, string Email, string? Telefone, bool TelefoneVerificado, bool AceitaSms, DateTime? AceiteSmsEm);
+    Guid Id, string Nome, string Email, string? Telefone, bool TelefoneVerificado, bool AceitaSms, DateTime? AceiteSmsEm,
+    string? Cnpj, string? RazaoSocial, DateTime? CnpjVerificadoEm, bool PodeOrganizar);
 
 /// <summary>E06 — atualização de nome e telefone. Trocar o telefone zera a verificação e o aceite de SMS.</summary>
 public sealed record AtualizarPerfilRequest
@@ -40,3 +41,12 @@ public sealed record PreferenciasSmsRequest
 }
 
 public sealed record PreferenciasSmsResponse(bool AceitaSms, DateTime? AceiteSmsEm);
+
+/// <summary>E40 — CNPJ do organizador, com ou sem máscara (RN24).</summary>
+public sealed record DefinirCnpjRequest
+{
+    /// <example>11.222.333/0001-81</example>
+    [Required(ErrorMessage = "Informe o CNPJ.")]
+    [Cnpj]
+    public string Cnpj { get; init; } = string.Empty;
+}
