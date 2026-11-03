@@ -13,7 +13,7 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P7 | Testes de integração: resolvido com PostgreSQL via `VITEME_TESTES_DB` (serviço no CI, ver D11). Testcontainers fica opcional | Dev | Etapa 0 (CI) | Resolvida |
 | P8 | ~~`SameSite=Strict` exige frontend e API no mesmo site~~ — cookie passou a `SameSite=None` com proteção CSRF (D47); origem configurável por `Cors:OrigemFrontend` | Dev | — | Resolvida |
 | P9 | SDK .NET no ambiente de desenvolvimento: .NET 9 indisponível (não está no apt; site da Microsoft bloqueado pela rede). Decidido usar .NET 10 LTS, instalado via apt (`dotnet-sdk-10.0`) | Dev | Etapa 0 | Resolvida |
-| P10 | Frontend é exigido pela Entrega 3 (antes adiado). Definir prazo, responsável e stack | Equipe | Antes da etapa 7 | Aberta |
+| P10 | Frontend é exigido pela Entrega 3 (antes adiado). Definir prazo, responsável e stack | Equipe | Antes da etapa 7 | **Resolvida: frontend no `viteme-web`** |
 | P11 | Hospedagem/demonstração: onde publicar API, frontend (HTTPS; mesmo site não é mais exigido, D47, mas é o mais seguro contra bloqueio de cookies entre sites) e banco, e acesso da banca ao Supabase | Equipe | Antes da etapa 7 | Aberta |
 | P12 | Autoria no Git: commits atuais saem como "Claude"; cada integrante precisa commitar com identidade própria (branches + PRs) | Equipe | Desde já | Aberta |
 | P13 | Swagger UI obrigatório | Dev | Etapa 1 | Resolvida (`/swagger`) |
@@ -41,11 +41,11 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P35 | Aprovação por webhook chegando com a reserva já vencida é estornada automaticamente (RN23), mesmo se ainda houver vaga. Regra da spec; pode frustrar o participante que pagou no limite | Equipe | — | Aceita |
 | P36 | O PDF usa só as fontes padrão (Helvetica, WinAnsi): nomes com caracteres fora do Latin-1 (ex.: alfabeto cirílico, emojis) saem como `?` | Equipe | Opcional | Aceita |
 | P37 | O lembrete de início só vai para inscrições CONFIRMADAS e o do fim das inscrições só para interessados sem inscrição; quem tem inscrição pendente de pagamento não é lembrado de pagar | Equipe | Opcional | Aberta |
-| P38 | O link de validação no PDF vem de `Certificados:UrlValidacao` (padrão `https://viteme.app/validar`). Definir o domínio real e criar a tela de validação no frontend (E39 é público) | Equipe | Etapa 7 | Aberta |
+| P38 | O link de validação no PDF vem de `Certificados:UrlValidacao` (padrão `https://viteme.app/validar`). Definir o domínio real e criar a tela de validação no frontend (E39 é público) | Equipe | Etapa 7 | **Resolvida: `/certificados/:codigo` no `viteme-web`** |
 | P39 | O SMS stub não envia de verdade: o fluxo (fila, tentativas, descarte) está pronto e testado; falta escolher o provedor (P4) | Equipe | Etapa 6 | Aberta |
-| P40 | Reuso de refresh token já revogado revoga **todas** as sessões do usuário (regra da spec). Duas abas renovando no mesmo instante podem derrubar a sessão; o frontend deve renovar uma vez e compartilhar o resultado entre abas | Equipe | Etapa 7 | Aberta |
+| P40 | Reuso de refresh token já revogado revoga **todas** as sessões do usuário (regra da spec). Duas abas renovando no mesmo instante podem derrubar a sessão; o frontend deve renovar uma vez e compartilhar o resultado entre abas | Equipe | Etapa 7 | **Resolvida: Web Locks no `viteme-web`** |
 | P41 | `Infrastructure/Tarefas` tem pouca cobertura (27,7%): os workers são desligados nos testes. A lógica executada por eles tem 90%+; o laço de repetição em si é simples | Dev | — | Aceita |
-| P42 | O CSP (Content-Security-Policy) é responsabilidade do frontend/host estático; a API envia `nosniff`, `X-Frame-Options`, `Referrer-Policy` e `Cache-Control: no-store` | Equipe | Etapa 7 | Aberta |
+| P42 | O CSP (Content-Security-Policy) é responsabilidade do frontend/host estático; a API envia `nosniff`, `X-Frame-Options`, `Referrer-Policy` e `Cache-Control: no-store` | Equipe | Etapa 7 | **Resolvida: CSP no `_headers` do Pages** |
 | P43 | Campos da resposta da BrasilAPI (`razao_social`, `situacao_cadastral` = 2 / `descricao_situacao_cadastral` = "ATIVA") vêm da documentação; a sessão de desenvolvimento não alcança a BrasilAPI (rede bloqueada). O adaptador aceita as duas formas da situação. **Conferir com uma consulta real** na hospedagem | Dev | Antes da demonstração | Aberta |
 | P44 | BrasilAPI é gratuita e sem SLA: se cair, ninguém cadastra CNPJ (502). Avaliar uma segunda fonte (ReceitaWS, cnpj.ws) atrás de `IConsultaCnpj` | Equipe | Opcional | Aberta |
 | P45 | Usuários e rascunhos anteriores à RN24 não têm CNPJ: o rascunho existe, mas só é publicado depois do E40. Eventos já publicados seguem no ar | Equipe | Ao aplicar a migration `CnpjUsuario` | Aceita |
