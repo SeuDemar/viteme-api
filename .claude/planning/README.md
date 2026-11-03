@@ -16,11 +16,12 @@ Este repositório contém **a API**. O frontend (`viteme-web`, React) vem depois
 | [arquitetura.md](arquitetura.md) | Camadas, projetos da solution, fluxos, integrações e tarefas em segundo plano |
 | [banco/modelo.md](banco/modelo.md) | Convenções, 14 entidades, enums, relacionamentos, integridade e índices |
 | [api/convencoes-e-erros.md](api/convencoes-e-erros.md) | Convenções da API, ProblemDetails e códigos de erro |
-| [api/regras-de-negocio.md](api/regras-de-negocio.md) | RN01–RN23 |
-| [api/endpoints.md](api/endpoints.md) | Os 39 endpoints (E01–E39) com entrada, saída e erros |
+| [api/regras-de-negocio.md](api/regras-de-negocio.md) | RN01–RN24 |
+| [api/endpoints.md](api/endpoints.md) | Os 40 endpoints (E01–E40) com entrada, saída e erros |
 | [seguranca.md](seguranca.md) | JWT, autorização por papel no evento, SMS/LGPD, riscos e medidas |
-| [testes.md](testes.md) | Estratégia, casos de teste (CT01–CT63), rastreabilidade e critérios de aceite |
+| [testes.md](testes.md) | Estratégia, casos de teste (CT01–CT70), rastreabilidade e critérios de aceite |
 | [roadmap.md](roadmap.md) | Ordem de implementação e definição de pronto por etapa |
+| [pagamentos-asaas.md](pagamentos-asaas.md) | Plano dos pagamentos reais: Asaas sandbox, subconta do organizador, split e Conta Escrow |
 
 ## Resumo em um parágrafo
 
@@ -34,4 +35,6 @@ Viteme centraliza divulgação, inscrição e acompanhamento dos eventos da facu
 - Etapa 2 concluída: autenticação e conta (E01–E09), CT01–CT13 passando; 97 testes.
 - Etapa 3 concluída: eventos, programação e colaboradores (E10–E23); 157 testes passando.
 - Etapa 4 concluída: inscrições, pagamentos (gateway stub), webhook, estornos e check-in (E24–E31); 229 testes passando.
-- Próximo passo: etapa 5 do [roadmap.md](roadmap.md) (interesse, notificações, denúncias e certificados, E32–E39).
+- Etapas 5 e 6 concluídas: interesse, notificações, denúncias e certificados (E32–E39), revisão de segurança e cobertura; 281 testes. Ajustes para o frontend (D47–D49): 291 testes.
+- Etapa 9a concluída (2026-10-28): CNPJ do organizador (E40, RN24, D50, migration `CnpjUsuario`); 320 testes passando.
+- Próximo passo: plano dos pagamentos reais em [pagamentos-asaas.md](pagamentos-asaas.md), começando pela Fase 0 (prova no sandbox).

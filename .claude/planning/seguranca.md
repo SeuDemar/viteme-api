@@ -64,6 +64,12 @@ O SMS só é enviado com **consentimento explícito e telefone confirmado**:
 
 > Enquanto o SMS for **stub**, o fluxo todo existe e é testável; o código só é gravado/logado em vez de enviado. Cuidado para o stub **não logar o código em ambientes de produção**.
 
+## 4.1 CNPJ do organizador (RN24)
+
+- CNPJ é dado público de pessoa jurídica (não é dado pessoal sensível); a razão social vem da própria Receita. Guardamos só CNPJ, razão social e data da verificação.
+- A consulta externa (BrasilAPI) envia apenas o CNPJ. Limite de 5 consultas por minuto por usuário (E40) para não abusar do serviço gratuito.
+- Sem verificação não há liberação: se a consulta cair, a API responde 502 e o usuário tenta de novo.
+
 ## 5. Riscos e medidas
 
 | Risco | Medida |

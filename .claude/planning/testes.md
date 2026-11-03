@@ -26,7 +26,8 @@
 | Alterações, cancelamento e notificações | Alta | 8 | CT39–CT46 |
 | Colaboradores e check-in | Média | 5 | CT47–CT51 |
 | Denúncias e certificados | Média | 6 | CT52–CT57 |
-| Frontend | Média | 6 | CT58–CT63 *(adiados)* |
+| Frontend | Média | 6 | CT58–CT63 *(no `viteme-web`)* |
+| CNPJ do organizador | Alta | 7 | CT64–CT70 |
 
 ## 3. Casos de teste (backend)
 
@@ -105,6 +106,15 @@ Formato: `ID — cenário → resultado esperado` · RN · endpoint.
 - **CT56** Evento encerrado com carga horária e check-in feito → 200 PDF; código de validação gerado · RN21 · E38, E39
 - **CT57** Certificado sem presença (inscrição confirmada, sem check-in) → 422 `CERTIFICADO_INDISPONIVEL` · RN21 · E38
 
+### 3.9 CNPJ do organizador (acrescentado em 2026-10-28, D50)
+- **CT64** CNPJ ativo com máscara → 200; salvo sem máscara, razão social da Receita, `podeOrganizar: true` · RN24 · E40, E05
+- **CT65** Dígito verificador errado → 400 com erro em `cnpj`, sem consultar a Receita · RN24 · E40
+- **CT66** CNPJ de outra conta → 409 `CNPJ_JA_CADASTRADO` · RN24 · E40
+- **CT67** CNPJ desconhecido → 422 `CNPJ_NAO_ENCONTRADO`; baixado → 422 `CNPJ_INATIVO`; perfil continua sem permissão · RN24 · E40
+- **CT68** Consulta fora do ar → 502 `CONSULTA_CNPJ_INDISPONIVEL` · RN24 · E40
+- **CT69** Criar evento sem CNPJ → 403 `CNPJ_NAO_VERIFICADO` · RN24 · E12
+- **CT70** Publicar rascunho de organizador sem CNPJ → 403 `CNPJ_NAO_VERIFICADO` · RN24 · E14
+
 > CT58–CT63 (frontend): validação de formulário, rota protegida, renovação automática de token, erros por campo, selo "Alterado" (72 h) e restauração de sessão — **adiados** com o frontend.
 
 ## 4. Rastreabilidade (regra → endpoints → testes)
@@ -134,6 +144,7 @@ Formato: `ID — cenário → resultado esperado` · RN · endpoint.
 | RN21 | E25, E38, E39 | CT56, CT57 |
 | RN22 | tarefa em segundo plano | CT22 |
 | RN23 | E31 | CT33, CT34, CT36 |
+| RN24 | E12, E14, E40 | CT64, CT65, CT66, CT67, CT68, CT69, CT70 |
 
 ## 5. Critérios de aceite
 

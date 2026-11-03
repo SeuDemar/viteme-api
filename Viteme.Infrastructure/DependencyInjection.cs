@@ -66,6 +66,17 @@ public static class DependencyInjection
         servicos.Configure<SmsStubOptions>(configuracao.GetSection(SmsStubOptions.Secao));
         servicos.AddSingleton<IProvedorSms, ProvedorSmsStub>();
 
+        // Consulta de CNPJ do organizador (RN24): BrasilAPI; o stub só para desenvolvimento sem internet.
+        servicos.Configure<ConsultaCnpjOptions>(configuracao.GetSection(ConsultaCnpjOptions.Secao));
+        if (configuracao.GetValue<bool>($"{ConsultaCnpjOptions.Secao}:UsarStub"))
+        {
+            servicos.AddSingleton<IConsultaCnpj, ConsultaCnpjStub>();
+        }
+        else
+        {
+            servicos.AddSingleton<IConsultaCnpj, ConsultaCnpjBrasilApi>();
+        }
+
         servicos.Configure<TarefasOptions>(configuracao.GetSection(TarefasOptions.Secao));
         servicos.AddHostedService<EncerrarEventosWorker>();
         servicos.AddHostedService<ReservasEEstornosWorker>();

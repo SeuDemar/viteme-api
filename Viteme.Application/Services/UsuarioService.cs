@@ -1,17 +1,20 @@
 using Viteme.Application.DTOs.Usuarios;
+using Viteme.Application.Excecoes;
 using Viteme.Application.Interfaces;
+using Viteme.Application.Validacoes;
 using Viteme.Domain.Entities;
 using Viteme.Domain.Excecoes;
 
 namespace Viteme.Application.Services;
 
-/// <summary>Perfil, verificação de telefone e consentimento de SMS (E05–E09). Regra RN18.</summary>
+/// <summary>Perfil, verificação de telefone, consentimento de SMS e CNPJ do organizador (E05–E09, E40). Regras RN18 e RN24.</summary>
 public class UsuarioService(
     IUsuarioRepository usuarios,
     ICodigoVerificacaoRepository codigos,
     IHashSeguro hashSeguro,
     IGeradorAleatorio aleatorio,
     IProvedorSms provedorSms,
+    IConsultaCnpj consultaCnpj,
     IUnitOfWork unitOfWork,
     IRelogio relogio)
 {
@@ -149,13 +152,73 @@ public class UsuarioService(
         return new PreferenciasSmsResponse(usuario.AceitaSms, usuario.AceiteSmsEm);
     }
 
+    /// <summary>
+    /// E40 (RN24): confere os dígitos verificadores, que o CNPJ não é de outra conta e que está ATIVO na Receita.
+    /// Só então libera o usuário para organizar eventos.
+    /// </summary>
+    public async Task<PerfilResponse> DefinirCnpjAsync(Guid usuarioId, DefinirCnpjRequest requisicao, CancellationToken cancellationToken = default)
+    {
+        var usuario = await ObterAsync(usuarioId, cancellationToken);
+        var cnpj = CnpjAttribute.Normalizar(requisicao.Cnpj);
+
+        if (usuario.Cnpj == cnpj && usuario.PodeOrganizar)
+        {
+            return Mapear(usuario);
+        }
+
+        if (await usuarios.CnpjEmUsoPorOutroAsync(cnpj, usuario.Id, cancellationToken))
+        {
+            throw CnpjJaCadastrado();
+        }
+
+        DadosCnpj? dados;
+        try
+        {
+            dados = await consultaCnpj.ConsultarAsync(cnpj, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            throw new RegraDeNegocioException("CONSULTA_CNPJ_INDISPONIVEL", "Consulta de CNPJ indisponível",
+                "Não foi possível consultar o CNPJ na Receita agora. Tente novamente em instantes.", 502);
+        }
+
+        if (dados is null)
+        {
+            throw new RegraDeNegocioException("CNPJ_NAO_ENCONTRADO", "CNPJ não encontrado",
+                "A Receita Federal não tem registro deste CNPJ. Confira o número informado.");
+        }
+
+        if (!dados.Ativo)
+        {
+            throw new RegraDeNegocioException("CNPJ_INATIVO", "CNPJ inativo",
+                $"O CNPJ está com situação cadastral {dados.Situacao} na Receita. Só CNPJ ativo pode organizar eventos.");
+        }
+
+        usuario.DefinirCnpj(cnpj, dados.RazaoSocial, relogio.UtcAgora);
+        try
+        {
+            await unitOfWork.SalvarAsync(cancellationToken);
+        }
+        catch (ViolacaoDeUnicidadeException)
+        {
+            // Outra conta gravou o mesmo CNPJ entre a checagem e o salvamento.
+            throw CnpjJaCadastrado();
+        }
+
+        return Mapear(usuario);
+    }
+
     private async Task<Usuario> ObterAsync(Guid usuarioId, CancellationToken cancellationToken) =>
         await usuarios.ObterPorIdAsync(usuarioId, cancellationToken)
         ?? throw new RegraDeNegocioException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado",
             "O usuário autenticado não existe mais.", 401);
 
     private static PerfilResponse Mapear(Usuario u) =>
-        new(u.Id, u.Nome, u.Email, u.Telefone, u.TelefoneVerificado, u.AceitaSms, u.AceiteSmsEm);
+        new(u.Id, u.Nome, u.Email, u.Telefone, u.TelefoneVerificado, u.AceitaSms, u.AceiteSmsEm,
+            u.Cnpj, u.RazaoSocial, u.CnpjVerificadoEm, u.PodeOrganizar);
+
+    private static RegraDeNegocioException CnpjJaCadastrado() =>
+        new("CNPJ_JA_CADASTRADO", "CNPJ já cadastrado", "Este CNPJ já está vinculado a outra conta.", 409);
 
     private static RegraDeNegocioException CodigoInvalido() =>
         new("CODIGO_INVALIDO", "Código inválido", "O código informado está incorreto.");

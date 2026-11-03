@@ -1,6 +1,6 @@
 # Pendências da API
 
-Situação em **2026-10-23**, após a etapa 6 (281 testes passando, cobertura de `Application/Services` em 93,4%).
+Situação em **2026-10-28**, após a etapa 9a, CNPJ do organizador (320 testes passando). Cobertura de `Application/Services` medida na etapa 6: 93,4%.
 Este documento lista só o que **ainda falta ou foi aceito como risco**. O histórico completo (inclusive o que já foi resolvido) está em [`.claude/planning/pendencias.md`](../.claude/planning/pendencias.md); as decisões, em [`.claude/planning/decisoes.md`](../.claude/planning/decisoes.md).
 
 Os códigos (P1, P2…) são os mesmos nos dois arquivos.
@@ -20,7 +20,10 @@ Os códigos (P1, P2…) são os mesmos nos dois arquivos.
 
 | Prioridade | Cód. | Pendência | Quem decide | Quando |
 |---|---|---|---|---|
-| 🟡 | P1 | O Asaas exige **CPF/CNPJ do pagador**? O usuário não tem CPF. Se exigir: novo campo, validação e cuidados de LGPD | Equipe | Antes do adaptador Asaas |
+| 🟡 | P46 | **Pagamentos reais** no sandbox do Asaas: subconta do organizador, split de 100% e Conta Escrow (valor retido até o evento encerrar + 2 dias). Plano em fases em [`pagamentos-asaas.md`](../.claude/planning/pagamentos-asaas.md) | Equipe | Após a Entrega 3 |
+| 🟡 | P1 | O Asaas exige **CPF do pagador**? O usuário não tem CPF (o CNPJ do organizador já existe, D50). Se exigir: pedir no momento do pagamento, com validação e cuidados de LGPD | Equipe | Fase 0 do plano Asaas |
+| 🟡 | P43 | Conferir com uma consulta real os campos da **BrasilAPI** (`razao_social`, situação ATIVA): a sessão de desenvolvimento não alcança o serviço. O adaptador aceita a situação como código ou texto | Dev | Antes da demonstração |
+| 🟢 | P44 | Segunda fonte de consulta de CNPJ (ReceitaWS, cnpj.ws) para quando a BrasilAPI cair | Equipe | Opcional |
 | 🟡 | P2 | O webhook do Asaas autentica por **token em cabeçalho**, não necessariamente HMAC. Confirmar na documentação (a interface `ValidarAssinaturaWebhook` já abstrai) | Dev | Antes do adaptador Asaas |
 | 🟡 | P29 | **Reconciliação com o gateway:** a situação do pagamento só muda por webhook. Se um aviso se perder, o participante paga e a reserva expira. Usar `ConsultarCobrancaAsync` para conferir cobranças pendentes perto do vencimento | Dev | Antes do adaptador Asaas |
 | 🟡 | P30 | O estorno é pedido ao gateway antes de gravar `ESTORNADO`. Se o banco falhar depois, o próximo ciclo pede de novo: o adaptador real deve enviar **chave de idempotência** (ex.: id do pagamento) | Dev | Adaptador Asaas |
@@ -65,6 +68,7 @@ Os códigos (P1, P2…) são os mesmos nos dois arquivos.
 | P35 | Pagamento aprovado com a reserva já vencida é estornado (RN23), mesmo havendo vaga | Regra da spec |
 | P36 | O PDF só tem caracteres Latin-1 (alfabeto cirílico, emojis saem como `?`) | Público é de língua portuguesa |
 | P41 | `Infrastructure/Tarefas` com 27,7% de cobertura (workers desligados nos testes) | A lógica que eles chamam tem 90%+ |
+| P45 | Rascunhos de usuários sem CNPJ (anteriores à RN24) só são publicados depois do E40; eventos já publicados seguem no ar | Regra nova não retroage sobre o que já está no mural |
 
 ## 7. Resolvidas na etapa 6 (referência)
 

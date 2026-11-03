@@ -6,7 +6,7 @@ Guia para a demonstração e para uma publicação simples (uma instância). A A
 
 1. Crie o projeto no Supabase e copie a conexão **direta** ou do **session pooler (porta 5432)**. Não use o pooler em modo *transaction* (6543): a API usa `SELECT ... FOR UPDATE` dentro de transações.
 2. Aplique o esquema: `docs/banco/schema.sql` no SQL Editor **ou** `dotnet ef database update --project Viteme.Infrastructure --startup-project Viteme.Api`.
-3. A API não aplica migrations sozinha.
+3. A API não aplica migrations sozinha. **Banco já criado?** Rode só as migrations novas, que estão em `docs/banco/migracoes/` (scripts idempotentes: podem rodar mais de uma vez). Ex.: `20261028224208_CnpjUsuario.sql` (CNPJ do organizador, RN24).
 
 ## 2. Variáveis de ambiente
 
@@ -21,6 +21,7 @@ Guia para a demonstração e para uma publicação simples (uma instância). A A
 | `Certificados__UrlValidacao` | Endereço da página de validação, impresso no PDF |
 | `Swagger__Habilitar` | `true` só se quiser a documentação interativa no ar |
 | `Gateway__Stub__HabilitarSimulador` | `true` **só na demonstração**; `false` em produção |
+| `Cnpj__UsarStub` | `false` (padrão). A API consulta o CNPJ do organizador na BrasilAPI (`brasilapi.com.br`), então precisa de saída HTTPS para lá |
 
 Segredos nunca vão para o repositório. Para a demonstração com o gateway e o SMS simulados, deixe `Sms__LogarConteudo=true` apenas se precisar ler o código de verificação no log.
 

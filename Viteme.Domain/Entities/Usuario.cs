@@ -42,6 +42,13 @@ public class Usuario
 
     public DateTime? BloqueadoAte { get; private set; }
 
+    /// <summary>CNPJ só com dígitos/letras maiúsculas (14 caracteres). Obrigatório para organizar eventos (RN24).</summary>
+    public string? Cnpj { get; private set; }
+
+    public string? RazaoSocial { get; private set; }
+
+    public DateTime? CnpjVerificadoEm { get; private set; }
+
     public DateTime CriadoEm { get; private set; }
 
     public DateTime AtualizadoEm { get; private set; }
@@ -112,4 +119,24 @@ public class Usuario
 
     /// <summary>RN16: SMS só é enviado com telefone verificado e aceite ativo.</summary>
     public bool PodeReceberSms => AceitaSms && TelefoneVerificado && Telefone is not null;
+
+    /// <summary>RN24: só quem tem CNPJ verificado cria e publica eventos.</summary>
+    public bool PodeOrganizar => Cnpj is not null && CnpjVerificadoEm is not null;
+
+    /// <summary>RN24: registra o CNPJ já validado (dígitos verificadores e situação ATIVA na Receita).</summary>
+    public void DefinirCnpj(string cnpj, string razaoSocial, DateTime agora)
+    {
+        Cnpj = cnpj;
+        RazaoSocial = razaoSocial;
+        CnpjVerificadoEm = agora;
+    }
+
+    public void GarantirPodeOrganizar()
+    {
+        if (!PodeOrganizar)
+        {
+            throw new RegraDeNegocioException("CNPJ_NAO_VERIFICADO", "CNPJ não verificado",
+                "Cadastre um CNPJ ativo no seu perfil para criar e publicar eventos.", 403);
+        }
+    }
 }

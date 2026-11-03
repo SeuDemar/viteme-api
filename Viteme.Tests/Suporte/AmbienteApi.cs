@@ -24,11 +24,12 @@ public sealed class AmbienteApi : IDisposable
     public const string Senha = "Senha123";
 
     private readonly WebApplicationFactory<Program> _fabrica;
+    private readonly HashSet<Guid> _organizadores = [];
 
     public AmbienteApi(BancoFixture banco, ApiFactory api, bool limitacao = false, bool tokenRealista = false)
     {
         Banco = banco;
-        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, Gateway, limitacao, tokenRealista);
+        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, Gateway, Cnpj, limitacao, tokenRealista);
         Cliente = _fabrica.CreateClient(new WebApplicationFactoryClientOptions
         {
             HandleCookies = false,
@@ -43,6 +44,8 @@ public sealed class AmbienteApi : IDisposable
     public SmsEmMemoria Sms { get; } = new();
 
     public GatewayEmMemoria Gateway { get; } = new();
+
+    public CnpjEmMemoria Cnpj { get; } = new();
 
     public HttpClient Cliente { get; }
 
@@ -128,6 +131,23 @@ public sealed class AmbienteApi : IDisposable
         return sessao;
     }
 
+    /// <summary>Cadastra um CNPJ novo (ativo) para o usuário, o que o libera para organizar eventos (RN24).</summary>
+    public async Task<string> HabilitarOrganizadorAsync(Sessao sessao)
+    {
+        var cnpj = Dados.NovoCnpj();
+        (await PutAsync("/api/v1/usuarios/me/cnpj", new { cnpj }, sessao.Token)).EnsureSuccessStatusCode();
+        _organizadores.Add(sessao.UsuarioId);
+        return cnpj;
+    }
+
+    /// <summary>Cadastra e autentica um usuário já com CNPJ verificado.</summary>
+    public async Task<Sessao> NovaSessaoOrganizadorAsync()
+    {
+        var sessao = await NovaSessaoAsync();
+        await HabilitarOrganizadorAsync(sessao);
+        return sessao;
+    }
+
     /// <summary>Executa algo com os serviços da aplicação, em um escopo próprio (ex.: tarefas periódicas).</summary>
     public async Task<T> ExecutarAsync<T>(Func<IServiceProvider, Task<T>> acao)
     {
@@ -184,9 +204,14 @@ public sealed class AmbienteApi : IDisposable
         return corpo;
     }
 
-    /// <summary>Cria um evento (rascunho) e, se pedido, publica. Retorna o id.</summary>
+    /// <summary>Cria um evento (rascunho) e, se pedido, publica. Retorna o id. Cadastra o CNPJ do organizador se faltar.</summary>
     public async Task<Guid> CriarEventoAsync(Sessao organizador, object? corpo = null, bool publicar = false)
     {
+        if (!_organizadores.Contains(organizador.UsuarioId))
+        {
+            await HabilitarOrganizadorAsync(organizador);
+        }
+
         var resposta = await PostAsync("/api/v1/eventos", corpo ?? CorpoEvento(), organizador.Token);
         resposta.EnsureSuccessStatusCode();
         var id = (await CorpoAsync(resposta)).GetProperty("id").GetGuid();

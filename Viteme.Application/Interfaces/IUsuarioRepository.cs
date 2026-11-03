@@ -14,5 +14,8 @@ public interface IUsuarioRepository
 
     Task<bool> EmailExisteAsync(string email, CancellationToken cancellationToken = default);
 
+    /// <summary>Se outro usuário já cadastrou este CNPJ.</summary>
+    Task<bool> CnpjEmUsoPorOutroAsync(string cnpj, Guid usuarioId, CancellationToken cancellationToken = default);
+
     void Adicionar(Usuario usuario);
 }

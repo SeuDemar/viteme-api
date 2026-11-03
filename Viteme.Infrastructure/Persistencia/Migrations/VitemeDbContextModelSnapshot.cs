@@ -737,6 +737,15 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("bloqueado_ate");
 
+                    b.Property<string>("Cnpj")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("cnpj");
+
+                    b.Property<DateTime?>("CnpjVerificadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cnpj_verificado_em");
+
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");
@@ -752,6 +761,11 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("nome");
+
+                    b.Property<string>("RazaoSocial")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("razao_social");
 
                     b.Property<string>("SenhaHash")
                         .IsRequired()
@@ -779,8 +793,15 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_usuario");
 
+                    b.HasIndex("Cnpj")
+                        .IsUnique()
+                        .HasDatabaseName("ux_usuario_cnpj")
+                        .HasFilter("cnpj IS NOT NULL");
+
                     b.ToTable("usuario", null, t =>
                         {
+                            t.HasCheckConstraint("ck_usuario_cnpj_formato", "cnpj IS NULL OR cnpj ~ '^[A-Z0-9]{12}[0-9]{2}$'");
+
                             t.HasCheckConstraint("ck_usuario_sms_exige_telefone_verificado", "NOT aceita_sms OR telefone_verificado");
 
                             t.HasCheckConstraint("ck_usuario_telefone_e164", "telefone IS NULL OR telefone ~ '^\\+[1-9][0-9]{7,14}$'");

@@ -4,7 +4,7 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 
 | # | Pendência | Quem decide | Resolver até | Status |
 |---|---|---|---|---|
-| P1 | Asaas exige CPF/CNPJ do pagador? `usuario` não tem CPF. Se exigir: novo campo, validação e implicações de LGPD | Equipe | Antes do adaptador Asaas real (pós-etapa 4) | Aberta |
+| P1 | Asaas exige CPF/CNPJ do pagador? `usuario` não tem CPF. Se exigir: novo campo, validação e implicações de LGPD. O CNPJ do **organizador** já existe (D50); falta o documento do **pagador** (Q4 de [pagamentos-asaas.md](pagamentos-asaas.md)) | Equipe | Fase 0 do plano Asaas | Aberta |
 | P2 | Webhook do Asaas autentica por token em cabeçalho, não necessariamente HMAC. Confirmar na documentação; `ValidarAssinaturaWebhook` já abstrai | Dev | Antes do adaptador Asaas real | Aberta |
 | P3 | ~~Biblioteca de PDF do certificado~~ — escritor próprio (D34), sem dependência | Equipe | Etapa 5 | **Resolvida** |
 | P4 | Provedor de SMS real (pay-per-use; opções AWS SNS, Zenvia, Comtele, Twilio). Se AWS SNS: sandbox, registro de sender ID no Brasil, orçamento/limite de gasto | Equipe | Etapa 6 (opcional) | Aberta |
@@ -46,3 +46,7 @@ Nenhuma bloqueia o desenvolvimento. Cada uma tem a etapa em que precisa ser reso
 | P40 | Reuso de refresh token já revogado revoga **todas** as sessões do usuário (regra da spec). Duas abas renovando no mesmo instante podem derrubar a sessão; o frontend deve renovar uma vez e compartilhar o resultado entre abas | Equipe | Etapa 7 | Aberta |
 | P41 | `Infrastructure/Tarefas` tem pouca cobertura (27,7%): os workers são desligados nos testes. A lógica executada por eles tem 90%+; o laço de repetição em si é simples | Dev | — | Aceita |
 | P42 | O CSP (Content-Security-Policy) é responsabilidade do frontend/host estático; a API envia `nosniff`, `X-Frame-Options`, `Referrer-Policy` e `Cache-Control: no-store` | Equipe | Etapa 7 | Aberta |
+| P43 | Campos da resposta da BrasilAPI (`razao_social`, `situacao_cadastral` = 2 / `descricao_situacao_cadastral` = "ATIVA") vêm da documentação; a sessão de desenvolvimento não alcança a BrasilAPI (rede bloqueada). O adaptador aceita as duas formas da situação. **Conferir com uma consulta real** na hospedagem | Dev | Antes da demonstração | Aberta |
+| P44 | BrasilAPI é gratuita e sem SLA: se cair, ninguém cadastra CNPJ (502). Avaliar uma segunda fonte (ReceitaWS, cnpj.ws) atrás de `IConsultaCnpj` | Equipe | Opcional | Aberta |
+| P45 | Usuários e rascunhos anteriores à RN24 não têm CNPJ: o rascunho existe, mas só é publicado depois do E40. Eventos já publicados seguem no ar | Equipe | Ao aplicar a migration `CnpjUsuario` | Aceita |
+| P46 | Pagamentos reais (Asaas sandbox, subconta, split, escrow): fases 0, 1b, 2, 3 e 4 de [pagamentos-asaas.md](pagamentos-asaas.md) | Equipe | Após a Entrega 3 | Aberta |
