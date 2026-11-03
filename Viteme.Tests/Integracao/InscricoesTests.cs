@@ -156,7 +156,7 @@ public class InscricoesTests(BancoFixture banco, ApiFactory api) : IClassFixture
     }
 
     [FactBanco]
-    public async Task CT28_organizador_e_colaborador_nao_se_inscrevem_no_proprio_evento()
+    public async Task CT28_organizador_nao_se_inscreve_no_proprio_evento_mas_colaborador_sim()
     {
         using var ambiente = new AmbienteApi(banco, api);
         var organizador = await ambiente.NovaSessaoAsync();
@@ -168,11 +168,9 @@ public class InscricoesTests(BancoFixture banco, ApiFactory api) : IClassFixture
         var doOrganizador = await ambiente.InscreverAsync(organizador, evento);
         var doColaborador = await ambiente.InscreverAsync(colaborador, evento);
 
-        foreach (var resposta in new[] { doOrganizador, doColaborador })
-        {
-            Assert.Equal((HttpStatusCode)422, resposta.StatusCode);
-            Assert.Equal("PAPEL_NAO_PERMITE_INSCRICAO", await CodigoAsync(resposta));
-        }
+        Assert.Equal((HttpStatusCode)422, doOrganizador.StatusCode);
+        Assert.Equal("PAPEL_NAO_PERMITE_INSCRICAO", await CodigoAsync(doOrganizador));
+        Assert.Equal(HttpStatusCode.Created, doColaborador.StatusCode);
     }
 
     [FactBanco]

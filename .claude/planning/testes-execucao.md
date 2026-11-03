@@ -17,6 +17,7 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | 2026-10-23 | etapa 6 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 281 | 281 | 0 | +11 testes: matriz de acesso (papel × endpoint), renovação concorrente, expiração do JWT, limite de códigos por telefone, CORS e cabeçalhos de segurança. Ao tornar o JWT dependente do `IRelogio`, 34 testes antigos que avançavam o relógio passaram a receber 401 (comportamento correto); o ambiente de teste agora usa token de longa duração, exceto nos testes de expiração. Cobertura de Services: **93,4%** ([cobertura](../../docs/evidencias/cobertura-etapa-6.txt)). Sem `VITEME_TESTES_DB`: 74 passam e 207 são ignorados. Evidência: [docs/evidencias/etapa-6-dotnet-test.txt](../../docs/evidencias/etapa-6-dotnet-test.txt) |
 | 2026-10-25 | D47 a D49 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 291 | 291 | 0 | Testes do cookie `SameSite=None` e da proteção CSRF de E03/E04 (D47); +2 testes de `inscricoesAbertas` em E10 e de `capacidade`/`inscritos` em E16, incluindo reserva vencida (D48); +2 do limite por IP com 1 e 2 saltos de proxy (D49; sem a configuração o caso de 2 saltos falha) |
 | 2026-10-28 | D50 (RN24) | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 320 | 320 | 0 | +29 testes: CNPJ numérico e alfanumérico (dígitos verificadores), leitura da resposta da BrasilAPI com `HttpMessageHandler` falso e E40/E12/E14 em PostgreSQL real (CT64–CT70). Os testes que criam evento passam a cadastrar o CNPJ do organizador antes (`AmbienteApi.HabilitarOrganizadorAsync`). Script incremental `docs/banco/migracoes/20261028224208_CnpjUsuario.sql` aplicado duas vezes sobre o esquema anterior, sem erro |
+| 2026-11-03 | D52, D53 | `VITEME_TESTES_DB=... dotnet test Viteme.sln` | 323 | 323 | 0 | +3 testes da data de início (CT71–CT73); CT28 e o teste de colaborador inscrito reescritos para a regra nova (CT74) |
 
 ## Casos de teste
 
@@ -49,7 +50,7 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | CT25 | Evento lotado (422 SEM_VAGAS) | Integração | Passou | 2026-10-23 | idem | |
 | CT26 | Disputa pela última vaga: 8 simultâneas, 1 vence (também em evento pago) | Integração (concorrência) | Passou | 2026-10-23 | idem | validado por mutação: sem o `FOR UPDATE` o teste falha |
 | CT27 | Inscrição fora do período (422 INSCRICOES_ENCERRADAS) | Integração | Passou | 2026-10-23 | idem | |
-| CT28 | Organizador/colaborador se inscreve (422 PAPEL_NAO_PERMITE_INSCRICAO) | Integração | Passou | 2026-10-23 | idem | |
+| CT28 | Organizador se inscreve (422 PAPEL_NAO_PERMITE_INSCRICAO); colaborador consegue (D52) | Integração | Passou | 2026-10-23 | idem | |
 | CT29 | Cancelamento no prazo (200, vaga liberada) | Integração | Passou | 2026-10-23 | idem | |
 | CT30 | Cancelamento a menos de 24 h (422) | Integração | Passou | 2026-10-23 | idem | |
 | CT31 | Inscrição paga (201 PENDENTE_PAGAMENTO, cobrança de R$ 50,00, reserva de 30 min) | Integração | Passou | 2026-10-23 | idem | |
@@ -87,6 +88,10 @@ Evidência: saída de `dotnet test` / link da execução do CI / captura de tela
 | CT68 | Consulta indisponível (502) | Integração | Passou | 2026-10-28 | idem | |
 | CT69 | Criar evento sem CNPJ (403) | Integração | Passou | 2026-10-28 | idem | |
 | CT70 | Publicar rascunho de organizador sem CNPJ (403) | Integração | Passou | 2026-10-28 | idem | |
+| CT71 | Rascunho com início no passado (422) | Integração | Passou | 2026-11-03 | `EventosAlteracaoTests` | |
+| CT72 | Trocar o início do rascunho para o passado (422) | Integração | Passou | 2026-11-03 | idem | |
+| CT73 | Evento iniciado editável sem mudar o início | Integração | Passou | 2026-11-03 | idem | |
+| CT74 | Inscrito pode ser colaborador | Integração | Passou | 2026-11-03 | `ColaboradoresTests` | Regra antiga (422 `USUARIO_JA_INSCRITO`) removida em D52 |
 
 > Quando um caso for executado, abrir uma linha por CT (CT01, CT02…) em vez da faixa.
 

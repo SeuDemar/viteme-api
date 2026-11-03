@@ -22,6 +22,9 @@ public class EventoService(
 {
     private static readonly TimeSpan JanelaAlteracaoRecente = TimeSpan.FromHours(72);
 
+    // O formulário trabalha com minutos: diferenças menores que isso não contam como troca da data de início.
+    private static readonly TimeSpan ToleranciaDataInicio = TimeSpan.FromMinutes(1);
+
     public async Task<PaginaResponse<EventoResumoResponse>> ListarMuralAsync(MuralFiltro filtro, CancellationToken cancellationToken = default)
     {
         var agora = relogio.UtcAgora;
@@ -49,7 +52,7 @@ public class EventoService(
         return await MontarDetalheAsync(eventoId, usuarioId, permissao, cancellationToken);
     }
 
-    /// <summary>E12. RN24: exige CNPJ verificado no perfil.</summary>
+    /// <summary>E12. RN24: exige CNPJ verificado no perfil. RN05: a data de início já precisa ser futura no rascunho.</summary>
     public async Task<EventoDetalheResultado> CriarAsync(Guid usuarioId, EventoRequest requisicao, CancellationToken cancellationToken = default)
     {
         var organizador = await usuarios.ObterPorIdAsync(usuarioId, cancellationToken)
@@ -58,6 +61,8 @@ public class EventoService(
         organizador.GarantirPodeOrganizar();
 
         var dados = Normalizar(requisicao);
+        GarantirInicioFuturo(dados.DataInicio, relogio.UtcAgora);
+
         var evento = new Evento(
             usuarioId, dados.Titulo, dados.Descricao, dados.Categoria, dados.Local, dados.ImagemUrl,
             dados.DataInicio, dados.DataFim, dados.InscricaoInicio, dados.InscricaoFim,
@@ -94,6 +99,12 @@ public class EventoService(
 
         var agora = relogio.UtcAgora;
         var dados = Normalizar(requisicao);
+
+        // RN05: só a troca da data é conferida, para não travar a edição de um evento que já começou.
+        if ((dados.DataInicio - evento.DataInicio).Duration() >= ToleranciaDataInicio)
+        {
+            GarantirInicioFuturo(dados.DataInicio, agora);
+        }
 
         if (dados.Preco != evento.Preco && await inscricoes.ExisteAtivaAsync(evento.Id, cancellationToken))
         {
@@ -193,6 +204,15 @@ public class EventoService(
         }
 
         return (await eventos.ListarAlteracoesAsync(eventoId, null, cancellationToken)).Select(Mapear).ToList();
+    }
+
+    private static void GarantirInicioFuturo(DateTime dataInicio, DateTime agora)
+    {
+        if (dataInicio <= agora)
+        {
+            throw new RegraDeNegocioException("DATA_INICIO_PASSADA", "Data de início no passado",
+                "A data e a hora de início precisam ser posteriores ao momento atual.");
+        }
     }
 
     internal async Task<EventoDetalheResultado> MontarDetalheAsync(

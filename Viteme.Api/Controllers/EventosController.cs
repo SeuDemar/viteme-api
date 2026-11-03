@@ -60,12 +60,14 @@ public class EventosController(EventoService eventos) : ControllerBase
 
     /// <summary>Cria um evento como rascunho (E12). O criador passa a ser o organizador.</summary>
     /// <response code="403"><c>CNPJ_NAO_VERIFICADO</c>: cadastre um CNPJ ativo no perfil antes (RN24).</response>
+    /// <response code="422"><c>DATA_INICIO_PASSADA</c>: a data e a hora de início precisam ser futuras (RN05).</response>
     [HttpPost]
     [Authorize]
     [ProducesResponseType<EventoDetalheResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     public async Task<IActionResult> Criar([FromBody] EventoRequest requisicao, CancellationToken cancellationToken)
     {
         var resultado = await eventos.CriarAsync(User.ObterUsuarioId(), requisicao, cancellationToken);
@@ -82,7 +84,7 @@ public class EventosController(EventoService eventos) : ControllerBase
     /// <response code="403">Sem o papel de organizador neste evento.</response>
     /// <response code="409"><c>EVENTO_FINALIZADO</c>: evento cancelado ou encerrado.</response>
     /// <response code="412"><c>VERSAO_DESATUALIZADA</c>: o evento mudou desde a leitura.</response>
-    /// <response code="422"><c>PRECO_BLOQUEADO</c>, <c>CAPACIDADE_ABAIXO_DAS_VAGAS_OCUPADAS</c>, <c>MOTIVO_OBRIGATORIO</c> ou <c>ATIVIDADE_FORA_DO_PERIODO</c>.</response>
+    /// <response code="422"><c>PRECO_BLOQUEADO</c>, <c>CAPACIDADE_ABAIXO_DAS_VAGAS_OCUPADAS</c>, <c>MOTIVO_OBRIGATORIO</c>, <c>ATIVIDADE_FORA_DO_PERIODO</c> ou <c>DATA_INICIO_PASSADA</c> (ao trocar o início para o passado).</response>
     /// <response code="428"><c>VERSAO_OBRIGATORIA</c>: faltou o cabeçalho If-Match.</response>
     [HttpPut("{id:guid}")]
     [Authorize(Policy = Politicas.OrganizadorDoEvento)]

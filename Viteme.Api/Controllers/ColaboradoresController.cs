@@ -25,7 +25,7 @@ public class ColaboradoresController(ColaboradorService colaboradores) : Control
     /// <summary>Adiciona um colaborador pelo e-mail (E22). O usuário é notificado.</summary>
     /// <response code="404"><c>USUARIO_NAO_ENCONTRADO</c>.</response>
     /// <response code="409"><c>JA_COLABORADOR</c>.</response>
-    /// <response code="422"><c>ORGANIZADOR_NAO_PODE_SER_COLABORADOR</c> ou <c>USUARIO_JA_INSCRITO</c>.</response>
+    /// <response code="422"><c>ORGANIZADOR_NAO_PODE_SER_COLABORADOR</c>. Quem está inscrito também pode colaborar.</response>
     [HttpPost]
     [Authorize(Policy = Politicas.OrganizadorDoEvento)]
     [ProducesResponseType<ColaboradorResponse>(StatusCodes.Status201Created)]

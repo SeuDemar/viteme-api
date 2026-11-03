@@ -28,6 +28,7 @@
 | Denúncias e certificados | Média | 6 | CT52–CT57 |
 | Frontend | Média | 6 | CT58–CT63 *(no `viteme-web`)* |
 | CNPJ do organizador | Alta | 7 | CT64–CT70 |
+| Data futura e colaborador inscrito | Alta | 4 | CT71–CT74 |
 
 ## 3. Casos de teste (backend)
 
@@ -67,7 +68,7 @@ Formato: `ID — cenário → resultado esperado` · RN · endpoint.
 - **CT25** Evento lotado (capacidade 10, 10 ocupadas) → 422 `SEM_VAGAS` · RN08, RN09 · E24
 - **CT26** Concorrência pela última vaga (duas simultâneas, 1 vaga) → apenas uma 201; outra 422 `SEM_VAGAS` · RN09 · E24 *(integração, banco real)*
 - **CT27** Após `inscricaoFim` → 422 `INSCRICOES_ENCERRADAS` · RN08 · E24
-- **CT28** Organizador tenta se inscrever → 422 `PAPEL_NAO_PERMITE_INSCRICAO` · RN04, RN08 · E24
+- **CT28** Organizador tenta se inscrever → 422 `PAPEL_NAO_PERMITE_INSCRICAO`; colaborador consegue (D52) · RN04, RN08 · E24
 - **CT29** Cancelamento gratuito 2 dias antes → 200 CANCELADA; vaga liberada · RN15 · E26
 - **CT30** Cancelamento 3 horas antes do início → 422 `PRAZO_CANCELAMENTO_ENCERRADO` · RN15 · E26
 
@@ -115,6 +116,12 @@ Formato: `ID — cenário → resultado esperado` · RN · endpoint.
 - **CT69** Criar evento sem CNPJ → 403 `CNPJ_NAO_VERIFICADO` · RN24 · E12
 - **CT70** Publicar rascunho de organizador sem CNPJ → 403 `CNPJ_NAO_VERIFICADO` · RN24 · E14
 
+### 3.10 Pedidos da equipe de 2026-11-03 (D52, D53)
+- **CT71** Criar rascunho com início no passado ou agora → 422 `DATA_INICIO_PASSADA` · RN05 · E12
+- **CT72** Trocar o início do rascunho para o passado → 422 `DATA_INICIO_PASSADA` · RN05 · E13
+- **CT73** Evento já iniciado: editar outro campo sem mudar o início → 200 · RN05 · E13
+- **CT74** Inscrito pode ser colaborador (201; continua inscrito e vira colaborador) · RN08 · E22
+
 > CT58–CT63 (frontend): validação de formulário, rota protegida, renovação automática de token, erros por campo, selo "Alterado" (72 h) e restauração de sessão — **adiados** com o frontend.
 
 ## 4. Rastreabilidade (regra → endpoints → testes)
@@ -125,10 +132,10 @@ Formato: `ID — cenário → resultado esperado` · RN · endpoint.
 | RN02 | E01 | CT01, CT03, CT58 |
 | RN03 | E02 | CT04, CT05, CT06 |
 | RN04 | E16, E22 | CT14, CT28, CT47, CT48 |
-| RN05 | E12, E13, E18, E19 | CT15, CT16 |
+| RN05 | E12, E13, E18, E19 | CT15, CT16, CT71, CT72, CT73 |
 | RN06 | E10, E11, E12, E14 | CT14, CT17, CT18, CT19 |
 | RN07 | E13, E18, E19, E20, E21, E22, E23, E27, E28 | CT20, CT21, CT47, CT51 |
-| RN08 | E22, E24 | CT23, CT24, CT25, CT27, CT28 |
+| RN08 | E22, E24 | CT23, CT24, CT25, CT27, CT28, CT74 |
 | RN09 | E10, E11, E24 | CT25, CT26, CT35 |
 | RN10 | E24 | CT23 |
 | RN11 | E24, E29, E30, E31 | CT31, CT32, CT35, CT38 |
