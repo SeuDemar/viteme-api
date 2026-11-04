@@ -74,11 +74,11 @@ public class InscricaoService(
             throw EventoService.EventoNaoEncontrado();
         }
 
-        // RN04/RN08: organizador e colaboradores não se inscrevem no próprio evento.
-        if (permissao.EhOrganizadorOuColaborador)
+        // RN04/RN08: o organizador não se inscreve no próprio evento. Colaborador pode (D52): um aluno ajuda e também participa.
+        if (permissao.EhOrganizador)
         {
             throw new RegraDeNegocioException("PAPEL_NAO_PERMITE_INSCRICAO", "Papel não permite inscrição",
-                "Organizador e colaboradores não podem se inscrever no próprio evento.");
+                "O organizador não pode se inscrever no próprio evento.");
         }
 
         if (evento.Status != StatusEvento.Publicado)

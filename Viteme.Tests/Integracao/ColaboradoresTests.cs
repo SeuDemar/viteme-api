@@ -83,7 +83,7 @@ public class ColaboradoresTests(BancoFixture banco, ApiFactory api) : IClassFixt
     }
 
     [FactBanco]
-    public async Task Usuario_com_inscricao_ativa_nao_pode_ser_colaborador()
+    public async Task CT74_usuario_com_inscricao_ativa_pode_ser_colaborador()
     {
         using var ambiente = new AmbienteApi(banco, api);
         var organizador = await ambiente.NovaSessaoAsync();
@@ -93,9 +93,12 @@ public class ColaboradoresTests(BancoFixture banco, ApiFactory api) : IClassFixt
         await ambiente.InscreverNoBancoAsync(id, inscrito.UsuarioId);
 
         var resposta = await ambiente.PostAsync(Rota(id), new { email }, organizador.Token);
+        var detalhe = await AmbienteApi.CorpoAsync(await ambiente.GetAsync($"/api/v1/eventos/{id}", inscrito.Token));
 
-        Assert.Equal((HttpStatusCode)422, resposta.StatusCode);
-        Assert.Equal("USUARIO_JA_INSCRITO", await AmbienteApi.CodigoErroAsync(resposta));
+        // D52: o aluno ajuda no evento e continua inscrito nele.
+        Assert.Equal(HttpStatusCode.Created, resposta.StatusCode);
+        Assert.True(detalhe.GetProperty("souColaborador").GetBoolean());
+        Assert.Equal("CONFIRMADA", detalhe.GetProperty("minhaInscricao").GetProperty("status").GetString());
     }
 
     [FactBanco]

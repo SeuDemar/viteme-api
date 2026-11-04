@@ -116,12 +116,12 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 **E12 — POST /eventos** (Autenticado com CNPJ verificado) · RN05, RN06, RN12, RN24
 - Entrada: `{ titulo, descricao, categoria, local, imagemUrl?, dataInicio, dataFim, inscricaoInicio, inscricaoFim, capacidade?, preco, cargaHoraria? }`
 - Saída: `201` + `Location`; evento `RASCUNHO`.
-- Validações: título 5–150; descrição ≤ 5000; preço 0–99.999,99 (2 casas); capacidade e carga horária > 0 quando informadas; `imagemUrl` https; datas conforme RN05. Erros: 400; 401; 403 `CNPJ_NAO_VERIFICADO`.
+- Validações: título 5–150; descrição ≤ 5000; preço 0–99.999,99 (2 casas); capacidade e carga horária > 0 quando informadas; `imagemUrl` https; datas conforme RN05 (início futuro). Erros: 400; 401; 403 `CNPJ_NAO_VERIFICADO`; 422 `DATA_INICIO_PASSADA`.
 
 **E13 — PUT /eventos/{id}** (Organizador) · RN05, RN07, RN13
 - Cabeçalho `If-Match` com a versão (ETag recebido em E11/E12; sem o cabeçalho a API responde 428 `VERSAO_OBRIGATORIA`). Entrada: campos de E12 + `motivoAlteracao` (obrigatório quando RN13 se aplica; 10–300).
 - Saída: `200` evento atualizado.
-- Erros: 400; 401; 403; 404; 409 `EVENTO_FINALIZADO` (cancelado/encerrado); 412 `VERSAO_DESATUALIZADA`; 422 `PRECO_BLOQUEADO`, `CAPACIDADE_ABAIXO_DAS_VAGAS_OCUPADAS`, `MOTIVO_OBRIGATORIO`.
+- Erros: 400; 401; 403; 404; 409 `EVENTO_FINALIZADO` (cancelado/encerrado); 412 `VERSAO_DESATUALIZADA`; 422 `PRECO_BLOQUEADO`, `CAPACIDADE_ABAIXO_DAS_VAGAS_OCUPADAS`, `MOTIVO_OBRIGATORIO`, `DATA_INICIO_PASSADA` (só quando a data de início muda).
 
 **E14 — POST /eventos/{id}/publicar** (Organizador) · RN06, RN19, RN24
 - Saída: `200 { status: "PUBLICADO" }`. Status atual RASCUNHO ou OCULTO (republicação registra `reaberto_em`; segunda ocultação cancela — RN19).
@@ -155,8 +155,8 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 
 **E22 — POST /eventos/{id}/colaboradores** (Organizador) · RN04, RN07, RN08
 - Entrada: `{ email }`. Saída: `201` colaborador adicionado; o usuário recebe notificação (tipo `COLABORACAO`).
-- Validações: e-mail de usuário cadastrado, **sem inscrição ativa** no evento.
-- Erros: 400; 401; 403; 404 `USUARIO_NAO_ENCONTRADO`; 409 `JA_COLABORADOR`; 422 `ORGANIZADOR_NAO_PODE_SER_COLABORADOR`, `USUARIO_JA_INSCRITO`.
+- Validações: e-mail de usuário cadastrado. Quem está inscrito também pode colaborar (D52).
+- Erros: 400; 401; 403; 404 `USUARIO_NAO_ENCONTRADO`; 409 `JA_COLABORADOR`; 422 `ORGANIZADOR_NAO_PODE_SER_COLABORADOR`.
 
 **E23 — DELETE /eventos/{id}/colaboradores/{usuarioId}** (Organizador) · RN07
 - Saída: `204`. Erros: 401; 403; 404.
@@ -167,7 +167,7 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Nota: `codigoCheckin` só vem preenchido quando a inscrição já está CONFIRMADA (D33). Rascunho/oculto que o usuário não pode ver responde 404 (D29).
 - Saída: `201 { id, status, codigoCheckin?, reservadaAte?, pagamento?: { id, valor, urlPagamento } }`. Gratuito → CONFIRMADA; pago → PENDENTE_PAGAMENTO + URL de pagamento.
 - Contagem de vagas + gravação da inscrição e do pagamento em **uma transação curta** com bloqueio da linha do evento; chamada ao gateway **depois** da confirmação, com o id do pagamento como referência externa e chave de idempotência.
-- Erros: 401; 404; 409 `INSCRICAO_EXISTENTE`; 422 `EVENTO_INDISPONIVEL`, `INSCRICOES_ENCERRADAS`, `SEM_VAGAS`, `PAPEL_NAO_PERMITE_INSCRICAO`; 502 `GATEWAY_INDISPONIVEL` (inscrição pendente passa a EXPIRADA e a vaga é liberada).
+- Erros: 401; 404; 409 `INSCRICAO_EXISTENTE`; 422 `EVENTO_INDISPONIVEL`, `INSCRICOES_ENCERRADAS`, `SEM_VAGAS`, `PAPEL_NAO_PERMITE_INSCRICAO` (só o organizador); 502 `GATEWAY_INDISPONIVEL` (inscrição pendente passa a EXPIRADA e a vaga é liberada).
 
 **E25 — GET /inscricoes/minhas** (Autenticado) · RN21
 - Query `situacao` (proximas | passadas | todas).

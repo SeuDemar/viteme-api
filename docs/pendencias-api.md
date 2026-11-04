@@ -1,6 +1,6 @@
 # Pendências da API
 
-Situação em **2026-10-28**, após a etapa 9a, CNPJ do organizador (320 testes passando). Cobertura de `Application/Services` medida na etapa 6: 93,4%.
+Situação em **2026-11-03**, após os pedidos da equipe de 03/11 (D52, D53; 323 testes passando). Cobertura de `Application/Services` medida na etapa 6: 93,4%.
 Este documento lista só o que **ainda falta ou foi aceito como risco**. O histórico completo (inclusive o que já foi resolvido) está em [`.claude/planning/pendencias.md`](../.claude/planning/pendencias.md); as decisões, em [`.claude/planning/decisoes.md`](../.claude/planning/decisoes.md).
 
 Os códigos (P1, P2…) são os mesmos nos dois arquivos.
@@ -11,7 +11,6 @@ Os códigos (P1, P2…) são os mesmos nos dois arquivos.
 
 | Prioridade | Cód. | Pendência | Quem decide | Quando |
 |---|---|---|---|---|
-| 🔴 | P10 | **Frontend** é exigido pela Entrega 3. Falta definir prazo, responsável e stack (a spec indica React + TypeScript + Vite) e se fica em pasta `viteme-web` neste repositório ou em outro | Equipe | Antes da etapa 7 |
 | 🔴 | P12 | **Autoria no Git:** os commits saem como "Claude". A Entrega 3 pede histórico que mostre cada integrante: cada um precisa commitar com identidade própria (branches + PRs) | Equipe | Desde já |
 | 🔴 | P14 | **Pagamento e SMS são simulados** (stub). Declarar isso na apresentação ou usar o sandbox do Asaas (o que torna P1 e P2 obrigatórias) | Equipe | Antes da demonstração |
 | 🔴 | P32 | O **simulador de pagamento** precisa estar **desligado** em produção (`Gateway__Stub__HabilitarSimulador=false`); remover quando o Asaas entrar | Dev | Antes de publicar |
@@ -43,9 +42,6 @@ Os códigos (P1, P2…) são os mesmos nos dois arquivos.
 | Prioridade | Cód. | Pendência | Quem decide |
 |---|---|---|---|
 | 🟡 | P31 | Mostrar **"estorno em andamento"** quando o pagamento está APROVADO mas a inscrição já foi cancelada/expirada | Equipe |
-| 🟡 | P38 | Definir o domínio real e criar a **tela pública de validação de certificado** (o PDF imprime `Certificados:UrlValidacao`) | Equipe |
-| 🟡 | P40 | Renovar o token **uma vez só** e compartilhar entre abas: reuso de refresh já revogado derruba todas as sessões | Equipe |
-| 🟡 | P42 | **Content-Security-Policy** fica no frontend/host estático (a API já envia `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `no-store`) | Equipe |
 | 🟢 | P26 | Filtros de data do mural usam o dia em **UTC**; eventos à noite podem cair no dia seguinte (Brasília é UTC−3). Tratar no frontend ou aceitar fuso na consulta | Equipe |
 
 ## 5. Melhorias opcionais
@@ -71,6 +67,8 @@ Os códigos (P1, P2…) são os mesmos nos dois arquivos.
 | P45 | Rascunhos de usuários sem CNPJ (anteriores à RN24) só são publicados depois do E40; eventos já publicados seguem no ar | Regra nova não retroage sobre o que já está no mural |
 
 ## 7. Resolvidas na etapa 6 (referência)
+
+Resolvidas pelo frontend (`viteme-web`): P10 (frontend publicado no Cloudflare Pages), P38 (tela pública de validação de certificado em `/certificados/:codigo`; o domínio real é o do Pages), P40 (renovação única compartilhada entre abas com Web Locks) e P42 (CSP no `_headers` do Pages).
 
 P15 (corrida na renovação do refresh), P18 (JWT com `IRelogio`), P20 (limite de códigos por telefone) e P21 (cobertura medida). Antes disso: P3 (PDF próprio), P24 (RN19), P27 (canal SMS), P13 (Swagger), P7, P9.
 

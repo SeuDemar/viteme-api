@@ -8,10 +8,10 @@ Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste
 | RN02 | Cadastro | A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número |
 | RN03 | Login | Após 5 tentativas de login inválidas seguidas, a conta fica bloqueada por 15 minutos |
 | RN04 | Papéis | O papel é definido por evento: quem cria o evento é o organizador; quem o organizador adiciona é colaborador; os demais usuários autenticados são participantes. O organizador não pode ser colaborador do próprio evento |
-| RN05 | Evento | A data de término deve ser posterior à de início; o período de inscrições deve terminar até o início do evento; as atividades da programação devem estar dentro do período do evento |
+| RN05 | Evento | A data de término deve ser posterior à de início; o período de inscrições deve terminar até o início do evento; as atividades da programação devem estar dentro do período do evento. A data e a hora de início precisam ser futuras já ao criar o rascunho e sempre que forem trocadas (D53) |
 | RN06 | Evento | Todo evento é criado como RASCUNHO e só aparece no mural quando PUBLICADO. Para publicar, os campos obrigatórios devem estar preenchidos e a data de início deve ser futura |
 | RN07 | Permissões | Somente o organizador edita, publica, cancela o evento e gerencia colaboradores e programação. O colaborador pode consultar os inscritos e realizar o check-in |
-| RN08 | Inscrição | A inscrição só é permitida se o evento estiver PUBLICADO, dentro do período de inscrições, com vaga disponível, e se o usuário não for organizador nem colaborador do evento nem tiver inscrição ativa nele |
+| RN08 | Inscrição | A inscrição só é permitida se o evento estiver PUBLICADO, dentro do período de inscrições, com vaga disponível, e se o usuário não for o organizador do evento nem tiver inscrição ativa nele. Colaborador pode se inscrever, e inscrito pode ser colaborador (D52) |
 | RN09 | Vagas | As vagas ocupadas são as inscrições CONFIRMADA mais as PENDENTE_PAGAMENTO com reserva válida. Capacidade não informada significa vagas ilimitadas |
 | RN10 | Inscrição | Em evento gratuito, a inscrição é CONFIRMADA no momento da solicitação |
 | RN11 | Pagamento | Em evento pago, a inscrição fica PENDENTE_PAGAMENTO com reserva de vaga por 30 minutos e só é confirmada quando o gateway informar pagamento APROVADO pelo webhook. A cobrança é criada no gateway com validade igual à da reserva. Reserva vencida torna a inscrição EXPIRADA e libera a vaga |

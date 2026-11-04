@@ -22,7 +22,7 @@ public class InscricoesController(InscricaoService inscricoes) : ControllerBase
     /// </remarks>
     /// <response code="404">Evento inexistente ou que o usuário não pode ver.</response>
     /// <response code="409"><c>INSCRICAO_EXISTENTE</c>.</response>
-    /// <response code="422"><c>EVENTO_INDISPONIVEL</c>, <c>INSCRICOES_ENCERRADAS</c>, <c>SEM_VAGAS</c> ou <c>PAPEL_NAO_PERMITE_INSCRICAO</c>.</response>
+    /// <response code="422"><c>EVENTO_INDISPONIVEL</c>, <c>INSCRICOES_ENCERRADAS</c>, <c>SEM_VAGAS</c> ou <c>PAPEL_NAO_PERMITE_INSCRICAO</c> (organizador do evento).</response>
     /// <response code="502"><c>GATEWAY_INDISPONIVEL</c>.</response>
     [HttpPost("eventos/{id:guid}/inscricoes")]
     [Authorize]

@@ -7,12 +7,11 @@ using Viteme.Domain.Excecoes;
 
 namespace Viteme.Application.Services;
 
-/// <summary>Colaboradores do evento (E21–E23). Regras RN04, RN07 e RN08.</summary>
+/// <summary>Colaboradores do evento (E21–E23). Regras RN04 e RN07. Quem está inscrito também pode colaborar (D52).</summary>
 public class ColaboradorService(
     IEventoRepository eventos,
     IColaboradorRepository colaboradores,
     IUsuarioRepository usuarios,
-    IInscricaoRepository inscricoes,
     NotificacaoService notificacoes,
     IUnitOfWork unitOfWork,
     IRelogio relogio)
@@ -44,13 +43,6 @@ public class ColaboradorService(
         if (await colaboradores.ObterAsync(eventoId, usuario.Id, cancellationToken) is not null)
         {
             throw JaColaborador();
-        }
-
-        // RN08: quem tem inscrição ativa no evento não pode colaborar nele.
-        if (await inscricoes.ObterAtivaAsync(eventoId, usuario.Id, cancellationToken) is not null)
-        {
-            throw new RegraDeNegocioException("USUARIO_JA_INSCRITO", "Usuário já inscrito",
-                "Quem tem inscrição ativa no evento não pode ser colaborador. Cancele a inscrição antes.");
         }
 
         var colaborador = new ColaboradorEvento(eventoId, usuario.Id, relogio.UtcAgora);

@@ -305,4 +305,54 @@ public class EventosAlteracaoTests(BancoFixture banco, ApiFactory api) : IClassF
         Assert.Equal("Sala A", historico[1].GetProperty("valorNovo").GetString());
         Assert.Equal(2, detalheFinal.GetProperty("ultimasAlteracoes").GetArrayLength());
     }
+
+    [FactBanco]
+    public async Task CT71_criar_rascunho_com_inicio_no_passado_retorna_422()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        var organizador = await ambiente.NovaSessaoOrganizadorAsync();
+
+        var passado = await ambiente.PostAsync("/api/v1/eventos",
+            ambiente.CorpoEvento(inicioEm: TimeSpan.FromMinutes(-5)), organizador.Token);
+        var agora = await ambiente.PostAsync("/api/v1/eventos",
+            ambiente.CorpoEvento(inicioEm: TimeSpan.Zero), organizador.Token);
+
+        foreach (var resposta in new[] { passado, agora })
+        {
+            Assert.Equal((HttpStatusCode)422, resposta.StatusCode);
+            Assert.Equal("DATA_INICIO_PASSADA", await AmbienteApi.CodigoErroAsync(resposta));
+        }
+    }
+
+    [FactBanco]
+    public async Task CT72_mudar_o_inicio_do_rascunho_para_o_passado_retorna_422()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        var organizador = await ambiente.NovaSessaoAsync();
+        var id = await ambiente.CriarEventoAsync(organizador);
+        var (detalhe, etag) = await ambiente.DetalheAsync(id, organizador.Token);
+        var ontem = AmbienteApi.Truncar(ambiente.Relogio.UtcAgora.AddDays(-1));
+
+        var resposta = await ambiente.PutAsync($"/api/v1/eventos/{id}",
+            AmbienteApi.CorpoDeEdicao(detalhe, ("dataInicio", ontem), ("inscricaoInicio", ontem.AddDays(-1)), ("inscricaoFim", ontem.AddHours(-1))),
+            organizador.Token, etag);
+
+        Assert.Equal((HttpStatusCode)422, resposta.StatusCode);
+        Assert.Equal("DATA_INICIO_PASSADA", await AmbienteApi.CodigoErroAsync(resposta));
+    }
+
+    [FactBanco]
+    public async Task CT73_evento_ja_iniciado_pode_ser_editado_sem_mudar_o_inicio()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        var organizador = await ambiente.NovaSessaoAsync();
+        var id = await ambiente.CriarEventoAsync(organizador, ambiente.CorpoEvento(inicioEm: TimeSpan.FromHours(2)), publicar: true);
+        ambiente.Relogio.Avancar(TimeSpan.FromHours(3));
+        var (detalhe, etag) = await ambiente.DetalheAsync(id, organizador.Token);
+
+        var resposta = await ambiente.PutAsync($"/api/v1/eventos/{id}",
+            AmbienteApi.CorpoDeEdicao(detalhe, ("descricao", "Descrição revisada durante o evento.")), organizador.Token, etag);
+
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+    }
 }
