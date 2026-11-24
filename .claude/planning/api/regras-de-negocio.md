@@ -29,7 +29,7 @@ Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste
 | RN23 | Webhook | O webhook só é processado com assinatura válida e de forma idempotente (a mesma transação e o mesmo status não são processados duas vezes). Pagamento aprovado para inscrição já expirada ou cancelada gera estorno automático |
 | RN24 | Organizador | Só cria e publica eventos (gratuitos ou pagos) quem tem CNPJ verificado no perfil: dígitos verificadores válidos, situação ATIVA na Receita Federal e não vinculado a outra conta. Participar e colaborar não exigem CNPJ |
 | RN25 | Recebimento | Com a Fase 2 do Asaas ligada, publicar evento pago, ou tornar pago um evento já no ar, exige a conta de recebimento do organizador APROVADA; o valor das inscrições vai para ela pelo split. Sem conta aprovada, a cobrança não é criada e a reserva expira. Evento gratuito não muda |
-| RN26 | Recebimento | Com a Fase 3 ligada (garantia), o valor fica retido na subconta e é liberado ao organizador 2 dias depois do término do evento. Estornos (RN14, RN15, RN23) continuam pela cobrança. Pagamento recebido antes de a garantia ser ligada sai da fila de liberação sem chamar o gateway |
+| RN26 | Recebimento | Com a Fase 3 ligada (garantia), a cobrança é criada na própria subconta do organizador e o valor fica retido nela; é liberado 2 dias depois do término do evento. Estornos (RN14, RN15, RN23) continuam pela cobrança, com a chave da subconta. Pagamento cobrado na raiz (antes da garantia, ou só com split) sai da fila de liberação sem chamar o gateway |
 
 ## Notas de implementação
 

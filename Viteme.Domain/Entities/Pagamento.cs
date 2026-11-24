@@ -42,6 +42,13 @@ public class Pagamento
 
     public DateTime AtualizadoEm { get; private set; }
 
+    /// <summary>
+    /// Conta de recebimento em que a cobrança foi criada (Fase 3: a garantia só retém cobranças da própria subconta).
+    /// Nula: cobrança na conta raiz, com ou sem split. As chamadas seguintes ao gateway (Pix, consulta, estorno, garantia)
+    /// usam a chave dessa subconta.
+    /// </summary>
+    public Guid? ContaRecebimentoId { get; private set; }
+
     /// <summary>Id da garantia (Conta Escrow) no gateway, quando a Fase 3 está ligada. O valor fica retido até a liberação (RN26).</summary>
     public string? GarantiaId { get; private set; }
 
@@ -50,6 +57,17 @@ public class Pagamento
 
     /// <summary>Coluna de sistema <c>xmin</c> (concorrência otimista entre webhook, expiração e estorno).</summary>
     public uint Versao { get; private set; }
+
+    /// <summary>Marca que a cobrança será criada na subconta do organizador. Só antes de existir a cobrança no gateway.</summary>
+    public void CobrarNaSubconta(Guid contaRecebimentoId)
+    {
+        if (IdTransacaoGateway is not null && ContaRecebimentoId != contaRecebimentoId)
+        {
+            throw new InvalidOperationException("A cobrança já foi criada; a conta que recebe não muda mais.");
+        }
+
+        ContaRecebimentoId = contaRecebimentoId;
+    }
 
     public void RegistrarCobranca(string idTransacaoGateway, string urlPagamento)
     {

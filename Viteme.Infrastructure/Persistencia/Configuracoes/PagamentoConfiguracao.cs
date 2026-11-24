@@ -22,5 +22,7 @@ public class PagamentoConfiguracao : IEntityTypeConfiguration<Pagamento>
         // RI07: UNIQUE aceita vários nulos, então o pagamento é gravado antes de o gateway devolver o id.
         b.HasIndex(p => p.IdTransacaoGateway).IsUnique();
         b.HasIndex(p => p.InscricaoId);
+        b.HasIndex(p => p.ContaRecebimentoId);
+        b.HasOne<ContaRecebimento>().WithMany().HasForeignKey(p => p.ContaRecebimentoId).OnDelete(DeleteBehavior.Restrict);
     }
 }

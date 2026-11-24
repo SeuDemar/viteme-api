@@ -148,6 +148,22 @@ public class ContaRecebimentoService(
         return conta is { EstaAprovada: true } ? conta : throw ContaPendente();
     }
 
+    /// <summary>
+    /// Chave de API (decifrada) da subconta em que a cobrança foi criada, para Pix, consulta e estorno (Fase 3). Nula para
+    /// cobrança da conta raiz.
+    /// </summary>
+    public async Task<string?> ChaveDaCobrancaAsync(Guid? contaRecebimentoId, CancellationToken cancellationToken = default)
+    {
+        if (contaRecebimentoId is not { } id)
+        {
+            return null;
+        }
+
+        var conta = await contas.ObterPorIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"Conta de recebimento {id} do pagamento não existe.");
+        return cifrador.Decifrar(conta.ChaveApiCifrada);
+    }
+
     internal static RegraDeNegocioException ContaPendente() =>
         new("CONTA_RECEBIMENTO_PENDENTE", "Conta de recebimento pendente",
             "Eventos pagos exigem a conta de recebimento aprovada. Abra ou conclua a conta em Perfil > Recebimentos.");

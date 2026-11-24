@@ -6,10 +6,11 @@ namespace Viteme.Application.Interfaces;
 public sealed record PagamentoParaEstorno(Guid PagamentoId, Guid UsuarioId, Guid EventoId);
 
 /// <summary>Cobrança sem desfecho confirmado no Viteme (pendente, ou expirada há pouco) que vale conferir no gateway.</summary>
-public sealed record PagamentoParaReconciliacao(Guid PagamentoId, string IdTransacao, decimal Valor);
+public sealed record PagamentoParaReconciliacao(Guid PagamentoId, string IdTransacao, decimal Valor, Guid? ContaRecebimentoId = null);
 
 /// <summary>Pagamento aprovado de evento pago com garantia ainda não liberada (Fase 3, RN26).</summary>
-public sealed record PagamentoComGarantia(Guid PagamentoId, string IdTransacao, string? GarantiaId, Guid OrganizadorId, DateTime CriadoEm);
+/// <remarks><see cref="ContaRecebimentoId"/> nulo: cobrança da conta raiz, sem garantia.</remarks>
+public sealed record PagamentoComGarantia(Guid PagamentoId, string IdTransacao, string? GarantiaId, Guid? ContaRecebimentoId);
 
 public interface IPagamentoRepository
 {

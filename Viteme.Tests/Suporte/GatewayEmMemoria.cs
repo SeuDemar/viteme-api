@@ -17,20 +17,23 @@ public class GatewayEmMemoria() : GatewayPagamentoStub(
 
     public ConcurrentQueue<(string IdTransacao, decimal Valor)> Estornos { get; } = new();
 
+    /// <summary>Chave da subconta usada em cada estorno (nula para cobrança da raiz), na mesma ordem de <see cref="Estornos"/>.</summary>
+    public ConcurrentQueue<string?> ChavesDosEstornos { get; } = new();
+
     /// <summary>Situação de cada cobrança no "gateway" (padrão: pendente), lida pela consulta da reconciliação.</summary>
     public ConcurrentDictionary<string, Viteme.Domain.Enums.StatusPagamento> StatusNoGateway { get; } = new();
 
     /// <summary>Quando definido, o "gateway" devolve este Pix na consulta do QR Code (padrão: indisponível).</summary>
     public PixCobranca? Pix { get; set; }
 
-    public override Task<PixCobranca?> ObterPixAsync(string idTransacao, CancellationToken cancellationToken = default) =>
+    public override Task<PixCobranca?> ObterPixAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default) =>
         Task.FromResult(Pix);
 
     public bool ExigirDocumento { get; set; }
 
     public override bool ExigeDocumentoDoPagador => ExigirDocumento;
 
-    public override Task<Viteme.Domain.Enums.StatusPagamento> ConsultarCobrancaAsync(string idTransacao, CancellationToken cancellationToken = default) =>
+    public override Task<Viteme.Domain.Enums.StatusPagamento> ConsultarCobrancaAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default) =>
         Task.FromResult(StatusNoGateway.TryGetValue(idTransacao, out var status) ? status : Viteme.Domain.Enums.StatusPagamento.Pendente);
 
     public bool FalharAoCriar { get; set; }
@@ -48,7 +51,7 @@ public class GatewayEmMemoria() : GatewayPagamentoStub(
         return await base.CriarCobrancaAsync(pedido, cancellationToken);
     }
 
-    public override Task SolicitarEstornoAsync(string idTransacao, decimal valor, CancellationToken cancellationToken = default)
+    public override Task SolicitarEstornoAsync(string idTransacao, decimal valor, string? chaveRecebedor = null, CancellationToken cancellationToken = default)
     {
         if (FalharEstorno)
         {
@@ -56,6 +59,7 @@ public class GatewayEmMemoria() : GatewayPagamentoStub(
         }
 
         Estornos.Enqueue((idTransacao, valor));
+        ChavesDosEstornos.Enqueue(chaveRecebedor);
         return Task.CompletedTask;
     }
 }

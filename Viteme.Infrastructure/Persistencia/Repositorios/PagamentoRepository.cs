@@ -53,9 +53,9 @@ public class PagamentoRepository(VitemeDbContext contexto) : IPagamentoRepositor
                         && p.IdTransacaoGateway != null && p.CriadoEm <= criadosAntes && p.CriadoEm >= criadosDepois)
             .OrderBy(p => p.CriadoEm)
             .Take(limite)
-            .Select(p => new { p.Id, p.IdTransacaoGateway, p.Valor })
+            .Select(p => new { p.Id, p.IdTransacaoGateway, p.Valor, p.ContaRecebimentoId })
             .ToListAsync(cancellationToken);
-        return itens.Select(x => new PagamentoParaReconciliacao(x.Id, x.IdTransacaoGateway!, x.Valor)).ToList();
+        return itens.Select(x => new PagamentoParaReconciliacao(x.Id, x.IdTransacaoGateway!, x.Valor, x.ContaRecebimentoId)).ToList();
     }
 
     public async Task<IReadOnlyList<PagamentoComGarantia>> ListarGarantiasParaLiberarAsync(
@@ -68,10 +68,10 @@ public class PagamentoRepository(VitemeDbContext contexto) : IPagamentoRepositor
                            join e in contexto.Eventos.AsNoTracking() on i.EventoId equals e.Id
                            where e.Status == StatusEvento.Encerrado && e.DataFim < terminoAntes
                            orderby e.DataFim, p.CriadoEm
-                           select new { p.Id, p.IdTransacaoGateway, p.GarantiaId, e.OrganizadorId, p.CriadoEm })
+                           select new { p.Id, p.IdTransacaoGateway, p.GarantiaId, p.ContaRecebimentoId })
             .Take(limite)
             .ToListAsync(cancellationToken);
-        return itens.Select(x => new PagamentoComGarantia(x.Id, x.IdTransacaoGateway!, x.GarantiaId, x.OrganizadorId, x.CriadoEm)).ToList();
+        return itens.Select(x => new PagamentoComGarantia(x.Id, x.IdTransacaoGateway!, x.GarantiaId, x.ContaRecebimentoId)).ToList();
     }
 
     public void Adicionar(Pagamento pagamento) => contexto.Pagamentos.Add(pagamento);

@@ -1,0 +1,944 @@
+{
+  "executadoEm": "2026-11-24T14:26:30.1264636-03:00",
+  "urlBase": "https://api-sandbox.asaas.com/v3",
+  "passos": [
+    {
+      "passo": "saldo-raiz",
+      "requisicao": "GET /finance/balance",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "balance": 0
+      }
+    },
+    {
+      "passo": "Q3-criar-subconta",
+      "requisicao": "POST /accounts",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "object": "account",
+        "id": "b8b1d0ed-5623-4c51-a049-7cd16deb8cf4",
+        "name": "Organizador Teste gswdde",
+        "email": "organizador-fase2-2026-11-24-142630@exemplo.com",
+        "loginEmail": "organizador-fase2-2026-11-24-142630@exemplo.com",
+        "phone": null,
+        "mobilePhone": "44999990000",
+        "address": "Av. Colombo",
+        "addressNumber": "5790",
+        "complement": null,
+        "province": "Zona 7",
+        "postalCode": "87020900",
+        "cpfCnpj": "96399193000174",
+        "birthDate": null,
+        "personType": "JURIDICA",
+        "companyType": "ASSOCIATION",
+        "city": 12903,
+        "state": "PR",
+        "country": "Brasil",
+        "site": null,
+        "walletId": "f3914e20-972e-47a1-b69d-71a84010a619",
+        "apiKey":"***",
+        "accessToken": {
+          "id": "7c2f77c2-bf92-4454-9f55-00acc1c63599",
+          "name": "Chave de API",
+          "enabled": true,
+          "disabledReason": null,
+          "expirationDate": null,
+          "dateCreated": "2026-11-24 14:26:33",
+          "projectedExpirationDateByLackOfUse": null,
+          "apiKey":"***"
+        },
+        "accountNumber": {
+          "agency": "0001",
+          "account": "398712",
+          "accountDigit": "7"
+        },
+        "incomeValue": 5000,
+        "taxRegime": null,
+        "commercialInfoExpiration": null
+      }
+    },
+    {
+      "passo": "Q6-aprovar-no-sandbox",
+      "requisicao": "POST /sandbox/myAccount/approve",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "id": "b8b1d0ed-5623-4c51-a049-7cd16deb8cf4",
+        "commercialInfo": "APPROVED",
+        "bankAccountInfo": "APPROVED",
+        "documentation": "APPROVED",
+        "general": "APPROVED"
+      }
+    },
+    {
+      "passo": "Q6-situacao-subconta",
+      "requisicao": "GET /myAccount/status",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "id": "b8b1d0ed-5623-4c51-a049-7cd16deb8cf4",
+        "commercialInfo": "APPROVED",
+        "bankAccountInfo": "APPROVED",
+        "documentation": "APPROVED",
+        "general": "APPROVED"
+      }
+    },
+    {
+      "passo": "Q6-documentos-subconta",
+      "requisicao": "GET /myAccount/documents",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "rejectReasons": null,
+        "data": [
+          {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "status": "APPROVED",
+            "type": "IDENTIFICATION",
+            "title": "Documentos de identificação",
+            "description": "Para enviar esse documento acesse nosso aplicativo ou utilize o link de onboarding.",
+            "responsible": {
+              "name": "presidente",
+              "type": "DIRECTOR"
+            },
+            "onboardingUrl": null
+          }
+        ]
+      }
+    },
+    {
+      "passo": "escrow-ligar-na-subconta",
+      "requisicao": "POST /accounts/b8b1d0ed-5623-4c51-a049-7cd16deb8cf4/escrow",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "isFeePayer": false,
+        "enabled": true,
+        "daysToExpire": 30
+      }
+    },
+    {
+      "passo": "escrow-consultar-subconta",
+      "requisicao": "GET /accounts/b8b1d0ed-5623-4c51-a049-7cd16deb8cf4/escrow",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "isFeePayer": false,
+        "enabled": true,
+        "daysToExpire": 30
+      }
+    },
+    {
+      "passo": "cliente",
+      "requisicao": "POST /customers",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "object": "customer",
+        "id": "cus_000010105044",
+        "dateCreated": "2026-11-24",
+        "name": "Pagador Fase 2",
+        "email": "fase2@exemplo.com",
+        "company": null,
+        "phone": null,
+        "mobilePhone": null,
+        "address": null,
+        "addressNumber": null,
+        "complement": null,
+        "province": null,
+        "postalCode": null,
+        "cpfCnpj": "12345678909",
+        "personType": "FISICA",
+        "deleted": false,
+        "additionalEmails": null,
+        "externalReference": "fase2-2026-11-24",
+        "notificationDisabled": true,
+        "observations": null,
+        "municipalInscription": null,
+        "stateInscription": null,
+        "canDelete": true,
+        "cannotBeDeletedReason": null,
+        "canEdit": true,
+        "cannotEditReason": null,
+        "city": null,
+        "cityName": null,
+        "state": null,
+        "country": "Brasil"
+      }
+    },
+    {
+      "passo": "cobranca-com-split",
+      "requisicao": "POST /payments",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_ic1jm9jlz4ckep",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105044",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 split",
+        "billingType": "PIX",
+        "pixTransaction": null,
+        "status": "PENDING",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": null,
+        "clientPaymentDate": null,
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_ic1jm9jlz4ckep",
+        "invoiceNumber": "22663884",
+        "externalReference": "a23604b8-c965-48c1-a1bc-0674f586b0d7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": null,
+        "estimatedCreditDate": null,
+        "transactionReceiptUrl": null,
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "split": [
+          {
+            "id": "57b6a455-6935-4bcc-963c-b74de749be0c",
+            "walletId": "f3914e20-972e-47a1-b69d-71a84010a619",
+            "fixedValue": null,
+            "percentualValue": 100.0,
+            "totalValue": 9.01,
+            "cancellationReason": null,
+            "status": "PENDING",
+            "externalReference": null,
+            "description": null
+          }
+        ],
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "pagar-no-simulador",
+      "requisicao": "POST /sandbox/payment/pay_0_ic1jm9jlz4ckep/confirm",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_ic1jm9jlz4ckep",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105044",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 split",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "0554d8f2-55e8-4386-b2b3-03a1e9c891ca",
+        "pixQrCodeId": "99a4a6cd-63d3-4947-89dd-1f2b190a3a26",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_ic1jm9jlz4ckep",
+        "invoiceNumber": "22663884",
+        "externalReference": "a23604b8-c965-48c1-a1bc-0674f586b0d7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF9pYzFqbTlqbHo0Y2tlcA%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "split": [
+          {
+            "id": "57b6a455-6935-4bcc-963c-b74de749be0c",
+            "walletId": "f3914e20-972e-47a1-b69d-71a84010a619",
+            "fixedValue": null,
+            "percentualValue": 100.0,
+            "totalValue": 9.01,
+            "cancellationReason": null,
+            "status": "DONE",
+            "externalReference": null,
+            "description": null
+          }
+        ],
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "cobranca-detalhe",
+      "requisicao": "GET /payments/pay_0_ic1jm9jlz4ckep",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_ic1jm9jlz4ckep",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105044",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 split",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "0554d8f2-55e8-4386-b2b3-03a1e9c891ca",
+        "pixQrCodeId": "99a4a6cd-63d3-4947-89dd-1f2b190a3a26",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_ic1jm9jlz4ckep",
+        "invoiceNumber": "22663884",
+        "externalReference": "a23604b8-c965-48c1-a1bc-0674f586b0d7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF9pYzFqbTlqbHo0Y2tlcA%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "split": [
+          {
+            "id": "57b6a455-6935-4bcc-963c-b74de749be0c",
+            "walletId": "f3914e20-972e-47a1-b69d-71a84010a619",
+            "fixedValue": null,
+            "percentualValue": 100.0,
+            "totalValue": 9.01,
+            "cancellationReason": null,
+            "status": "DONE",
+            "externalReference": null,
+            "description": null
+          }
+        ],
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "saldo-subconta",
+      "requisicao": "GET /finance/balance",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "balance": 9.01
+      }
+    },
+    {
+      "passo": "extrato-subconta",
+      "requisicao": "GET /financialTransactions?limit=10",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "object": "list",
+        "hasMore": false,
+        "totalCount": 1,
+        "limit": 10,
+        "offset": 0,
+        "data": [
+          {
+            "object": "financialTransaction",
+            "id": "ftn_000011971531",
+            "value": 9.01,
+            "balance": 9.01,
+            "type": "INTERNAL_TRANSFER_CREDIT",
+            "date": "2026-11-24",
+            "description": "Comissão recebida do parceiro Viteme - fatura nr. 22663884",
+            "paymentId": null,
+            "externalReference": null,
+            "splitId": "57b6a455-6935-4bcc-963c-b74de749be0c",
+            "transferId": null,
+            "anticipationId": null,
+            "billId": null,
+            "invoiceId": null,
+            "paymentDunningId": null,
+            "creditBureauReportId": null
+          }
+        ]
+      }
+    },
+    {
+      "passo": "cobrancas-vistas-pela-subconta",
+      "requisicao": "GET /payments?limit=10",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "object": "list",
+        "hasMore": false,
+        "totalCount": 0,
+        "limit": 10,
+        "offset": 0,
+        "data": []
+      }
+    },
+    {
+      "passo": "Q2-garantia-chave-subconta",
+      "requisicao": "GET /payments/pay_0_ic1jm9jlz4ckep/escrow",
+      "chave": "subconta",
+      "status": 404,
+      "resposta": ""
+    },
+    {
+      "passo": "Q2-garantia-chave-raiz",
+      "requisicao": "GET /payments/pay_0_ic1jm9jlz4ckep/escrow",
+      "chave": "raiz",
+      "status": 404,
+      "resposta": ""
+    },
+    {
+      "passo": "cliente-da-subconta",
+      "requisicao": "POST /customers",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "object": "customer",
+        "id": "cus_000010105047",
+        "dateCreated": "2026-11-24",
+        "name": "Pagador Fase 2 Sub",
+        "email": "fase2-sub@exemplo.com",
+        "company": null,
+        "phone": null,
+        "mobilePhone": null,
+        "address": null,
+        "addressNumber": null,
+        "complement": null,
+        "province": null,
+        "postalCode": null,
+        "cpfCnpj": "12345678909",
+        "personType": "FISICA",
+        "deleted": false,
+        "additionalEmails": null,
+        "externalReference": null,
+        "notificationDisabled": true,
+        "observations": null,
+        "municipalInscription": null,
+        "stateInscription": null,
+        "canDelete": true,
+        "cannotBeDeletedReason": null,
+        "canEdit": true,
+        "cannotEditReason": null,
+        "city": null,
+        "cityName": null,
+        "state": null,
+        "country": "Brasil"
+      }
+    },
+    {
+      "passo": "cobranca-da-subconta",
+      "requisicao": "POST /payments",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_1v89uy8a61nitp",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105047",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 cobranca propria",
+        "billingType": "PIX",
+        "pixTransaction": null,
+        "status": "PENDING",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": null,
+        "clientPaymentDate": null,
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_1v89uy8a61nitp",
+        "invoiceNumber": "22663889",
+        "externalReference": "02446287-ad61-4009-98dc-391e1a9e66a7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": null,
+        "estimatedCreditDate": null,
+        "transactionReceiptUrl": null,
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "pagar-cobranca-da-subconta",
+      "requisicao": "POST /sandbox/payment/pay_0_1v89uy8a61nitp/confirm",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_1v89uy8a61nitp",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105047",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 cobranca propria",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "3863e940-bdb3-483b-920b-976ef9bacb94",
+        "pixQrCodeId": "b829a15b-b618-4e5c-b61a-ff22477b20ab",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_1v89uy8a61nitp",
+        "invoiceNumber": "22663889",
+        "externalReference": "02446287-ad61-4009-98dc-391e1a9e66a7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF8xdjg5dXk4YTYxbml0cA%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": {
+          "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+          "status": "ACTIVE",
+          "finishReason": null,
+          "finishDate": null,
+          "expirationDate": "2026-12-24"
+        },
+        "refunds": null
+      }
+    },
+    {
+      "passo": "cobranca-da-subconta-detalhe",
+      "requisicao": "GET /payments/pay_0_1v89uy8a61nitp",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_1v89uy8a61nitp",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105047",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 cobranca propria",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "3863e940-bdb3-483b-920b-976ef9bacb94",
+        "pixQrCodeId": "b829a15b-b618-4e5c-b61a-ff22477b20ab",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_1v89uy8a61nitp",
+        "invoiceNumber": "22663889",
+        "externalReference": "02446287-ad61-4009-98dc-391e1a9e66a7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF8xdjg5dXk4YTYxbml0cA%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": {
+          "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+          "status": "ACTIVE",
+          "finishReason": null,
+          "finishDate": null,
+          "expirationDate": "2026-12-24"
+        },
+        "refunds": null
+      }
+    },
+    {
+      "passo": "garantia-da-cobranca-propria",
+      "requisicao": "GET /payments/pay_0_1v89uy8a61nitp/escrow",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+        "status": "ACTIVE",
+        "finishReason": null,
+        "finishDate": null,
+        "expirationDate": "2026-12-24"
+      }
+    },
+    {
+      "passo": "saldo-subconta-com-garantia",
+      "requisicao": "GET /finance/balance",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "balance": 9.01
+      }
+    },
+    {
+      "passo": "Q1-finish-cobranca-propria-chave-subconta",
+      "requisicao": "POST /escrow/fde08d15-c611-42b0-b995-5352c5ce5c98/finish",
+      "chave": "subconta",
+      "status": 404,
+      "resposta": ""
+    },
+    {
+      "passo": "Q1-finish-cobranca-propria-chave-raiz",
+      "requisicao": "POST /escrow/fde08d15-c611-42b0-b995-5352c5ce5c98/finish",
+      "chave": "raiz",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_1v89uy8a61nitp",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105047",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 cobranca propria",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "3863e940-bdb3-483b-920b-976ef9bacb94",
+        "pixQrCodeId": "b829a15b-b618-4e5c-b61a-ff22477b20ab",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_1v89uy8a61nitp",
+        "invoiceNumber": "22663889",
+        "externalReference": "02446287-ad61-4009-98dc-391e1a9e66a7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF8xdjg5dXk4YTYxbml0cA%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": {
+          "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+          "status": "DONE",
+          "finishReason": "REQUESTED_BY_CUSTOMER",
+          "finishDate": "2026-11-24",
+          "expirationDate": "2026-12-24"
+        },
+        "refunds": null
+      }
+    },
+    {
+      "passo": "garantia-apos-finish",
+      "requisicao": "GET /payments/pay_0_1v89uy8a61nitp/escrow",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+        "status": "DONE",
+        "finishReason": "REQUESTED_BY_CUSTOMER",
+        "finishDate": "2026-11-24",
+        "expirationDate": "2026-12-24"
+      }
+    },
+    {
+      "passo": "Q1-finish-repetido",
+      "requisicao": "POST /escrow/fde08d15-c611-42b0-b995-5352c5ce5c98/finish",
+      "chave": "subconta",
+      "status": 404,
+      "resposta": ""
+    },
+    {
+      "passo": "saldo-subconta-final",
+      "requisicao": "GET /finance/balance",
+      "chave": "subconta",
+      "status": 200,
+      "resposta": {
+        "balance": 18.02
+      }
+    }
+  ],
+  "respostas": {
+    "Q3_subcontaCriada": true,
+    "Q3_devolveIdWalletEApiKey": true,
+    "Q6_situacaoAposAprovar": {
+      "id": "b8b1d0ed-5623-4c51-a049-7cd16deb8cf4",
+      "commercialInfo": "APPROVED",
+      "bankAccountInfo": "APPROVED",
+      "documentation": "APPROVED",
+      "general": "APPROVED"
+    },
+    "Q6_aprovacaoSandboxHttp": 200,
+    "Q6_situacaoGeral": "APPROVED",
+    "Q6_idDaSituacaoIgualAoDaConta": true,
+    "Q6_temOnboardingUrl": false,
+    "escrow_ligadoPelaApi": true,
+    "statusAposPagamento": "RECEIVED",
+    "splitNaCobranca": [
+      {
+        "id": "57b6a455-6935-4bcc-963c-b74de749be0c",
+        "walletId": "f3914e20-972e-47a1-b69d-71a84010a619",
+        "fixedValue": null,
+        "percentualValue": 100.0,
+        "totalValue": 9.01,
+        "cancellationReason": null,
+        "status": "DONE",
+        "externalReference": null,
+        "description": null
+      }
+    ],
+    "escrowNaCobrancaDaRaiz": null,
+    "saldoSubconta": {
+      "balance": 9.01
+    },
+    "cobrancasNaSubconta": [],
+    "Q2_garantiaComChaveSubconta": 404,
+    "Q2_garantiaComChaveRaiz": 404,
+    "Q1_valorFicouRetido": false,
+    "Q2_statusDaGarantia": null,
+    "cobrancaPropria_status": "RECEIVED",
+    "cobrancaPropria_escrowNoDetalhe": {
+      "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+      "status": "ACTIVE",
+      "finishReason": null,
+      "finishDate": null,
+      "expirationDate": "2026-12-24"
+    },
+    "cobrancaPropria_garantia": {
+      "http": 200,
+      "corpo": {
+        "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+        "status": "ACTIVE",
+        "finishReason": null,
+        "finishDate": null,
+        "expirationDate": "2026-12-24"
+      }
+    },
+    "saldoSubcontaComGarantiaAtiva": {
+      "balance": 9.01
+    },
+    "Q1_finishChaveSubconta": {
+      "http": 404,
+      "corpo": ""
+    },
+    "Q1_finishChaveRaiz": {
+      "http": 200,
+      "corpo": {
+        "object": "payment",
+        "id": "pay_0_1v89uy8a61nitp",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010105047",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 2 cobranca propria",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "3863e940-bdb3-483b-920b-976ef9bacb94",
+        "pixQrCodeId": "b829a15b-b618-4e5c-b61a-ff22477b20ab",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_1v89uy8a61nitp",
+        "invoiceNumber": "22663889",
+        "externalReference": "02446287-ad61-4009-98dc-391e1a9e66a7",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF8xdjg5dXk4YTYxbml0cA%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": {
+          "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+          "status": "DONE",
+          "finishReason": "REQUESTED_BY_CUSTOMER",
+          "finishDate": "2026-11-24",
+          "expirationDate": "2026-12-24"
+        },
+        "refunds": null
+      }
+    },
+    "garantiaAposFinish": {
+      "id": "fde08d15-c611-42b0-b995-5352c5ce5c98",
+      "status": "DONE",
+      "finishReason": "REQUESTED_BY_CUSTOMER",
+      "finishDate": "2026-11-24",
+      "expirationDate": "2026-12-24"
+    },
+    "Q1_finishRepetido": {
+      "http": 404,
+      "corpo": ""
+    },
+    "saldoSubcontaFinal": {
+      "balance": 18.02
+    }
+  }
+}

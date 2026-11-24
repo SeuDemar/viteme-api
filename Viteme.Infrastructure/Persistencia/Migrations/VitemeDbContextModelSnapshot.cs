@@ -690,6 +690,10 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("atualizado_em");
 
+                    b.Property<Guid?>("ContaRecebimentoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conta_recebimento_id");
+
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");
@@ -739,6 +743,9 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_pagamento");
+
+                    b.HasIndex("ContaRecebimentoId")
+                        .HasDatabaseName("ix_pagamento_conta_recebimento_id");
 
                     b.HasIndex("IdTransacaoGateway")
                         .IsUnique()
@@ -1100,6 +1107,12 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
 
             modelBuilder.Entity("Viteme.Domain.Entities.Pagamento", b =>
                 {
+                    b.HasOne("Viteme.Domain.Entities.ContaRecebimento", null)
+                        .WithMany()
+                        .HasForeignKey("ContaRecebimentoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_pagamento_conta_recebimento_conta_recebimento_id");
+
                     b.HasOne("Viteme.Domain.Entities.Inscricao", null)
                         .WithMany("Pagamentos")
                         .HasForeignKey("InscricaoId")

@@ -7,11 +7,17 @@ public sealed record Pagador(Guid UsuarioId, string Nome, string Email, string? 
 
 /// <summary>
 /// Cobrança a criar no gateway. <see cref="ReferenciaExterna"/> é o id do pagamento e serve de chave de idempotência.
-/// <see cref="Pagador"/> pode ser nulo (o stub não usa). <see cref="WalletRecebedor"/> é a carteira da subconta do organizador
-/// (Fase 2): com ela, o valor vai para o organizador pelo split; sem ela, fica na conta raiz.
+/// <see cref="Pagador"/> pode ser nulo (o stub não usa). Quem recebe:
+/// <list type="bullet">
+/// <item>nenhum dos dois: conta raiz;</item>
+/// <item><see cref="WalletRecebedor"/> (Fase 2): cobrança na raiz com split de 100% para a carteira da subconta do organizador;</item>
+/// <item><see cref="ChaveApiRecebedor"/> (Fase 3): cobrança criada na própria subconta, com a chave dela. É o único jeito de o
+/// valor ficar em garantia: o Asaas não retém o que chega por split da raiz.</item>
+/// </list>
 /// </summary>
 public sealed record PedidoCobranca(
-    Guid ReferenciaExterna, decimal Valor, string Descricao, DateTime ValidaAte, Pagador? Pagador = null, string? WalletRecebedor = null);
+    Guid ReferenciaExterna, decimal Valor, string Descricao, DateTime ValidaAte, Pagador? Pagador = null, string? WalletRecebedor = null,
+    string? ChaveApiRecebedor = null);
 
 public sealed record CobrancaCriada(string IdTransacao, string UrlPagamento);
 
@@ -38,11 +44,14 @@ public interface IGatewayPagamento
     /// QR Code e "copia e cola" da cobrança, ou <c>null</c> se o gateway não os oferece agora (ex.: conta sem chave Pix).
     /// Nesse caso a tela usa o link de pagamento (<see cref="CobrancaCriada.UrlPagamento"/>).
     /// </summary>
-    Task<PixCobranca?> ObterPixAsync(string idTransacao, CancellationToken cancellationToken = default);
+    /// <param name="chaveRecebedor">Chave da subconta em que a cobrança foi criada (Fase 3); nula para cobrança da raiz.</param>
+    Task<PixCobranca?> ObterPixAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default);
 
-    Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, CancellationToken cancellationToken = default);
+    /// <param name="chaveRecebedor">Chave da subconta em que a cobrança foi criada (Fase 3); nula para cobrança da raiz.</param>
+    Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default);
 
-    Task SolicitarEstornoAsync(string idTransacao, decimal valor, CancellationToken cancellationToken = default);
+    /// <param name="chaveRecebedor">Chave da subconta em que a cobrança foi criada (Fase 3); nula para cobrança da raiz.</param>
+    Task SolicitarEstornoAsync(string idTransacao, decimal valor, string? chaveRecebedor = null, CancellationToken cancellationToken = default);
 
     /// <summary>Confere a autenticidade do webhook (HMAC, token em cabeçalho etc., conforme o fornecedor).</summary>
     bool ValidarAssinaturaWebhook(string corpoBruto, IReadOnlyDictionary<string, string> cabecalhos);

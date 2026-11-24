@@ -42,12 +42,23 @@ public class PagamentoService(
     {
         // Fase 2 (split): sem a conta de recebimento aprovada não há para onde mandar o dinheiro (RN25). Só acontece se a
         // conta for rejeitada depois de o evento estar no ar; a publicação já exige a aprovação.
+        // Fase 3 (garantia ligada na subconta): a cobrança nasce na subconta, com a chave dela; só assim o valor fica retido.
         string? walletRecebedor = null;
+        string? chaveRecebedor = null;
         if (gatewayContas.SubcontasHabilitadas)
         {
             try
             {
-                walletRecebedor = (await contasRecebimento.ObterAprovadaAsync(evento.OrganizadorId, cancellationToken)).WalletId;
+                var conta = await contasRecebimento.ObterAprovadaAsync(evento.OrganizadorId, cancellationToken);
+                if (gatewayContas.GarantiaHabilitada && conta.GarantiaHabilitadaEm is not null)
+                {
+                    pagamento.CobrarNaSubconta(conta.Id);
+                    chaveRecebedor = await contasRecebimento.ChaveDaCobrancaAsync(conta.Id, cancellationToken);
+                }
+                else
+                {
+                    walletRecebedor = conta.WalletId;
+                }
             }
             catch (RegraDeNegocioException)
             {
@@ -69,7 +80,7 @@ public class PagamentoService(
             var usuario = await usuarios.ObterPorIdAsync(inscricao.UsuarioId, cancellationToken);
             var pagador = usuario is null ? null : new Pagador(usuario.Id, usuario.Nome, usuario.Email, usuario.Cpf);
             cobranca = await gateway.CriarCobrancaAsync(
-                new PedidoCobranca(pagamento.Id, pagamento.Valor, $"Inscrição em {evento.Titulo}", inscricao.ReservadaAte ?? relogio.UtcAgora, pagador, walletRecebedor),
+                new PedidoCobranca(pagamento.Id, pagamento.Valor, $"Inscrição em {evento.Titulo}", inscricao.ReservadaAte ?? relogio.UtcAgora, pagador, walletRecebedor, chaveRecebedor),
                 cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -125,7 +136,8 @@ public class PagamentoService(
         {
             try
             {
-                var status = await gateway.ConsultarCobrancaAsync(candidato.IdTransacao, cancellationToken);
+                var chave = await contasRecebimento.ChaveDaCobrancaAsync(candidato.ContaRecebimentoId, cancellationToken);
+                var status = await gateway.ConsultarCobrancaAsync(candidato.IdTransacao, chave, cancellationToken);
                 if (status != StatusPagamento.Aprovado)
                 {
                     continue;
@@ -227,7 +239,8 @@ public class PagamentoService(
         PixCobranca? pix;
         try
         {
-            pix = await gateway.ObterPixAsync(pendente.IdTransacaoGateway!, cancellationToken);
+            var chave = await contasRecebimento.ChaveDaCobrancaAsync(pendente.ContaRecebimentoId, cancellationToken);
+            pix = await gateway.ObterPixAsync(pendente.IdTransacaoGateway!, chave, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -397,7 +410,7 @@ public class PagamentoService(
             await unitOfWork.SalvarAsync(cancellationToken);
 
             // Fase 3: guarda o id da garantia agora (melhor esforço); se falhar, a tarefa de liberação busca depois.
-            await garantias.TentarRegistrarAsync(pagamento, inscricao.EventoId, cancellationToken);
+            await garantias.TentarRegistrarAsync(pagamento, cancellationToken);
             return new WebhookResponse(true);
         }
 

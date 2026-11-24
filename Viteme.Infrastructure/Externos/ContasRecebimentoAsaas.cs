@@ -35,7 +35,7 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
 
     public async Task<SubcontaCriada> CriarSubcontaAsync(DadosSubconta dados, CancellationToken cancellationToken = default)
     {
-        // confirmar Q3: campos obrigatórios de POST /v3/accounts para PJ (a documentação pede incomeValue e companyType).
+        // Q3 conferida no sandbox PJ (2026-11-24, docs/evidencias/asaas-fase2-*.json): este corpo cria a subconta; a cidade vem do CEP.
         var corpo = new Dictionary<string, object?>
         {
             ["name"] = dados.RazaoSocial,
@@ -66,12 +66,18 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
                     enabled = true,
                     interrupted = false,
                     authToken = _opcoes.TokenWebhook,
-                    // confirmar Q6: nomes dos eventos de situação de conta.
+                    // Situação da conta (confirmar Q6: nomes) e pagamentos: com a garantia (Fase 3), as cobranças nascem na
+                    // subconta e os eventos delas chegam por este webhook, não pelo da raiz.
                     events = new[]
                     {
                         "ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED",
                         "ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED",
                         "ACCOUNT_STATUS_GENERAL_APPROVAL_PENDING",
+                        "PAYMENT_RECEIVED",
+                        "PAYMENT_CONFIRMED",
+                        "PAYMENT_OVERDUE",
+                        "PAYMENT_DELETED",
+                        "PAYMENT_REFUNDED",
                     },
                 },
             };
@@ -113,7 +119,7 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
             return null;
         }
 
-        // confirmar Q6: o id em accountStatus é o da subconta (o mesmo devolvido por POST /v3/accounts)?
+        // Conferido no sandbox: GET /myAccount/status devolve o mesmo id da conta. Falta confirmar o corpo do webhook (Q6).
         if (string.IsNullOrWhiteSpace(dados.AccountStatus?.Id))
         {
             throw new FormatException("O webhook de conta deve informar accountStatus.id.");
@@ -126,7 +132,8 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
 
     public async Task HabilitarGarantiaAsync(string contaId, CancellationToken cancellationToken = default)
     {
-        // confirmar: POST /v3/accounts/{id}/escrow existe no sandbox (seção 7 do plano). Só recebimentos posteriores ficam retidos.
+        // Conferido no sandbox (2026-11-24): responde 200 com a chave da raiz e devolve { enabled, daysToExpire, isFeePayer }.
+        // Só recebimentos posteriores ficam retidos.
         await _api.EnviarAsync<JsonElement>(
             HttpMethod.Post, $"accounts/{Uri.EscapeDataString(contaId)}/escrow",
             new
@@ -141,7 +148,8 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
 
     public async Task<string?> ObterGarantiaAsync(string idTransacao, string chaveApiSubconta, CancellationToken cancellationToken = default)
     {
-        // confirmar Q1/Q2: a garantia do split é consultada com a chave da subconta, pela cobrança da conta raiz?
+        // Q2 conferida no sandbox (2026-11-24): consulta com a chave da subconta, pelo id da cobrança DELA. A garantia só existe
+        // para cobranças criadas pela própria subconta: o valor que chega por split da raiz não fica retido (404 aqui).
         var garantia = await ConsultarGarantiaAsync(idTransacao, chaveApiSubconta, cancellationToken);
         return string.IsNullOrWhiteSpace(garantia?.Id) ? null : garantia.Id;
     }
@@ -156,15 +164,15 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
             return;
         }
 
-        // confirmar Q1: finish com a chave da subconta ou da raiz.
+        // Q1 conferida no sandbox (2026-11-24): só a chave da RAIZ encerra (a da subconta recebe 404); repetir também dá 404.
         await _api.EnviarAsync<JsonElement>(
-            HttpMethod.Post, $"escrow/{Uri.EscapeDataString(garantiaId)}/finish", null, chaveApiSubconta, cancellationToken);
+            HttpMethod.Post, $"escrow/{Uri.EscapeDataString(garantiaId)}/finish", null, null, cancellationToken);
         _logger.LogInformation("[Asaas] garantia {GarantiaId} encerrada; valor liberado à subconta.", garantiaId);
     }
 
     public void Dispose() => _api.Dispose();
 
-    // confirmar Q6: valores de general (APPROVED, REJECTED, PENDING, AWAITING_APPROVAL).
+    // Subconta nova no sandbox: general PENDING, commercialInfo AWAITING_APPROVAL. Falta ver APPROVED/REJECTED (Q6).
     internal static SituacaoContaRecebimento MapearSituacao(string? geral) => geral switch
     {
         "APPROVED" => SituacaoContaRecebimento.Aprovada,

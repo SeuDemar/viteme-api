@@ -284,9 +284,15 @@ public class ContaRecebimentoTests(BancoFixture banco, ApiFactory api) : IClassF
         ambiente.Contas.Garantias[pago.IdTransacao] = "esc_1";
         (await ambiente.WebhookDeAsync(pago, "APROVADO")).EnsureSuccessStatusCode();
 
+        // A cobrança nasceu na subconta, com a chave dela e sem split (o Asaas só retém cobranças da própria subconta).
+        var cobranca = Assert.Single(ambiente.Gateway.Cobrancas);
+        Assert.Null(cobranca.WalletRecebedor);
+        Assert.Equal(Assert.Single(ambiente.Contas.ChavesEntregues), cobranca.ChaveApiRecebedor);
         await using (var contexto = banco.CriarContexto())
         {
-            Assert.Equal("esc_1", (await contexto.Pagamentos.SingleAsync(p => p.Id == pago.PagamentoId)).GarantiaId);
+            var gravado = await contexto.Pagamentos.SingleAsync(p => p.Id == pago.PagamentoId);
+            Assert.Equal("esc_1", gravado.GarantiaId);
+            Assert.Equal((await contexto.ContasRecebimento.SingleAsync(c => c.UsuarioId == organizador.UsuarioId)).Id, gravado.ContaRecebimentoId);
         }
 
         // Evento termina; um dia depois ainda não libera, dois dias depois libera uma única vez.
@@ -306,6 +312,43 @@ public class ContaRecebimentoTests(BancoFixture banco, ApiFactory api) : IClassF
         Assert.Contains(encerrada.Chave, ambiente.Contas.ChavesEntregues);
         await using var leitura = banco.CriarContexto();
         Assert.NotNull((await leitura.Pagamentos.SingleAsync(p => p.Id == pago.PagamentoId)).GarantiaLiberadaEm);
+    }
+
+    [FactBanco]
+    public async Task Estorno_de_cobranca_criada_na_subconta_usa_a_chave_dela()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        ambiente.Contas.SubcontasHabilitadas = true;
+        ambiente.Contas.GarantiaHabilitada = true;
+        var organizador = await OrganizadorAprovadoAsync(ambiente);
+        await NoEscopoAsync(ambiente, sp => sp.GetRequiredService<ContaRecebimentoService>().SincronizarAsync(10));
+        var evento = await ambiente.CriarEventoAsync(organizador, ambiente.CorpoEvento(preco: 50m), publicar: true);
+        var participante = await ambiente.NovaSessaoAsync();
+        var pago = await ambiente.InscreverEmEventoPagoAsync(participante, evento);
+        (await ambiente.WebhookDeAsync(pago, "APROVADO")).EnsureSuccessStatusCode();
+
+        var resposta = await ambiente.PostAsync($"/api/v1/inscricoes/{pago.InscricaoId}/cancelar", token: participante.Token);
+
+        resposta.EnsureSuccessStatusCode();
+        Assert.Equal((pago.IdTransacao, 50m), Assert.Single(ambiente.Gateway.Estornos));
+        Assert.Equal(Assert.Single(ambiente.Contas.ChavesEntregues), Assert.Single(ambiente.Gateway.ChavesDosEstornos));
+    }
+
+    [FactBanco]
+    public async Task Sem_garantia_ligada_o_estorno_e_pela_conta_raiz()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        ambiente.Contas.SubcontasHabilitadas = true;
+        var organizador = await OrganizadorAprovadoAsync(ambiente);
+        var evento = await ambiente.CriarEventoAsync(organizador, ambiente.CorpoEvento(preco: 50m), publicar: true);
+        var participante = await ambiente.NovaSessaoAsync();
+        var pago = await ambiente.InscreverEmEventoPagoAsync(participante, evento);
+        (await ambiente.WebhookDeAsync(pago, "APROVADO")).EnsureSuccessStatusCode();
+
+        (await ambiente.PostAsync($"/api/v1/inscricoes/{pago.InscricaoId}/cancelar", token: participante.Token)).EnsureSuccessStatusCode();
+
+        Assert.Null(Assert.Single(ambiente.Gateway.Cobrancas).ChaveApiRecebedor);
+        Assert.Null(Assert.Single(ambiente.Gateway.ChavesDosEstornos));
     }
 
     [FactBanco]

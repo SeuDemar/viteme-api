@@ -52,13 +52,13 @@ public class GatewayPagamentoStub(IOptions<GatewayStubOptions> opcoes, ILogger<G
         return Task.FromResult(new CobrancaCriada(id, $"{opcoes.Value.UrlBase.TrimEnd('/')}/{id}"));
     }
 
-    public virtual Task<PixCobranca?> ObterPixAsync(string idTransacao, CancellationToken cancellationToken = default) =>
+    public virtual Task<PixCobranca?> ObterPixAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default) =>
         Task.FromResult<PixCobranca?>(null);
 
-    public virtual Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, CancellationToken cancellationToken = default) =>
+    public virtual Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default) =>
         Task.FromResult(StatusPagamento.Pendente);
 
-    public virtual Task SolicitarEstornoAsync(string idTransacao, decimal valor, CancellationToken cancellationToken = default)
+    public virtual Task SolicitarEstornoAsync(string idTransacao, decimal valor, string? chaveRecebedor = null, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("[Gateway stub] estorno de {Valor} solicitado para {IdTransacao}.", valor, idTransacao);
         return Task.CompletedTask;

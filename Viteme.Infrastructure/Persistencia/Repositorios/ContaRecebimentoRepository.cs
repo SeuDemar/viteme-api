@@ -7,6 +7,9 @@ namespace Viteme.Infrastructure.Persistencia.Repositorios;
 
 public class ContaRecebimentoRepository(VitemeDbContext contexto) : IContaRecebimentoRepository
 {
+    public Task<ContaRecebimento?> ObterPorIdAsync(Guid contaId, CancellationToken cancellationToken = default) =>
+        contexto.ContasRecebimento.FirstOrDefaultAsync(c => c.Id == contaId, cancellationToken);
+
     public Task<ContaRecebimento?> ObterPorUsuarioAsync(Guid usuarioId, CancellationToken cancellationToken = default) =>
         contexto.ContasRecebimento.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId, cancellationToken);
 

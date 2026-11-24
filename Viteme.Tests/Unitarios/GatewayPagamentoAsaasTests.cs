@@ -58,6 +58,40 @@ public class GatewayPagamentoAsaasTests
     }
 
     [Fact]
+    public async Task Com_a_chave_da_subconta_cliente_e_cobranca_nascem_nela_e_sem_split()
+    {
+        var roteiro = new Roteiro()
+            .Responde(HttpMethod.Get, "payments?externalReference=", """{"data":[]}""")
+            .Responde(HttpMethod.Get, "customers?externalReference=", """{"data":[]}""")
+            .Responde(HttpMethod.Post, "customers", """{"id":"cus_sub","deleted":false}""")
+            .Responde(HttpMethod.Post, "payments", """{"id":"pay_sub","status":"PENDING","invoiceUrl":"u"}""");
+        using var gateway = Criar(roteiro);
+
+        var cobranca = await gateway.CriarCobrancaAsync(Pedido() with { WalletRecebedor = "wal_org", ChaveApiRecebedor = "chave-da-subconta" });
+
+        Assert.Equal("pay_sub", cobranca.IdTransacao);
+        Assert.All(roteiro.Chamadas, c => Assert.Equal("chave-da-subconta", c.Requisicao.Headers.GetValues("access_token").Single()));
+        Assert.DoesNotContain("split", roteiro.Chamadas.Single(c => c.Metodo == HttpMethod.Post && c.Rota.EndsWith("/payments")).Corpo);
+    }
+
+    [Fact]
+    public async Task Pix_consulta_e_estorno_da_cobranca_da_subconta_usam_a_chave_dela()
+    {
+        var roteiro = new Roteiro()
+            .Responde(HttpMethod.Get, "payments/pay_sub/pixQrCode", """{"encodedImage":"aW1n","payload":"000201","expirationDate":"2026-11-25 23:59:59"}""")
+            .Responde(HttpMethod.Get, "payments/pay_sub", """{"id":"pay_sub","status":"RECEIVED","deleted":false}""")
+            .Responde(HttpMethod.Post, "payments/pay_sub/refund", """{"id":"pay_sub","status":"REFUNDED","deleted":false}""");
+        using var gateway = Criar(roteiro);
+
+        await gateway.ObterPixAsync("pay_sub", "chave-da-subconta");
+        await gateway.ConsultarCobrancaAsync("pay_sub", "chave-da-subconta");
+        await gateway.SolicitarEstornoAsync("pay_sub", 50m, "chave-da-subconta");
+
+        Assert.Equal(4, roteiro.Chamadas.Count);
+        Assert.All(roteiro.Chamadas, c => Assert.Equal("chave-da-subconta", c.Requisicao.Headers.GetValues("access_token").Single()));
+    }
+
+    [Fact]
     public async Task Com_carteira_do_organizador_a_cobranca_leva_split_de_100_por_cento()
     {
         var roteiro = new Roteiro()

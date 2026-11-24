@@ -352,3 +352,15 @@ INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
 VALUES ('20261124150000_ContaRecebimento', '10.0.13');
 
 COMMIT;
+
+START TRANSACTION;
+ALTER TABLE pagamento ADD conta_recebimento_id uuid;
+
+CREATE INDEX ix_pagamento_conta_recebimento_id ON pagamento (conta_recebimento_id);
+
+ALTER TABLE pagamento ADD CONSTRAINT fk_pagamento_conta_recebimento_conta_recebimento_id FOREIGN KEY (conta_recebimento_id) REFERENCES conta_recebimento (id) ON DELETE RESTRICT;
+
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20261125120000_CobrancaNaSubconta', '10.0.13');
+
+COMMIT;

@@ -124,7 +124,7 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    private readonly HttpClient _http;
+    private readonly ApiAsaas _api;
     private readonly GatewayAsaasOptions _opcoes;
     private readonly ILogger<GatewayPagamentoAsaas> _logger;
 
@@ -137,13 +137,7 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
     {
         _opcoes = opcoes.Value;
         _logger = logger;
-        _http = new HttpClient(handler, disposeHandler: true)
-        {
-            BaseAddress = new Uri(_opcoes.UrlBase.TrimEnd('/') + "/"),
-            Timeout = TimeSpan.FromSeconds(_opcoes.TimeoutSegundos),
-        };
-        _http.DefaultRequestHeaders.Add("access_token", _opcoes.ChaveApi);
-        _http.DefaultRequestHeaders.UserAgent.Add(ProductInfoHeaderValue.Parse(_opcoes.NomeAplicacao));
+        _api = new ApiAsaas(handler, _opcoes);
     }
 
     public bool ExigeDocumentoDoPagador => true;
@@ -154,15 +148,18 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
     {
         var referencia = pedido.ReferenciaExterna.ToString();
 
+        // Fase 3: com a chave da subconta, cliente e cobrança nascem nela (única forma de o valor ficar em garantia).
+        var chave = pedido.ChaveApiRecebedor;
+
         // Idempotência: a mesma referência externa devolve a cobrança já criada (retentativa após falha de rede).
-        var existente = await BuscarAsync<ListaAsaas<PagamentoAsaas>>($"payments?externalReference={Uri.EscapeDataString(referencia)}", cancellationToken);
+        var existente = await BuscarAsync<ListaAsaas<PagamentoAsaas>>($"payments?externalReference={Uri.EscapeDataString(referencia)}", chave, cancellationToken);
         if (existente?.Data.FirstOrDefault(p => !p.Deleted) is { } ja)
         {
             return new CobrancaCriada(ja.Id, ja.InvoiceUrl ?? string.Empty);
         }
 
         var pagador = pedido.Pagador ?? throw new InvalidOperationException("O Asaas exige os dados do pagador para criar a cobrança.");
-        var cliente = await ObterOuCriarClienteAsync(pagador, cancellationToken);
+        var cliente = await ObterOuCriarClienteAsync(pagador, chave, cancellationToken);
 
         var corpo = new Dictionary<string, object>
         {
@@ -176,21 +173,21 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
 
         // Fase 2: o valor líquido vai inteiro para a subconta do organizador. Com a Conta Escrow ligada nela (Fase 3), fica
         // retido até a liberação (RN26). Taxa da plataforma sobre o split: decisão em aberto (hoje 100% ao organizador).
-        if (!string.IsNullOrWhiteSpace(pedido.WalletRecebedor))
+        if (chave is null && !string.IsNullOrWhiteSpace(pedido.WalletRecebedor))
         {
             corpo["split"] = new[] { new { walletId = pedido.WalletRecebedor, percentualValue = 100 } };
         }
 
-        var criada = await EnviarAsync<PagamentoAsaas>(HttpMethod.Post, "payments", corpo, cancellationToken);
+        var criada = await EnviarAsync<PagamentoAsaas>(HttpMethod.Post, "payments", corpo, chave, cancellationToken);
         _logger.LogInformation("[Asaas] cobrança {IdTransacao} de {Valor} criada para a referência {Referencia}.", criada.Id, pedido.Valor, referencia);
         return new CobrancaCriada(criada.Id, criada.InvoiceUrl ?? string.Empty);
     }
 
-    public async Task<PixCobranca?> ObterPixAsync(string idTransacao, CancellationToken cancellationToken = default)
+    public async Task<PixCobranca?> ObterPixAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            var qr = await EnviarAsync<PixAsaas>(HttpMethod.Get, $"payments/{Uri.EscapeDataString(idTransacao)}/pixQrCode", null, cancellationToken);
+            var qr = await EnviarAsync<PixAsaas>(HttpMethod.Get, $"payments/{Uri.EscapeDataString(idTransacao)}/pixQrCode", null, chaveRecebedor, cancellationToken);
             if (string.IsNullOrWhiteSpace(qr.Payload) || string.IsNullOrWhiteSpace(qr.EncodedImage))
             {
                 return null;
@@ -206,16 +203,16 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         }
     }
 
-    public async Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, CancellationToken cancellationToken = default)
+    public async Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default)
     {
-        var pagamento = await EnviarAsync<PagamentoAsaas>(HttpMethod.Get, $"payments/{Uri.EscapeDataString(idTransacao)}", null, cancellationToken);
+        var pagamento = await EnviarAsync<PagamentoAsaas>(HttpMethod.Get, $"payments/{Uri.EscapeDataString(idTransacao)}", null, chaveRecebedor, cancellationToken);
         return pagamento.Deleted ? StatusPagamento.Expirado : MapearStatus(pagamento.Status);
     }
 
-    public async Task SolicitarEstornoAsync(string idTransacao, decimal valor, CancellationToken cancellationToken = default)
+    public async Task SolicitarEstornoAsync(string idTransacao, decimal valor, string? chaveRecebedor = null, CancellationToken cancellationToken = default)
     {
         // Idempotência (P30): se o estorno já foi feito ou está em andamento, não pede de novo.
-        var atual = await EnviarAsync<PagamentoAsaas>(HttpMethod.Get, $"payments/{Uri.EscapeDataString(idTransacao)}", null, cancellationToken);
+        var atual = await EnviarAsync<PagamentoAsaas>(HttpMethod.Get, $"payments/{Uri.EscapeDataString(idTransacao)}", null, chaveRecebedor, cancellationToken);
         if (atual.Status is "REFUNDED" or "REFUND_REQUESTED" or "REFUND_IN_PROGRESS")
         {
             _logger.LogInformation("[Asaas] estorno de {IdTransacao} já {Status}; nada a fazer.", idTransacao, atual.Status);
@@ -224,7 +221,7 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
 
         await EnviarAsync<PagamentoAsaas>(
             HttpMethod.Post, $"payments/{Uri.EscapeDataString(idTransacao)}/refund",
-            new { value = valor, description = "Estorno de inscrição no Viteme" }, cancellationToken);
+            new { value = valor, description = "Estorno de inscrição no Viteme" }, chaveRecebedor, cancellationToken);
         _logger.LogInformation("[Asaas] estorno de {Valor} solicitado para {IdTransacao}.", valor, idTransacao);
     }
 
@@ -273,7 +270,7 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         return new NotificacaoPagamento(pagamento.Id, referencia, status.Value, pagamento.Value.Value, pagamento.BillingType);
     }
 
-    public void Dispose() => _http.Dispose();
+    public void Dispose() => _api.Dispose();
 
     // Pix pago ou confirmado aprova; vencida ou apagada expira; estorno total estorna. O resto não muda o pagamento.
     private static StatusPagamento? MapearEvento(string evento) => evento switch
@@ -301,16 +298,16 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         return data < hoje ? hoje : data;
     }
 
-    private async Task<string> ObterOuCriarClienteAsync(Pagador pagador, CancellationToken cancellationToken)
+    private async Task<string> ObterOuCriarClienteAsync(Pagador pagador, string? chave, CancellationToken cancellationToken)
     {
         var referencia = pagador.UsuarioId.ToString();
-        var existentes = await BuscarAsync<ListaAsaas<ClienteAsaas>>($"customers?externalReference={Uri.EscapeDataString(referencia)}", cancellationToken);
+        var existentes = await BuscarAsync<ListaAsaas<ClienteAsaas>>($"customers?externalReference={Uri.EscapeDataString(referencia)}", chave, cancellationToken);
         if (existentes?.Data.FirstOrDefault(c => !c.Deleted) is { } cliente)
         {
             // Cliente criado antes de o usuário informar o CPF (ou com outro CPF): atualiza para a cobrança ser aceita.
             if (!string.IsNullOrWhiteSpace(pagador.CpfCnpj) && cliente.CpfCnpj != pagador.CpfCnpj)
             {
-                await EnviarAsync<ClienteAsaas>(HttpMethod.Put, $"customers/{cliente.Id}", new { cpfCnpj = pagador.CpfCnpj }, cancellationToken);
+                await EnviarAsync<ClienteAsaas>(HttpMethod.Put, $"customers/{cliente.Id}", new { cpfCnpj = pagador.CpfCnpj }, chave, cancellationToken);
             }
 
             return cliente.Id;
@@ -329,43 +326,16 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         var criado = await EnviarAsync<ClienteAsaas>(
             HttpMethod.Post, "customers",
             new { name = pagador.Nome, email = pagador.Email, cpfCnpj = documento, externalReference = referencia, notificationDisabled = true },
-            cancellationToken);
+            chave, cancellationToken);
         return criado.Id;
     }
 
-    private Task<T?> BuscarAsync<T>(string rota, CancellationToken cancellationToken) where T : class =>
-        EnviarAsync<T?>(HttpMethod.Get, rota, null, cancellationToken);
+    private Task<T?> BuscarAsync<T>(string rota, string? chave, CancellationToken cancellationToken) where T : class =>
+        _api.EnviarAsync<T?>(HttpMethod.Get, rota, null, chave, cancellationToken);
 
-    private async Task<T> EnviarAsync<T>(HttpMethod metodo, string rota, object? corpo, CancellationToken cancellationToken)
-    {
-        using var requisicao = new HttpRequestMessage(metodo, rota);
-        if (corpo is not null)
-        {
-            requisicao.Content = JsonContent.Create(corpo, options: Json);
-        }
-
-        using var resposta = await _http.SendAsync(requisicao, cancellationToken);
-        if (!resposta.IsSuccessStatusCode)
-        {
-            var detalhe = await LerErroAsync(resposta, cancellationToken);
-            throw new HttpRequestException($"Asaas respondeu {(int)resposta.StatusCode} em {metodo} {rota}: {detalhe}", null, resposta.StatusCode);
-        }
-
-        return (await resposta.Content.ReadFromJsonAsync<T>(Json, cancellationToken))!;
-    }
-
-    private static async Task<string> LerErroAsync(HttpResponseMessage resposta, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var erro = await resposta.Content.ReadFromJsonAsync<ErroAsaas>(Json, cancellationToken);
-            return erro?.Errors is { Count: > 0 } lista ? string.Join("; ", lista.Select(e => e.Description)) : "sem detalhe";
-        }
-        catch (Exception ex) when (ex is JsonException or NotSupportedException)
-        {
-            return "resposta não é JSON";
-        }
-    }
+    /// <summary>Chave nula: conta raiz (configuração). Com a chave da subconta, a chamada é feita como ela (Fase 3).</summary>
+    private Task<T> EnviarAsync<T>(HttpMethod metodo, string rota, object? corpo, string? chave, CancellationToken cancellationToken) =>
+        _api.EnviarAsync<T>(metodo, rota, corpo, chave, cancellationToken);
 
     private sealed record ListaAsaas<T>(List<T> Data);
 
@@ -378,7 +348,4 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
 
     private sealed record WebhookAsaas(string? Id, string? Event, PagamentoAsaas? Payment);
 
-    private sealed record ErroAsaas(List<DetalheErroAsaas>? Errors);
-
-    private sealed record DetalheErroAsaas(string? Code, string? Description);
 }

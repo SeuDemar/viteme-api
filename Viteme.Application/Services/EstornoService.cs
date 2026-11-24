@@ -14,6 +14,7 @@ namespace Viteme.Application.Services;
 public class EstornoService(
     IPagamentoRepository pagamentos,
     IGatewayPagamento gateway,
+    ContaRecebimentoService contasRecebimento,
     NotificacaoService notificacoes,
     IUnitOfWork unitOfWork,
     ILogger<EstornoService> logger)
@@ -45,7 +46,9 @@ public class EstornoService(
 
         try
         {
-            await gateway.SolicitarEstornoAsync(pagamento.IdTransacaoGateway, pagamento.Valor, cancellationToken);
+            // Cobrança criada na subconta (Fase 3) só pode ser estornada com a chave dela.
+            var chave = await contasRecebimento.ChaveDaCobrancaAsync(pagamento.ContaRecebimentoId, cancellationToken);
+            await gateway.SolicitarEstornoAsync(pagamento.IdTransacaoGateway, pagamento.Valor, chave, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

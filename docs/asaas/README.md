@@ -75,6 +75,12 @@ URL do webhook a cadastrar no Asaas: `POST https://<api>/api/v1/pagamentos/webho
 
 - Sem CPF/CNPJ do pagador (P1/Q4) a cobrança só funciona no sandbox, com o CPF padrão acima. Em produção a criação do cliente falha.
 - Subconta/split (Fase 2) e escrow (Fase 3) estão no código, desligados: a cobrança cai na conta raiz até ligar as chaves acima.
+  Com o escrow, a cobrança é criada na subconta (o Asaas só retém cobranças da própria subconta). Antes de publicar, rode no
+  Supabase `docs/banco/migracoes/20261125120000_CobrancaNaSubconta.sql`.
+- Conferência no sandbox PJ: `docs/asaas/fase2-sandbox.ps1` (chamadas soltas, com evidência) e o teste opt-in
+  `VITEME_TESTES_ASAAS_SANDBOX=1 dotnet test --filter AsaasSandboxTests` (adaptadores reais; precisa de `ASAAS_API_KEY`).
+  No sandbox: habilitar o split no painel (Integrações > Segurança) e aprovar a subconta com `POST /v3/sandbox/myAccount/approve`
+  (chave da subconta). Nome de subconta com número ou caractere especial impede a aprovação.
   Os pontos que dependem da conta sandbox PJ estão marcados com `confirmar Qn` em `ContasRecebimentoAsaas.cs`.
 - `UrlPagamento` é a `invoiceUrl` do Asaas (página com o QR Code). Mostrar o QR Code e o "copia e cola" no próprio site
   (`GET /payments/{id}/pixQrCode`) é a Fase 4.

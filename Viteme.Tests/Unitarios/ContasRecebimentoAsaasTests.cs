@@ -51,6 +51,10 @@ public class ContasRecebimentoAsaasTests
         var webhook = corpo.RootElement.GetProperty("webhooks")[0];
         Assert.Equal("https://api/api/v1/pagamentos/webhook", webhook.GetProperty("url").GetString());
         Assert.Equal("token-webhook", webhook.GetProperty("authToken").GetString());
+        var eventos = webhook.GetProperty("events").EnumerateArray().Select(e => e.GetString()).ToList();
+        Assert.Contains("ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED", eventos);
+        Assert.Contains("PAYMENT_RECEIVED", eventos);
+        Assert.Contains("PAYMENT_REFUNDED", eventos);
         Assert.Equal("chave-sub", Chave(roteiro.Chamadas[1].Requisicao));
     }
 
@@ -145,7 +149,9 @@ public class ContasRecebimentoAsaasTests
             await contas.EncerrarGarantiaAsync("pay_1", "esc_1", "chave-sub");
         }
 
-        Assert.Contains(ativa.Chamadas, c => c.Metodo == HttpMethod.Post && c.Rota == "/v3/escrow/esc_1/finish" && Chave(c.Requisicao) == "chave-sub");
+        // Conferido no sandbox: só a chave da raiz encerra a garantia; a consulta usa a da subconta.
+        Assert.Contains(ativa.Chamadas, c => c.Metodo == HttpMethod.Post && c.Rota == "/v3/escrow/esc_1/finish" && Chave(c.Requisicao) == "chave-raiz");
+        Assert.Contains(ativa.Chamadas, c => c.Metodo == HttpMethod.Get && Chave(c.Requisicao) == "chave-sub");
 
         var encerrada = new RoteiroHttp()
             .Responde(HttpMethod.Get, "payments/pay_1/escrow", """{"id":"esc_1","status":"DONE","finishDate":"2026-11-30"}""");

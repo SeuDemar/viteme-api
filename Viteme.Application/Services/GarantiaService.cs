@@ -6,11 +6,11 @@ namespace Viteme.Application.Services;
 
 /// <summary>
 /// Garantia (Conta Escrow, Fase 3 do Asaas): o valor pago fica retido na subconta do organizador e só é liberado depois do
-/// evento (RN26). Desligada pela configuração, nada aqui chama o gateway.
+/// evento (RN26). O Asaas só retém cobranças criadas na própria subconta (conferido no sandbox em 2026-11-24), então só
+/// pagamentos com <see cref="Pagamento.ContaRecebimentoId"/> têm garantia. Desligada pela configuração, nada aqui chama o gateway.
 /// </summary>
 public class GarantiaService(
     IPagamentoRepository pagamentos,
-    IEventoRepository eventos,
     IContaRecebimentoRepository contas,
     IContasRecebimento gateway,
     ICifradorSegredos cifrador,
@@ -25,18 +25,18 @@ public class GarantiaService(
     /// Na aprovação do pagamento: guarda o id da garantia. Melhor esforço: uma falha só é registrada no log, porque o
     /// pagamento já está confirmado e a tarefa de liberação busca o id depois.
     /// </summary>
-    public async Task TentarRegistrarAsync(Pagamento pagamento, Guid eventoId, CancellationToken cancellationToken = default)
+    public async Task TentarRegistrarAsync(Pagamento pagamento, CancellationToken cancellationToken = default)
     {
-        if (!gateway.GarantiaHabilitada || pagamento.GarantiaId is not null || pagamento.IdTransacaoGateway is null)
+        if (!gateway.GarantiaHabilitada || pagamento.GarantiaId is not null || pagamento.IdTransacaoGateway is null
+            || pagamento.ContaRecebimentoId is not { } contaId)
         {
             return;
         }
 
         try
         {
-            var evento = await eventos.ObterPorIdAsync(eventoId, cancellationToken);
-            var conta = evento is null ? null : await contas.ObterPorUsuarioAsync(evento.OrganizadorId, cancellationToken);
-            if (conta?.GarantiaHabilitadaEm is null)
+            var conta = await contas.ObterPorIdAsync(contaId, cancellationToken);
+            if (conta is null)
             {
                 return;
             }
@@ -56,8 +56,8 @@ public class GarantiaService(
     }
 
     /// <summary>
-    /// Tarefa periódica (RN26): libera as garantias dos pagamentos de eventos encerrados há mais de
-    /// <see cref="PrazoLiberacao"/>. Pagamento sem garantia (anterior à Conta Escrow) sai da fila sem chamar o gateway.
+    /// Tarefa periódica (RN26): libera as garantias dos pagamentos de eventos encerrados há mais de <see cref="PrazoLiberacao"/>.
+    /// Pagamento cobrado na conta raiz (sem garantia: split ou antes da Fase 3) sai da fila sem chamar o gateway.
     /// Cada pagamento é gravado à parte: uma falha não impede os outros e é repetida no próximo ciclo.
     /// </summary>
     public async Task<int> LiberarVencidasAsync(int limite, CancellationToken cancellationToken = default)
@@ -79,8 +79,8 @@ public class GarantiaService(
                     continue;
                 }
 
-                var conta = await contas.ObterPorUsuarioAsync(item.OrganizadorId, cancellationToken);
-                if (conta?.GarantiaHabilitadaEm is not { } habilitadaEm || (item.GarantiaId is null && item.CriadoEm < habilitadaEm))
+                var conta = item.ContaRecebimentoId is { } contaId ? await contas.ObterPorIdAsync(contaId, cancellationToken) : null;
+                if (conta is null)
                 {
                     pagamento.DispensarGarantia(agora);
                     await unitOfWork.SalvarAsync(cancellationToken);
@@ -91,7 +91,7 @@ public class GarantiaService(
                 var garantiaId = item.GarantiaId ?? await gateway.ObterGarantiaAsync(item.IdTransacao, chave, cancellationToken);
                 if (garantiaId is null)
                 {
-                    // O gateway não reteve esta cobrança: o valor já está com o organizador.
+                    // Cobrança da subconta que não ficou retida (ex.: recebida antes de a garantia ser ligada nela).
                     pagamento.DispensarGarantia(agora);
                     await unitOfWork.SalvarAsync(cancellationToken);
                     continue;

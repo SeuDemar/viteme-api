@@ -4,6 +4,8 @@ namespace Viteme.Application.Interfaces;
 
 public interface IContaRecebimentoRepository
 {
+    Task<ContaRecebimento?> ObterPorIdAsync(Guid contaId, CancellationToken cancellationToken = default);
+
     Task<ContaRecebimento?> ObterPorUsuarioAsync(Guid usuarioId, CancellationToken cancellationToken = default);
 
     Task<ContaRecebimento?> ObterPorContaGatewayAsync(string contaGatewayId, CancellationToken cancellationToken = default);

@@ -150,6 +150,19 @@ Fontes: [Introdução à Conta Escrow](https://docs.asaas.com/docs/introducao-co
 - Q1/Q2: valor do split fica retido? `finish` com a chave da raiz ou da subconta? Onde vem o id da garantia?
 - Escrow existe no sandbox? (`POST /v3/accounts/escrow` responde?)
 
+**Respostas da conta sandbox PJ (2026-11-24, `docs/asaas/fase2-sandbox.ps1`, evidência em `docs/evidencias/asaas-fase2-2026-11-24.json`, chaves mascaradas):**
+- **Q3 respondida:** o corpo que `ContasRecebimentoAsaas` envia (name, email, cpfCnpj, companyType, mobilePhone, incomeValue, postalCode, address, addressNumber, province) cria a subconta PJ; a resposta traz `id`, `walletId` e `apiKey` (também em `accessToken.apiKey`); a cidade vem do CEP. **Nome só com letras:** número ou caractere especial no nome impede a aprovação automática e o Pix.
+- **Q6 respondida em parte:** subconta nova nasce `general: PENDING` (`commercialInfo: AWAITING_APPROVAL`); `GET /myAccount/status` (chave da subconta) devolve o mesmo `id` da conta. **No sandbox, aprovar é `POST /v3/sandbox/myAccount/approve` com a chave da própria subconta** (corpo vazio): tudo vira `APPROVED`. Sem aprovação, a subconta não cobra Pix ("sua conta precisa estar aprovada"). `GET /myAccount/documents` vem com `onboardingUrl: null` logo após criar. Falta: o corpo real do webhook de conta (precisa de URL pública).
+- **Split (Fase 2) validado:** com o split habilitado no painel (Integrações > Segurança), a cobrança da raiz com `split: [{ walletId, percentualValue: 100 }]` paga R$ 10,00 e credita **R$ 9,01** (líquido da taxa) na subconta, na hora, como `INTERNAL_TRANSFER_CREDIT`. O código atual da Fase 2 está correto.
+- **Escrow existe no sandbox:** `POST`/`GET /v3/accounts/{id}/escrow` com a chave da raiz respondem 200 `{ isFeePayer, enabled, daysToExpire }`.
+- **Q1/Q2 respondidas, e mudam a Fase 3:**
+  - O valor que chega **por split da raiz não fica retido**, nem com a subconta aprovada e o escrow ligado antes: `GET /payments/{id}/escrow` dá 404 com as duas chaves e o saldo da subconta fica disponível na hora.
+  - Só fica retida a **cobrança criada pela própria subconta** (com a chave dela): `escrow: { id, status: ACTIVE, expirationDate: +daysToExpire }`, saldo disponível não muda.
+  - Consulta: `GET /payments/{id}/escrow` com a **chave da subconta** e o id da cobrança dela.
+  - Encerrar: `POST /escrow/{id}/finish` só com a **chave da raiz** (com a da subconta, 404). Resposta: a cobrança com `escrow.status: DONE`, `finishReason: REQUESTED_BY_CUSTOMER`; o saldo da subconta sobe na hora. Repetir dá 404 (o adaptador já consulta antes). **Corrigido no adaptador.**
+
+**Fase 3 refeita (2026-11-25):** com a garantia ligada na subconta (`conta_recebimento.garantia_habilitada_em`), a cobrança é criada **na subconta**, com a chave dela e sem split (`PedidoCobranca.ChaveApiRecebedor`); o pagamento guarda a conta em `pagamento.conta_recebimento_id` (migration `20261125120000_CobrancaNaSubconta`) e Pix, reconciliação e estorno usam a mesma chave (`ContaRecebimentoService.ChaveDaCobrancaAsync`). O webhook criado em cada subconta recebe também os eventos `PAYMENT_*`. Sem garantia, segue o split da Fase 2. Pagamento sem conta (raiz ou split) sai da fila de liberação sem chamar o gateway. **Validado no sandbox** com os adaptadores reais: `AsaasSandboxTests` (opt-in: `VITEME_TESTES_ASAAS_SANDBOX=1` e `ASAAS_API_KEY`) cria, aprova, liga o escrow, cobra na subconta, paga, vê a garantia retida e a libera. Uma taxa da plataforma, se houver, vira split da subconta para a carteira da raiz (decisão em aberto). Falta: o webhook real (de conta e de pagamento) chegando na API publicada.
+
 ### 8.5 Roteiro quando a conta PJ existir
 1. Criar a conta em sandbox.asaas.com como **PJ**, gerar a chave, preencher 8.2 (ainda com `Habilitar=false`).
 2. Rodar `docs/asaas/fase0-sandbox.ps1` de novo: responde Q1, Q2, Q3, Q6 e o escrow. Ajustar os pontos `// confirmar Qn`.

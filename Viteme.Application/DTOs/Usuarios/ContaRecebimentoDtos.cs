@@ -6,7 +6,7 @@ namespace Viteme.Application.DTOs.Usuarios;
 
 /// <summary>
 /// E41 — dados da empresa para abrir a conta de recebimento (subconta no gateway). CNPJ, razão social e e-mail vêm do perfil.
-/// Campos conforme <c>POST /v3/accounts</c> do Asaas para PJ (confirmar Q3 na conta sandbox PJ).
+/// Campos conforme <c>POST /v3/accounts</c> do Asaas para PJ (conferidos no sandbox PJ em 2026-11-24).
 /// </summary>
 public sealed record CriarContaRecebimentoRequest
 {
