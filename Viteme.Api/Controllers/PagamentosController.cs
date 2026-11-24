@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Viteme.Api.Autenticacao;
+using Viteme.Api.Autorizacao;
 using Viteme.Application.DTOs.Pagamentos;
 using Viteme.Application.Services;
 
@@ -47,6 +48,19 @@ public class PagamentosController(PagamentoService pagamentos) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<IActionResult> ObterStatus(Guid id, CancellationToken cancellationToken) =>
         Ok(await pagamentos.ObterStatusAsync(id, User.ObterUsuarioId(), cancellationToken));
+
+    /// <summary>Totais recebido, retido na garantia e liberado das inscrições pagas do evento (E47). Só o organizador.</summary>
+    /// <remarks>Valores brutos, antes das taxas do meio de pagamento.</remarks>
+    /// <response code="403">Quem não é o organizador do evento.</response>
+    /// <response code="404">Evento inexistente.</response>
+    [HttpGet("eventos/{id:guid}/recebimentos")]
+    [Authorize(Policy = Politicas.OrganizadorDoEvento)]
+    [ProducesResponseType<RecebimentosEventoResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> ObterRecebimentos(Guid id, CancellationToken cancellationToken) =>
+        Ok(await pagamentos.ObterRecebimentosDoEventoAsync(id, cancellationToken));
 
     /// <summary>QR Code e "copia e cola" do Pix da cobrança pendente (E46).</summary>
     /// <response code="404"><c>PIX_INDISPONIVEL</c>: sem cobrança pendente ou sem QR Code agora; use o <c>urlPagamento</c> de E29.</response>

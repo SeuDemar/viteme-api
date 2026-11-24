@@ -19,6 +19,13 @@ public class PagamentoRepository(VitemeDbContext contexto) : IPagamentoRepositor
             .OrderByDescending(p => p.CriadoEm)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<PagamentoDoEvento>> ListarDoEventoAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
+        await (from p in contexto.Pagamentos.AsNoTracking()
+               join i in contexto.Inscricoes on p.InscricaoId equals i.Id
+               where i.EventoId == eventoId
+               select new PagamentoDoEvento(p.Valor, p.Status, p.ContaRecebimentoId, p.GarantiaLiberadaEm))
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<Pagamento>> ListarPendentesDoEventoAsync(Guid eventoId, CancellationToken cancellationToken = default) =>
         await (from p in contexto.Pagamentos
                where p.Status == StatusPagamento.Pendente

@@ -14,5 +14,19 @@ public sealed record PagamentoStatusResponse(
 /// <summary>E46 — Pix da cobrança pendente: "copia e cola" e QR Code em PNG (base64, sem prefixo <c>data:</c>).</summary>
 public sealed record PixResponse(string CopiaECola, string ImagemBase64, DateTime? ExpiraEm);
 
+/// <summary>
+/// E47 — totais das inscrições pagas do evento, em reais e brutos (antes das taxas do meio de pagamento).
+/// <c>Recebido</c> = pagamentos aprovados; desses, <c>Retido</c> está na garantia (RN26) e <c>Liberado</c> já está disponível
+/// ao organizador. <c>Estornado</c> foi devolvido; <c>AguardandoPagamento</c> são cobranças ainda pendentes.
+/// </summary>
+public sealed record RecebimentosEventoResponse(
+    decimal Recebido,
+    decimal Retido,
+    decimal Liberado,
+    decimal Estornado,
+    decimal AguardandoPagamento,
+    int PagamentosAprovados,
+    int PagamentosEstornados);
+
 /// <summary>E31 — <c>processado</c> é falso quando o webhook já havia sido tratado antes.</summary>
 public sealed record WebhookResponse(bool Processado);

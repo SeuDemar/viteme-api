@@ -365,6 +365,69 @@ public class ContaRecebimentoTests(BancoFixture banco, ApiFactory api) : IClassF
     }
 
     [FactBanco]
+    public async Task E47_totais_do_evento_separam_retido_liberado_estornado_e_pendente()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        ambiente.Contas.SubcontasHabilitadas = true;
+        ambiente.Contas.GarantiaHabilitada = true;
+        var organizador = await OrganizadorAprovadoAsync(ambiente);
+        await NoEscopoAsync(ambiente, sp => sp.GetRequiredService<ContaRecebimentoService>().SincronizarAsync(10));
+        var evento = await ambiente.CriarEventoAsync(
+            organizador, ambiente.CorpoEvento(preco: 50m, inicioEm: TimeSpan.FromDays(2), duracao: TimeSpan.FromHours(2)), publicar: true);
+        var rota = $"/api/v1/eventos/{evento}/recebimentos";
+
+        var retido = await ambiente.InscreverEmEventoPagoAsync(await ambiente.NovaSessaoAsync(), evento);
+        ambiente.Contas.Garantias[retido.IdTransacao] = "esc_1";
+        (await ambiente.WebhookDeAsync(retido, "APROVADO")).EnsureSuccessStatusCode();
+        var quemCancela = await ambiente.NovaSessaoAsync();
+        var estornado = await ambiente.InscreverEmEventoPagoAsync(quemCancela, evento);
+        (await ambiente.WebhookDeAsync(estornado, "APROVADO")).EnsureSuccessStatusCode();
+        (await ambiente.PostAsync($"/api/v1/inscricoes/{estornado.InscricaoId}/cancelar", token: quemCancela.Token)).EnsureSuccessStatusCode();
+        await ambiente.InscreverEmEventoPagoAsync(await ambiente.NovaSessaoAsync(), evento);
+
+        var antes = await AmbienteApi.CorpoAsync(await ambiente.GetAsync(rota, organizador.Token));
+
+        Assert.Equal(50m, antes.GetProperty("recebido").GetDecimal());
+        Assert.Equal(50m, antes.GetProperty("retido").GetDecimal());
+        Assert.Equal(0m, antes.GetProperty("liberado").GetDecimal());
+        Assert.Equal(50m, antes.GetProperty("estornado").GetDecimal());
+        Assert.Equal(50m, antes.GetProperty("aguardandoPagamento").GetDecimal());
+        Assert.Equal(1, antes.GetProperty("pagamentosAprovados").GetInt32());
+        Assert.Equal(1, antes.GetProperty("pagamentosEstornados").GetInt32());
+
+        // Evento termina e a garantia é liberada dois dias depois: o valor passa de retido para liberado.
+        ambiente.Relogio.Avancar(TimeSpan.FromDays(2) + TimeSpan.FromHours(3));
+        await NoEscopoAsync(ambiente, sp => sp.GetRequiredService<EncerramentoEventosService>().EncerrarVencidosAsync());
+        ambiente.Relogio.Avancar(TimeSpan.FromDays(2) + TimeSpan.FromMinutes(1));
+        await NoEscopoAsync(ambiente, sp => sp.GetRequiredService<GarantiaService>().LiberarVencidasAsync(10));
+        var depois = await AmbienteApi.CorpoAsync(await ambiente.GetAsync(rota, organizador.Token));
+
+        Assert.Equal(0m, depois.GetProperty("retido").GetDecimal());
+        Assert.Equal(50m, depois.GetProperty("liberado").GetDecimal());
+    }
+
+    [FactBanco]
+    public async Task E47_so_o_organizador_ve_os_totais()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        var organizador = await ambiente.NovaSessaoOrganizadorAsync();
+        var evento = await ambiente.CriarEventoAsync(organizador, ambiente.CorpoEvento(preco: 50m), publicar: true);
+        var pago = await ambiente.InscreverEmEventoPagoAsync(await ambiente.NovaSessaoAsync(), evento);
+        (await ambiente.WebhookDeAsync(pago, "APROVADO")).EnsureSuccessStatusCode();
+        var rota = $"/api/v1/eventos/{evento}/recebimentos";
+
+        var organizadorVe = await ambiente.GetAsync(rota, organizador.Token);
+        var outro = await ambiente.GetAsync(rota, (await ambiente.NovaSessaoAsync()).Token);
+        var inexistente = await ambiente.GetAsync($"/api/v1/eventos/{Guid.NewGuid()}/recebimentos", organizador.Token);
+
+        // Sem garantia, o aprovado já está liberado.
+        var corpo = await AmbienteApi.CorpoAsync(organizadorVe);
+        Assert.Equal((50m, 0m, 50m), (corpo.GetProperty("recebido").GetDecimal(), corpo.GetProperty("retido").GetDecimal(), corpo.GetProperty("liberado").GetDecimal()));
+        Assert.Equal(HttpStatusCode.Forbidden, outro.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, inexistente.StatusCode);
+    }
+
+    [FactBanco]
     public async Task Estorno_de_cobranca_criada_na_subconta_usa_a_chave_dela()
     {
         using var ambiente = new AmbienteApi(banco, api);

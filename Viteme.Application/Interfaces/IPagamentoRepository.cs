@@ -1,4 +1,5 @@
 using Viteme.Domain.Entities;
+using Viteme.Domain.Enums;
 
 namespace Viteme.Application.Interfaces;
 
@@ -12,6 +13,9 @@ public sealed record PagamentoParaReconciliacao(Guid PagamentoId, string IdTrans
 /// <remarks><see cref="ContaRecebimentoId"/> nulo: cobrança da conta raiz, sem garantia.</remarks>
 public sealed record PagamentoComGarantia(Guid PagamentoId, string IdTransacao, string? GarantiaId, Guid? ContaRecebimentoId);
 
+/// <summary>Valor e desfecho de um pagamento do evento, para os totais de E47.</summary>
+public sealed record PagamentoDoEvento(decimal Valor, StatusPagamento Status, Guid? ContaRecebimentoId, DateTime? GarantiaLiberadaEm);
+
 public interface IPagamentoRepository
 {
     Task<Pagamento?> ObterPorIdAsync(Guid pagamentoId, CancellationToken cancellationToken = default);
@@ -20,6 +24,9 @@ public interface IPagamentoRepository
 
     /// <summary>Pagamentos da inscrição, do mais recente para o mais antigo (com rastreamento).</summary>
     Task<IReadOnlyList<Pagamento>> ListarDaInscricaoAsync(Guid inscricaoId, CancellationToken cancellationToken = default);
+
+    /// <summary>Todos os pagamentos das inscrições do evento, só com valor e desfecho (sem rastreamento).</summary>
+    Task<IReadOnlyList<PagamentoDoEvento>> ListarDoEventoAsync(Guid eventoId, CancellationToken cancellationToken = default);
 
     /// <summary>Pagamentos ainda pendentes das inscrições do evento (com rastreamento).</summary>
     Task<IReadOnlyList<Pagamento>> ListarPendentesDoEventoAsync(Guid eventoId, CancellationToken cancellationToken = default);

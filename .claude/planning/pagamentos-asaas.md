@@ -64,10 +64,10 @@ E40 `PUT /usuarios/me/cnpj`, RN24, migration `CnpjUsuario`, consulta na BrasilAP
 - Habilitar a garantia **antes** do primeiro recebimento de cada organizador (só recebimentos posteriores à habilitação ficam retidos): usar o padrão para todas as subcontas (`POST /v3/accounts/escrow`). A garantia tem **mensalidade** (seção 7): decidir quem paga (`isFeePayer`).
 - Depois da liberação não há estorno pelo Viteme (o evento já aconteceu); RN15 continua valendo até 24 h antes do início.
 
-### Fase 4 — Frontend
-- Perfil: seção "Recebimentos" (situação da subconta, botão para o onboarding).
-- Pagamento: QR Code Pix real e "copia e cola"; o simulador sai quando `Gateway:Provedor = Asaas`.
-- Gestão do evento: total recebido, retido e liberado.
+### Fase 4 — Frontend ✅ (2026-11-24)
+- Perfil: seção "Recebimentos" (situação da subconta, botão para o onboarding), atrás de `VITE_RECEBIMENTOS`.
+- Pagamento: QR Code Pix real e "copia e cola" (E46); o simulador sai quando `Gateway:Provedor = Asaas`. Exige chave Pix na conta que cobra: a conta PJ do sandbox tem uma EVP ativa e `pixQrCode` respondeu 200 (o 400 da Fase 0 era da conta PF, sem chave). Com a garantia ligada a cobrança nasce na subconta, que também precisa de chave Pix.
+- Gestão do evento: cartão "Recebimentos" com total recebido, retido na garantia, liberado, estornado e aguardando pagamento (E47), só para o organizador de evento pago. Valores brutos, antes das taxas.
 
 ## 4. Definição de pronto (para a demonstração)
 Fluxo completo no sandbox: organizador com CNPJ → subconta aprovada → evento pago publicado → participante paga Pix → valor aparece **retido** na subconta → (a) participante cancela e recebe estorno, ou (b) evento encerra e a garantia é liberada. Webhooks reais, sem simulador. Testes automatizados com handler falso; roteiro manual registrado em `docs/evidencias/`.

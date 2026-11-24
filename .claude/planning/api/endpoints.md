@@ -1,4 +1,4 @@
-# Endpoints (E01–E46)
+# Endpoints (E01–E47)
 
 Prefixo `/api/v1`. Convenções e erros: [convencoes-e-erros.md](convencoes-e-erros.md). Regras: [regras-de-negocio.md](regras-de-negocio.md).
 
@@ -55,6 +55,7 @@ Legenda de acesso: **Público** · **Autenticado** · **Organizador** · **Org./
 
 | E45 | PUT | `/usuarios/me/cpf` | Autenticado | Informar o CPF do pagador (exigido pelo Asaas) |
 | E46 | GET | `/inscricoes/{id}/pagamento/pix` | Dono | QR Code e "copia e cola" do Pix pendente |
+| E47 | GET | `/eventos/{id}/recebimentos` | Organizador | Totais recebido, retido na garantia e liberado do evento |
 
 > E41 e E42 (conta de recebimento) só existem com a Fase 2 do Asaas ligada (`Gateway__Asaas__Subcontas__Habilitar=true`); desligada, respondem `404 RECEBIMENTOS_DESABILITADOS`. Plano em [../pagamentos-asaas.md](../pagamentos-asaas.md), seção 8.
 
@@ -107,6 +108,11 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 **E46 — GET /inscricoes/{id}/pagamento/pix** (Dono)
 - Saída: `200 { copiaECola, imagemBase64, expiraEm? }` (PNG em base64, sem prefixo `data:`) da cobrança pendente.
 - Erros: `404 PIX_INDISPONIVEL` (sem cobrança pendente, reserva vencida, ou o gateway não oferece o QR agora, por exemplo conta sem chave Pix): a tela usa o `urlPagamento` de E29. 401; 404 para inscrição de outro usuário.
+
+**E47 — GET /eventos/{id}/recebimentos** (Organizador) · RN26
+- Saída: `200 { recebido, retido, liberado, estornado, aguardandoPagamento, pagamentosAprovados, pagamentosEstornados }`, em reais e **brutos** (antes das taxas do meio de pagamento).
+- `recebido` = pagamentos aprovados. Deles, `retido` = cobrados na subconta com garantia (Fase 3) e ainda não liberados; `liberado` = o resto (sem garantia o valor já cai na conta). `estornado` = devolvidos; `aguardandoPagamento` = cobranças pendentes.
+- Erros: 401; 403 (não é o organizador); 404 (evento inexistente).
 
 **E05 — GET /usuarios/me** (Autenticado)
 - Saída: `200 { id, nome, email, telefone, telefoneVerificado, aceitaSms, aceiteSmsEm, cnpj, razaoSocial, cnpjVerificadoEm, podeOrganizar }` (campos de CNPJ: E40, RN24). Erros: 401.

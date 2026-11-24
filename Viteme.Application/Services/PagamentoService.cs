@@ -223,6 +223,28 @@ public class PagamentoService(
     }
 
     /// <summary>
+    /// E47: totais das inscrições pagas do evento para o organizador. Pagamento aprovado cobrado na subconta com garantia
+    /// (Fase 3) fica retido até a liberação (RN26); os demais aprovados já estão liberados.
+    /// </summary>
+    public async Task<RecebimentosEventoResponse> ObterRecebimentosDoEventoAsync(Guid eventoId, CancellationToken cancellationToken = default)
+    {
+        var lista = await pagamentos.ListarDoEventoAsync(eventoId, cancellationToken);
+        var aprovados = lista.Where(p => p.Status == StatusPagamento.Aprovado).ToList();
+        var estornados = lista.Where(p => p.Status == StatusPagamento.Estornado).ToList();
+        var recebido = aprovados.Sum(p => p.Valor);
+        var retido = aprovados.Where(p => p.ContaRecebimentoId is not null && p.GarantiaLiberadaEm is null).Sum(p => p.Valor);
+
+        return new RecebimentosEventoResponse(
+            recebido,
+            retido,
+            recebido - retido,
+            estornados.Sum(p => p.Valor),
+            lista.Where(p => p.Status == StatusPagamento.Pendente).Sum(p => p.Valor),
+            aprovados.Count,
+            estornados.Count);
+    }
+
+    /// <summary>
     /// E46: QR Code e "copia e cola" do Pix da cobrança pendente. 404 <c>PIX_INDISPONIVEL</c> quando não há cobrança pendente ou o
     /// gateway não oferece o QR agora; a tela usa o link de pagamento da cobrança (E29).
     /// </summary>
