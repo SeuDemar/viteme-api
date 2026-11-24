@@ -17,7 +17,7 @@ Este repositório contém **a API**. O frontend (`viteme-web`, React) vem depois
 | [banco/modelo.md](banco/modelo.md) | Convenções, 14 entidades, enums, relacionamentos, integridade e índices |
 | [api/convencoes-e-erros.md](api/convencoes-e-erros.md) | Convenções da API, ProblemDetails e códigos de erro |
 | [api/regras-de-negocio.md](api/regras-de-negocio.md) | RN01–RN24 |
-| [api/endpoints.md](api/endpoints.md) | Os 40 endpoints (E01–E40) com entrada, saída e erros |
+| [api/endpoints.md](api/endpoints.md) | Os endpoints (E01–E40, E43–E44) com entrada, saída e erros |
 | [seguranca.md](seguranca.md) | JWT, autorização por papel no evento, SMS/LGPD, riscos e medidas |
 | [testes.md](testes.md) | Estratégia, casos de teste (CT01–CT70), rastreabilidade e critérios de aceite |
 | [roadmap.md](roadmap.md) | Ordem de implementação e definição de pronto por etapa |

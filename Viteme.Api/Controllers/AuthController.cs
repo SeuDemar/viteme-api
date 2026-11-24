@@ -88,7 +88,7 @@ public class AuthController(AuthService auth) : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Pede o e-mail de redefinição de senha (E05). A resposta é a mesma exista ou não a conta.</summary>
+    /// <summary>Pede o e-mail de redefinição de senha (E43). A resposta é a mesma exista ou não a conta.</summary>
     /// <response code="202">Se o e-mail estiver cadastrado, um link de redefinição (válido por 1 hora) foi enviado.</response>
     /// <response code="400">E-mail em formato inválido.</response>
     /// <response code="429">Limite de 5 requisições por minuto por IP.</response>
@@ -103,7 +103,7 @@ public class AuthController(AuthService auth) : ControllerBase
         return Accepted();
     }
 
-    /// <summary>Define a nova senha com o token recebido por e-mail (E06).</summary>
+    /// <summary>Define a nova senha com o token recebido por e-mail (E44).</summary>
     /// <remarks>O token vale uma vez. A troca revoga todas as sessões do usuário e encerra um bloqueio por tentativas.</remarks>
     /// <response code="204">Senha redefinida.</response>
     /// <response code="400"><c>LINK_REDEFINICAO_INVALIDO</c> (inexistente, usado ou expirado) ou senha fraca (erros por campo).</response>

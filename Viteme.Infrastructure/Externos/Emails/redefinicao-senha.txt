@@ -1,7 +1,14 @@
+VITEME - Redefinição de senha
+
 Olá, {{nome}}!
 
 Recebemos um pedido para redefinir a senha da sua conta no Viteme. Para escolher uma nova senha, acesse:
 
 {{link}}
 
-O link vale por {{prazo}} e só pode ser usado uma vez. Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.
+O link vale por {{prazo}} e só pode ser usado uma vez.
+
+Não foi você? Ignore este e-mail: sua senha continua a mesma e ninguém acessa sua conta sem o link acima.
+
+--
+Mensagem automática do Viteme, não é preciso responder.

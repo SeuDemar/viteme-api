@@ -7,7 +7,7 @@ using Viteme.Domain.Excecoes;
 
 namespace Viteme.Application.Services;
 
-/// <summary>Cadastro, login, renovação e logout (E01–E04). Regras RN01–RN03.</summary>
+/// <summary>Cadastro, login, renovação, logout e redefinição de senha (E01–E04, E43, E44). Regras RN01–RN03.</summary>
 public class AuthService(
     IUsuarioRepository usuarios,
     ITokenRenovacaoRepository tokens,
@@ -136,7 +136,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// E05: gera o link de redefinição e o envia por e-mail. A resposta é sempre a mesma, exista ou não a conta, e uma falha
+    /// E43: gera o link de redefinição e o envia por e-mail. A resposta é sempre a mesma, exista ou não a conta, e uma falha
     /// no envio não aparece para quem chamou (só no log): o endpoint não pode revelar quais e-mails estão cadastrados.
     /// </summary>
     public async Task SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequest requisicao, CancellationToken cancellationToken = default)
@@ -171,7 +171,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// E06: troca a senha com o token recebido. O token vale uma vez; a troca encerra o bloqueio por tentativas
+    /// E44: troca a senha com o token recebido. O token vale uma vez; a troca encerra o bloqueio por tentativas
     /// e revoga todas as sessões do usuário (quem tinha a senha antiga perde o acesso).
     /// </summary>
     public async Task RedefinirSenhaAsync(RedefinirSenhaRequest requisicao, CancellationToken cancellationToken = default)

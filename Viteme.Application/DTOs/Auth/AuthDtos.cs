@@ -51,7 +51,7 @@ public sealed record RenovarResponse(string TokenAcesso, DateTime ExpiraEm);
 public sealed record LoginResultado(
     string TokenAcesso, DateTime ExpiraEm, UsuarioResumo Usuario, string RefreshToken, DateTime RefreshExpiraEm);
 
-/// <summary>E05 — pedido de redefinição de senha.</summary>
+/// <summary>E43 — pedido de redefinição de senha.</summary>
 public sealed record EsqueciSenhaRequest
 {
     /// <example>maria@exemplo.com</example>
@@ -61,7 +61,7 @@ public sealed record EsqueciSenhaRequest
     public string Email { get; init; } = string.Empty;
 }
 
-/// <summary>E06 — nova senha, com o token recebido por e-mail.</summary>
+/// <summary>E44 — nova senha, com o token recebido por e-mail.</summary>
 public sealed record RedefinirSenhaRequest
 {
     [Required(ErrorMessage = "Informe o token.")]

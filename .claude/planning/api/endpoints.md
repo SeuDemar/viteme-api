@@ -1,4 +1,4 @@
-# Endpoints (E01–E40)
+# Endpoints (E01–E40, E43–E44)
 
 Prefixo `/api/v1`. Convenções e erros: [convencoes-e-erros.md](convencoes-e-erros.md). Regras: [regras-de-negocio.md](regras-de-negocio.md).
 
@@ -48,6 +48,10 @@ Legenda de acesso: **Público** · **Autenticado** · **Organizador** · **Org./
 | E38 | GET | `/inscricoes/{id}/certificado` | Dono | Emitir (1ª vez) e baixar PDF |
 | E39 | GET | `/certificados/{codigo}/validacao` | Público | Validar autenticidade |
 | E40 | PUT | `/usuarios/me/cnpj` | Autenticado | Cadastrar o CNPJ do organizador (RN24) |
+| E43 | POST | `/auth/esqueci-senha` | Público | Pedir o e-mail de redefinição de senha |
+| E44 | POST | `/auth/redefinir-senha` | Público | Definir a nova senha com o token do e-mail |
+
+> E41 e E42 estão reservados à conta de recebimento do organizador ([../pagamentos-asaas.md](../pagamentos-asaas.md)); por isso a redefinição de senha usa E43 e E44.
 
 ## 2. Especificação
 
@@ -76,6 +80,19 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 **E04 — POST /auth/logout** (Público)
 - Entrada: cookie `refresh_token`. Saída: `204`; cookie removido.
 - Não exige token de acesso (sair mesmo com token expirado); revoga o refresh do cookie, se houver; **idempotente**; nunca retorna erro (sempre 204).
+
+**E43 — POST /auth/esqueci-senha** (Público) · D54
+- Entrada: `{ email }`. Saída: `202` sem corpo.
+- Validações: e-mail obrigatório, válido, ≤ 160.
+- A resposta é **a mesma exista ou não a conta**, e uma falha no envio do e-mail só vai para o log: o endpoint não revela quais e-mails estão cadastrados.
+- Conta existente: invalida os links pendentes, gera um token de 32 bytes (guardado como hash, validade de 1 hora) e envia o e-mail pelo SendGrid. Se já houve pedido do mesmo usuário no último minuto, não envia outro.
+- Erros: 400; 429 (5/min por IP).
+
+**E44 — POST /auth/redefinir-senha** (Público) · D54
+- Entrada: `{ token, novaSenha }`. Saída: `204`.
+- Validações: token obrigatório; senha conforme RN02. O token precisa existir, não ter sido usado nem ter expirado; o uso é marcado em uma instrução condicional, então dois envios simultâneos não trocam a senha duas vezes.
+- Efeitos: grava o novo hash da senha, zera as tentativas e o bloqueio de login (RN03), invalida os outros links pendentes e **revoga todas as sessões** (refresh tokens) do usuário.
+- Erros: 400 `LINK_REDEFINICAO_INVALIDO` (inexistente, usado ou expirado) ou por campo (senha fraca); 429 (5/min por IP).
 
 **E05 — GET /usuarios/me** (Autenticado)
 - Saída: `200 { id, nome, email, telefone, telefoneVerificado, aceitaSms, aceiteSmsEm, cnpj, razaoSocial, cnpjVerificadoEm, podeOrganizar }` (campos de CNPJ: E40, RN24). Erros: 401.
@@ -237,4 +254,4 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 
 ## 3. Rate limiting (resumo, ver [../seguranca.md](../seguranca.md))
 
-Por IP e por usuário: login (5/min), envio de código SMS (RN18), denúncias, validação de certificado e consulta de CNPJ (E40, 5/min por usuário). O webhook (E31) **não** passa pelo rate limiting.
+Por IP e por usuário: login (5/min), pedido e conclusão da redefinição de senha (E43 e E44, 5/min por IP), envio de código SMS (RN18), denúncias, validação de certificado e consulta de CNPJ (E40, 5/min por usuário). O webhook (E31) **não** passa pelo rate limiting.

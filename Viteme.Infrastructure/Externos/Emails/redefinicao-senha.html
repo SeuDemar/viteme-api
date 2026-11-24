@@ -1,35 +1,111 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>Redefinição de senha no Viteme</title>
 </head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px;">
+<body style="margin:0;padding:0;background-color:#e8f1f5;-webkit-text-size-adjust:100%;">
+  <!-- Texto de pré-visualização exibido ao lado do assunto na caixa de entrada -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#e8f1f5;font-size:1px;line-height:1px;">
+    Use o link para escolher uma nova senha. Ele vale por {{prazo}} e só pode ser usado uma vez.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#e8f1f5;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:32px;">
+      <td align="center" style="padding:32px 12px;">
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+
+          <!-- Marca -->
           <tr>
-            <td style="font-size:22px;font-weight:bold;color:#0e7490;padding-bottom:16px;">Viteme</td>
-          </tr>
-          <tr>
-            <td style="font-size:16px;line-height:24px;">
-              <p style="margin:0 0 16px;">Olá, {{nome}}!</p>
-              <p style="margin:0 0 24px;">Recebemos um pedido para redefinir a senha da sua conta no Viteme.</p>
-              <p style="margin:0 0 24px;">
-                <a href="{{link}}" style="display:inline-block;background:#0e7490;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px;">Escolher uma nova senha</a>
-              </p>
-              <p style="margin:0 0 16px;font-size:14px;color:#475569;">
-                Se o botão não funcionar, copie este endereço e cole no navegador:<br>
-                <span style="word-break:break-all;">{{link}}</span>
-              </p>
-              <p style="margin:0;font-size:14px;color:#475569;">
-                O link vale por {{prazo}} e só pode ser usado uma vez. Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.
-              </p>
+            <td align="center" style="padding:0 0 20px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+              <span style="display:inline-block;background-color:#0b5f78;border-radius:10px;padding:8px 14px;font-size:24px;font-weight:700;letter-spacing:0.5px;line-height:1;color:#ffffff;"><span style="color:#ff7a66;">V</span>iteme</span>
             </td>
           </tr>
+
+          <!-- Cartão -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(11,95,120,0.12);">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                <!-- Faixa do topo -->
+                <tr>
+                  <td height="8" style="height:8px;font-size:0;line-height:0;background-color:#0e8aa8;background-image:linear-gradient(90deg,#0b5f78 0%,#0e8aa8 60%,#ff7a66 100%);">&nbsp;</td>
+                </tr>
+
+                <tr>
+                  <td style="padding:36px 36px 8px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#12303d;">
+                    <h1 style="margin:0 0 16px;font-size:24px;line-height:32px;font-weight:700;color:#0b3f52;">Redefinição de senha</h1>
+                    <p style="margin:0 0 12px;font-size:16px;line-height:26px;">Olá, {{nome}}!</p>
+                    <p style="margin:0;font-size:16px;line-height:26px;">Recebemos um pedido para redefinir a senha da sua conta no Viteme. Clique no botão abaixo para escolher uma nova senha.</p>
+                  </td>
+                </tr>
+
+                <!-- Botão -->
+                <tr>
+                  <td align="center" style="padding:28px 36px 12px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#ff7a66" style="background-color:#ff7a66;border-radius:12px;">
+                          <a href="{{link}}" target="_blank" style="display:inline-block;padding:15px 34px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:20px;color:#ffffff;text-decoration:none;border-radius:12px;">Escolher nova senha</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Aviso de validade -->
+                <tr>
+                  <td style="padding:12px 36px 8px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background-color:#eef7fa;border-left:4px solid #0e8aa8;border-radius:8px;padding:12px 16px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:22px;color:#12303d;">
+                          O link vale por <strong>{{prazo}}</strong> e só pode ser usado <strong>uma vez</strong>.
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Link alternativo -->
+                <tr>
+                  <td style="padding:16px 36px 4px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#5b7480;">
+                    O botão não funciona? Copie e cole este endereço no navegador:
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 36px 8px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;word-break:break-all;">
+                    <a href="{{link}}" target="_blank" style="color:#0b5f78;text-decoration:underline;">{{link}}</a>
+                  </td>
+                </tr>
+
+                <!-- Separador e segurança -->
+                <tr>
+                  <td style="padding:20px 36px 0;"><div style="height:1px;line-height:1px;font-size:1px;background-color:#e1ecf0;">&nbsp;</div></td>
+                </tr>
+                <tr>
+                  <td style="padding:20px 36px 32px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:22px;color:#5b7480;">
+                    <strong style="color:#12303d;">Não foi você?</strong> Ignore este e-mail: sua senha continua a mesma e ninguém acessa sua conta sem o link acima.
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Rodapé -->
+          <tr>
+            <td align="center" style="padding:20px 16px 0;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#6d8691;">
+              Você recebeu este e-mail porque alguém pediu a redefinição de senha no Viteme.<br>
+              Esta é uma mensagem automática, não é preciso responder.
+            </td>
+          </tr>
+
         </table>
+
       </td>
     </tr>
   </table>

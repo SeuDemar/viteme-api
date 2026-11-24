@@ -3,7 +3,7 @@ using Viteme.Tests.Suporte;
 
 namespace Viteme.Tests.Integracao;
 
-/// <summary>E05/E06: pedido e conclusão da redefinição de senha por e-mail.</summary>
+/// <summary>E43/E44: pedido e conclusão da redefinição de senha por e-mail.</summary>
 public class RedefinicaoSenhaTests(BancoFixture banco, ApiFactory api) : IClassFixture<BancoFixture>, IClassFixture<ApiFactory>
 {
     private const string NovaSenha = "NovaSenha456";
