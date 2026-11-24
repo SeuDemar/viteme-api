@@ -56,6 +56,18 @@ Variáveis da API (o `__` é o separador de seção):
 | `Gateway__Asaas__CpfCnpjPagadorPadraoSandbox` | CPF de teste válido, usado só no sandbox enquanto o Viteme não coleta o CPF do pagador (P1) |
 | `Gateway__Stub__HabilitarSimulador` | `false` (o simulador assina com o segredo do stub e não funciona com o Asaas) |
 
+### Subconta e garantia (Fases 2 e 3, desligadas por padrão)
+
+As chaves já existem no código; ligar só depois do roteiro da seção 8.5 de `.claude/planning/pagamentos-asaas.md`. A API não sobe com uma combinação inválida (ex.: garantia ligada sem subconta, subconta ligada sem a chave de cifragem).
+
+| Variável | Valor |
+|---|---|
+| `Gateway__Asaas__ChaveCifragemSubcontas` | 32 bytes em base64 (`openssl rand -base64 32`); cifra a chave de API de cada subconta. Obrigatória com `Subcontas__Habilitar=true`. Trocar torna ilegíveis as chaves já guardadas |
+| `Gateway__Asaas__Subcontas__Habilitar` | `false` (padrão). `true` liga a conta de recebimento do organizador (E41/E42), o split e a RN25 |
+| `Gateway__Asaas__Escrow__Habilitar` | `false` (padrão). `true` liga a garantia (Fase 3); exige `Subcontas__Habilitar=true` |
+| `Gateway__Asaas__Escrow__DiasParaExpirar` | `60` (padrão, de 1 a 365): o Asaas expira a garantia sozinho se a tarefa de liberação falhar |
+| `Gateway__Asaas__Escrow__SubcontaPagaMensalidade` | `false` (padrão: a conta raiz paga a mensalidade do escrow) ou `true` (a subconta paga, `isFeePayer`). Decisão da equipe |
+
 URL do webhook a cadastrar no Asaas: `POST https://<api>/api/v1/pagamentos/webhook`, eventos de cobrança.
 
 ## Limites conhecidos do adaptador

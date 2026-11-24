@@ -35,6 +35,75 @@ public class GatewayAsaasOptions
     /// Só vale no sandbox: com a URL de produção é ignorado e a cobrança falha.
     /// </summary>
     public string CpfCnpjPagadorPadraoSandbox { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Chave mestra (32 bytes em base64) que cifra a chave de API de cada subconta (AES-GCM). Só por variável de ambiente.
+    /// Obrigatória quando <see cref="Subcontas"/> está ligada.
+    /// </summary>
+    public string ChaveCifragemSubcontas { get; set; } = string.Empty;
+
+    /// <summary>Fase 2 (plano pagamentos-asaas.md, seção 8): subconta do organizador e split. Desligada por padrão.</summary>
+    public SubcontasAsaasOptions Subcontas { get; set; } = new();
+
+    /// <summary>Fase 3: Conta Escrow (garantia) nas subcontas. Desligada por padrão; exige <see cref="Subcontas"/> ligada.</summary>
+    public EscrowAsaasOptions Escrow { get; set; } = new();
+
+    /// <summary>
+    /// Confere a combinação das chaves. Devolve as mensagens de erro (vazio quando está tudo certo); a inicialização da API
+    /// falha com elas, para não ligar subconta ou garantia pela metade.
+    /// </summary>
+    public IReadOnlyList<string> Validar()
+    {
+        var erros = new List<string>();
+        if (Escrow.Habilitar && !Subcontas.Habilitar)
+        {
+            erros.Add("Gateway:Asaas:Escrow:Habilitar exige Gateway:Asaas:Subcontas:Habilitar (a garantia é da subconta).");
+        }
+
+        if (Subcontas.Habilitar && !ChaveCifragemValida(ChaveCifragemSubcontas))
+        {
+            erros.Add("Gateway:Asaas:Subcontas:Habilitar exige Gateway:Asaas:ChaveCifragemSubcontas com 32 bytes em base64 (openssl rand -base64 32).");
+        }
+
+        if (Escrow.Habilitar && Escrow.DiasParaExpirar is < 1 or > 365)
+        {
+            erros.Add("Gateway:Asaas:Escrow:DiasParaExpirar deve ficar entre 1 e 365.");
+        }
+
+        return erros;
+    }
+
+    private static bool ChaveCifragemValida(string chave)
+    {
+        if (string.IsNullOrWhiteSpace(chave))
+        {
+            return false;
+        }
+
+        var bytes = new byte[64];
+        return Convert.TryFromBase64String(chave.Trim(), bytes, out var tamanho) && tamanho == 32;
+    }
+}
+
+public class SubcontasAsaasOptions
+{
+    /// <summary><c>true</c> liga E41/E42 (conta de recebimento), o split na cobrança e a RN25.</summary>
+    public bool Habilitar { get; set; }
+}
+
+public class EscrowAsaasOptions
+{
+    /// <summary><c>true</c> liga a garantia: o valor fica retido até a liberação depois do evento (RN26).</summary>
+    public bool Habilitar { get; set; }
+
+    /// <summary>Dias até o Asaas expirar a garantia sozinho, caso a tarefa de liberação falhe.</summary>
+    public int DiasParaExpirar { get; set; } = 60;
+
+    /// <summary>
+    /// <c>true</c>: a mensalidade do escrow é cobrada da subconta (<c>isFeePayer</c>); <c>false</c>: da conta raiz.
+    /// Decisão da equipe antes de produção.
+    /// </summary>
+    public bool SubcontaPagaMensalidade { get; set; }
 }
 
 /// <summary>

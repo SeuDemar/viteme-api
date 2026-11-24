@@ -50,6 +50,13 @@ public static class DependencyInjection
 
         // Gateway:Provedor = Stub (padrão) | Asaas. O stub continua registrado como simulador (desligado por padrão).
         servicos.Configure<GatewayAsaasOptions>(configuracao.GetSection(GatewayAsaasOptions.Secao));
+        var opcoesAsaas = configuracao.GetSection(GatewayAsaasOptions.Secao).Get<GatewayAsaasOptions>() ?? new GatewayAsaasOptions();
+        var errosAsaas = opcoesAsaas.Validar();
+        if (errosAsaas.Count > 0)
+        {
+            throw new InvalidOperationException(string.Join(" ", errosAsaas));
+        }
+
         if (string.Equals(configuracao["Gateway:Provedor"], "Asaas", StringComparison.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(configuracao[$"{GatewayAsaasOptions.Secao}:ChaveApi"]))

@@ -110,3 +110,46 @@ Lido na documentação, **ainda não testado** no sandbox.
 - **Conta sandbox PJ (P55).** O sandbox é separado da produção e aprova a conta sozinho quando os dados obrigatórios estão corretos (nome sem números ou caracteres especiais). Limites: 20 subcontas por dia; a partir da primeira subconta, período de avaliação com até 10 subcontas de titulares diferentes, R$ 2.000 em cobranças por subconta e 60 dias. A chave de API da subconta só aparece na criação. O onboarding por link é simulado e o teste dele depende de liberação do suporte. Não confirmado: se o sandbox aceita CNPJ só com dígitos válidos ou exige CNPJ real.
 
 Fontes: [Introdução à Conta Escrow](https://docs.asaas.com/docs/introducao-conta-escrow) · [Habilitando a Conta Escrow para as subcontas](https://docs.asaas.com/docs/habilitando-a-conta-escrow-para-as-subcontas) · [Bloqueio dos valores](https://docs.asaas.com/docs/bloqueio-dos-valores) · [O que pode ser testado](https://docs.asaas.com/docs/o-que-pode-ser-testado) · [FAQ do Sandbox](https://docs.asaas.com/docs/faq-sandbox) · [Criar subconta](https://docs.asaas.com/reference/criar-subconta) · [Creating subaccounts](https://docs.asaas.com/docs/creating-subaccounts)
+
+## 8. Próximo passo: Fases 2 e 3 prontas no código, ligadas só pela configuração (plano de 2026-11-24)
+
+**Objetivo.** Deixar subconta, split e garantia implementados e testados com HTTP falso, **desligados por padrão**. Quando existir a conta sandbox PJ (P55), basta trocar variáveis de ambiente e ligar uma chave; nenhum código novo. Enquanto desligado, o fluxo atual (cobrança na conta raiz, sem split) continua igual, inclusive em produção.
+
+### 8.1 Antes do código (no sandbox atual, conta PF)
+1. Teste ponta a ponta do webhook já cadastrado (Q5, P52): inscrição paga → `POST /sandbox/payment/{id}/confirm` → log do webhook com 200 → inscrição CONFIRMADA. Guardar em `docs/evidencias/`.
+2. Estorno com saldo (adicionar saldo à conta do sandbox) e reconciliação (desativar o webhook, pagar, reativar: a tarefa de 5 min confirma).
+
+### 8.2 O que você substitui depois (único trabalho manual)
+| Variável (App Service / ambiente) | Valor | Quando |
+|---|---|---|
+| `Gateway__Asaas__ChaveApi` | chave da **conta sandbox PJ** | ao criar a conta PJ |
+| `Gateway__Asaas__TokenWebhook` | token novo; recadastrar com `docs/asaas/registrar-webhook.ps1` (webhook é por conta) | idem |
+| `Gateway__Asaas__ChaveCifragemSubcontas` | 32 bytes em base64 (`openssl rand -base64 32`); cifra a chave de API de cada subconta | idem |
+| `Gateway__Asaas__Subcontas__Habilitar` | `true` liga E41/E42, split e RN25 | depois do roteiro 8.5 |
+| `Gateway__Asaas__Escrow__Habilitar` | `true` liga a garantia (Fase 3) | depois de confirmar que o escrow existe no sandbox |
+| `Gateway__Asaas__Escrow__DiasParaExpirar` | ex.: `60` (trava se a tarefa de liberação falhar) | — |
+| `Gateway__Asaas__Escrow__SubcontaPagaMensalidade` | `true`/`false` (`isFeePayer`) — **decisão da equipe** | antes de produção |
+| `VITE_RECEBIMENTOS` (web) | `true` mostra a seção "Recebimentos" no perfil | junto com Subcontas |
+
+### 8.3 Código a escrever (ordem sugerida; cada item com testes de handler falso, como `GatewayPagamentoAsaasTests`)
+1. **Opções e chave mestra.** `GatewayAsaasOptions` ganha `Subcontas.Habilitar`, `Escrow.{Habilitar, DiasParaExpirar, SubcontaPagaMensalidade}` e `ChaveCifragemSubcontas`. Falha na inicialização se `Habilitar=true` sem a chave. Defaults: tudo desligado. **Feito (2026-11-24):** `GatewayAsaasOptions.Validar()`, testes em `GatewayAsaasOptionsTests`, variáveis em `docs/asaas/README.md` e `VITE_RECEBIMENTOS` no `.env.example` do web.
+2. **Domínio e banco.** Entidade `ContaRecebimento` (usuario_id único, `asaas_conta_id`, `wallet_id`, `chave_api_cifrada`, situação `PENDENTE | APROVADA | REJEITADA`, `onboarding_url`, datas). `pagamento` ganha `garantia_id` e `garantia_liberada_em`. Migration EF + SQL idempotente em `docs/banco/migracoes/` (mesmo padrão de `CpfUsuario`). Cifragem AES-GCM com a chave mestra, atrás de `ICifradorSegredos` (Infrastructure).
+3. **Contrato.** Interface nova `IContasRecebimento` (não inchar `IGatewayPagamento`): `CriarSubcontaAsync(dados) → (contaId, walletId, apiKey, onboardingUrl)`, `ConsultarSituacaoAsync`, `HabilitarEscrowPadraoAsync`, `EncerrarGarantiaAsync(garantiaId, chaveSubconta)`, `ConsultarGarantiaAsync(pagamentoId, chaveSubconta)`. Stub para desenvolvimento (aprova na hora) e adaptador Asaas.
+4. **E41 `POST /usuarios/me/conta-recebimento`** (exige CNPJ verificado, D50): monta a subconta com CNPJ/razão social; campos que faltarem (endereço, `companyType`, `incomeValue`, telefone) vêm no corpo — **lista exata depende da Q3**; deixar o DTO com os campos da documentação de `POST /v3/accounts` e marcar `// confirmar Q3`. Guarda `apiKey` cifrada (só aparece na criação). 409 se já existe. Depois de criada, o CNPJ fica travado (E40 → 409 `CNPJ_TRAVADO_POR_SUBCONTA`).
+5. **E42 `GET /usuarios/me/conta-recebimento`**: situação e `onboardingUrl`. Webhook de situação da conta (eventos `ACCOUNT_STATUS_*` — **confirmar nomes na Q6**) atualiza a situação; a tarefa periódica também consulta as PENDENTES (mesmo padrão da reconciliação P29).
+6. **Split na cobrança.** `PedidoCobranca` ganha `WalletRecebedor?`; com Subcontas ligadas, `CriarCobrancaAsync` envia `split: [{ walletId, percentualValue: 100 }]`. Sem conta APROVADA → não cria cobrança.
+7. **RN25** (com Subcontas ligadas): publicar evento **pago** exige conta APROVADA → 422 `CONTA_RECEBIMENTO_PENDENTE`. Evento gratuito não muda.
+8. **Fase 3 (com Escrow ligado).** Na aprovação da conta: `HabilitarEscrow` da subconta (ou padrão para todas, uma vez). No webhook de pagamento aprovado: guardar `garantia_id` (do objeto `escrow` da cobrança — **confirmar Q1/Q2**). Tarefa periódica: eventos ENCERRADOS há 2 dias → `EncerrarGarantiaAsync` (RN26) e grava `garantia_liberada_em`. Estorno (RN14/RN15) continua por `POST /payments/{id}/refund`.
+9. **Web.** Perfil: seção "Recebimentos" (formulário E41, situação, botão do onboarding), atrás de `VITE_RECEBIMENTOS`. Gestão: totais recebido/retido/liberado (Fase 4). Mensagem de RN25 na publicação.
+10. **Docs.** E41/E42 em `api/endpoints.md`, RN25/RN26 em `regras-de-negocio.md`, D-número para cifragem da chave da subconta e para a mensalidade do escrow, códigos de erro em `decisoes.md`, variáveis em `docs/deploy.md`.
+
+### 8.4 Pontos que só a conta PJ responde (o código deixa marcado `// confirmar Qn`)
+- Q3: campos obrigatórios de `POST /v3/accounts` para PJ.
+- Q6: aprovação da subconta no sandbox (automática ou onboarding simulado — o teste do onboarding pode exigir pedir ao suporte) e nomes dos eventos de webhook da conta.
+- Q1/Q2: valor do split fica retido? `finish` com a chave da raiz ou da subconta? Onde vem o id da garantia?
+- Escrow existe no sandbox? (`POST /v3/accounts/escrow` responde?)
+
+### 8.5 Roteiro quando a conta PJ existir
+1. Criar a conta em sandbox.asaas.com como **PJ**, gerar a chave, preencher 8.2 (ainda com `Habilitar=false`).
+2. Rodar `docs/asaas/fase0-sandbox.ps1` de novo: responde Q1, Q2, Q3, Q6 e o escrow. Ajustar os pontos `// confirmar Qn`.
+3. Ligar `Subcontas__Habilitar`, depois `Escrow__Habilitar`, e fazer o fluxo da seção 4 (definição de pronto) com evidência em `docs/evidencias/`.
