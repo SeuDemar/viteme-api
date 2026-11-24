@@ -88,6 +88,37 @@ public class AuthController(AuthService auth) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Pede o e-mail de redefinição de senha (E05). A resposta é a mesma exista ou não a conta.</summary>
+    /// <response code="202">Se o e-mail estiver cadastrado, um link de redefinição (válido por 1 hora) foi enviado.</response>
+    /// <response code="400">E-mail em formato inválido.</response>
+    /// <response code="429">Limite de 5 requisições por minuto por IP.</response>
+    [HttpPost("esqueci-senha")]
+    [EnableRateLimiting(LimitacaoExtensions.RedefinicaoSenha)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests, "application/problem+json")]
+    public async Task<IActionResult> EsqueciSenha([FromBody] EsqueciSenhaRequest requisicao, CancellationToken cancellationToken)
+    {
+        await auth.SolicitarRedefinicaoSenhaAsync(requisicao, cancellationToken);
+        return Accepted();
+    }
+
+    /// <summary>Define a nova senha com o token recebido por e-mail (E06).</summary>
+    /// <remarks>O token vale uma vez. A troca revoga todas as sessões do usuário e encerra um bloqueio por tentativas.</remarks>
+    /// <response code="204">Senha redefinida.</response>
+    /// <response code="400"><c>LINK_REDEFINICAO_INVALIDO</c> (inexistente, usado ou expirado) ou senha fraca (erros por campo).</response>
+    /// <response code="429">Limite de 5 requisições por minuto por IP.</response>
+    [HttpPost("redefinir-senha")]
+    [EnableRateLimiting(LimitacaoExtensions.RedefinicaoSenha)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests, "application/problem+json")]
+    public async Task<IActionResult> RedefinirSenha([FromBody] RedefinirSenhaRequest requisicao, CancellationToken cancellationToken)
+    {
+        await auth.RedefinirSenhaAsync(requisicao, cancellationToken);
+        return NoContent();
+    }
+
     private void GravarCookie(string refreshToken, DateTime expiraEm) =>
         Response.Cookies.Append(CookieRefresh, refreshToken, OpcoesCookie(expiraEm));
 

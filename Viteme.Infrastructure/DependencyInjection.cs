@@ -33,6 +33,7 @@ public static class DependencyInjection
         servicos.AddScoped<IUsuarioRepository, UsuarioRepository>();
         servicos.AddScoped<ICodigoVerificacaoRepository, CodigoVerificacaoRepository>();
         servicos.AddScoped<ITokenRenovacaoRepository, TokenRenovacaoRepository>();
+        servicos.AddScoped<ITokenRedefinicaoSenhaRepository, TokenRedefinicaoSenhaRepository>();
         servicos.AddScoped<IPagamentoRepository, PagamentoRepository>();
         servicos.AddScoped<IEventoRepository, EventoRepository>();
         servicos.AddScoped<IColaboradorRepository, ColaboradorRepository>();
@@ -76,6 +77,19 @@ public static class DependencyInjection
         {
             servicos.AddSingleton<IConsultaCnpj, ConsultaCnpjBrasilApi>();
         }
+
+        // E-mail transacional (redefinição de senha): SendGrid quando há chave de API; sem chave, um stub que não envia nada.
+        servicos.Configure<EmailOptions>(configuracao.GetSection(EmailOptions.Secao));
+        if (string.IsNullOrWhiteSpace(configuracao[$"{EmailOptions.Secao}:SendGrid:ChaveApi"]))
+        {
+            servicos.AddSingleton<IEnvioEmail, EnvioEmailStub>();
+        }
+        else
+        {
+            servicos.AddSingleton<IEnvioEmail, EnvioEmailSendGrid>();
+        }
+
+        servicos.AddScoped<IEmailRedefinicaoSenha, EmailRedefinicaoSenha>();
 
         servicos.Configure<TarefasOptions>(configuracao.GetSection(TarefasOptions.Secao));
         servicos.AddHostedService<EncerrarEventosWorker>();

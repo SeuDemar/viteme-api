@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Viteme.Application.DTOs.Auth;
 using Viteme.Application.Excecoes;
 using Viteme.Application.Interfaces;
@@ -10,6 +11,9 @@ namespace Viteme.Application.Services;
 public class AuthService(
     IUsuarioRepository usuarios,
     ITokenRenovacaoRepository tokens,
+    ITokenRedefinicaoSenhaRepository tokensRedefinicao,
+    IEmailRedefinicaoSenha emailRedefinicao,
+    ILogger<AuthService> logger,
     ISenhaHasher hasher,
     ITokenService tokenService,
     IHashSeguro hashSeguro,
@@ -18,6 +22,7 @@ public class AuthService(
     IRelogio relogio)
 {
     private const int BytesRefreshToken = 64;
+    private const int BytesTokenRedefinicao = 32;
 
     public async Task<CadastroResponse> CadastrarAsync(CadastroRequest requisicao, CancellationToken cancellationToken = default)
     {
@@ -130,6 +135,68 @@ public class AuthService(
         await unitOfWork.SalvarAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// E05: gera o link de redefinição e o envia por e-mail. A resposta é sempre a mesma, exista ou não a conta, e uma falha
+    /// no envio não aparece para quem chamou (só no log): o endpoint não pode revelar quais e-mails estão cadastrados.
+    /// </summary>
+    public async Task SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequest requisicao, CancellationToken cancellationToken = default)
+    {
+        var agora = relogio.UtcAgora;
+        var usuario = await usuarios.ObterPorEmailAsync(requisicao.Email.Trim(), cancellationToken);
+        if (usuario is null)
+        {
+            return;
+        }
+
+        // Já há um pedido recente: não manda outro e-mail (o link anterior continua valendo).
+        if (await tokensRedefinicao.ExistePedidoDesdeAsync(usuario.Id, agora - TokenRedefinicaoSenha.IntervaloMinimoEntrePedidos, cancellationToken))
+        {
+            return;
+        }
+
+        await tokensRedefinicao.InvalidarPendentesDoUsuarioAsync(usuario.Id, agora, cancellationToken);
+
+        var valor = aleatorio.GerarTokenOpaco(BytesTokenRedefinicao);
+        tokensRedefinicao.Adicionar(new TokenRedefinicaoSenha(usuario.Id, hashSeguro.Calcular(valor), agora));
+        await unitOfWork.SalvarAsync(cancellationToken);
+
+        try
+        {
+            await emailRedefinicao.EnviarAsync(usuario, valor, TokenRedefinicaoSenha.Validade, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Falha ao enviar o e-mail de redefinição de senha do usuário {UsuarioId}.", usuario.Id);
+        }
+    }
+
+    /// <summary>
+    /// E06: troca a senha com o token recebido. O token vale uma vez; a troca encerra o bloqueio por tentativas
+    /// e revoga todas as sessões do usuário (quem tinha a senha antiga perde o acesso).
+    /// </summary>
+    public async Task RedefinirSenhaAsync(RedefinirSenhaRequest requisicao, CancellationToken cancellationToken = default)
+    {
+        var agora = relogio.UtcAgora;
+        var token = await tokensRedefinicao.ObterPorHashAsync(hashSeguro.Calcular(requisicao.Token), cancellationToken);
+        if (token is null || !token.EstaAtivo(agora))
+        {
+            throw LinkRedefinicaoInvalido();
+        }
+
+        var usuario = await usuarios.ObterPorIdAsync(token.UsuarioId, cancellationToken) ?? throw LinkRedefinicaoInvalido();
+
+        // Dois envios simultâneos com o mesmo link: só o primeiro a marcar o uso troca a senha.
+        if (!await tokensRedefinicao.TentarUsarAsync(token.Id, agora, cancellationToken))
+        {
+            throw LinkRedefinicaoInvalido();
+        }
+
+        usuario.RedefinirSenha(hasher.Gerar(requisicao.NovaSenha));
+        await tokensRedefinicao.InvalidarPendentesDoUsuarioAsync(usuario.Id, agora, cancellationToken);
+        await tokens.RevogarTodosDoUsuarioAsync(usuario.Id, agora, cancellationToken);
+        await unitOfWork.SalvarAsync(cancellationToken);
+    }
+
     private async Task<RenovarResultado> EmitirTokensAsync(Usuario usuario, DateTime agora, CancellationToken cancellationToken)
     {
         var acesso = tokenService.GerarTokenAcesso(usuario, agora);
@@ -150,6 +217,10 @@ public class AuthService(
     // Mesma mensagem para e-mail inexistente e senha incorreta.
     private static RegraDeNegocioException CredenciaisInvalidas() =>
         new("CREDENCIAIS_INVALIDAS", "Credenciais inválidas", "E-mail ou senha incorretos.", 401);
+
+    private static RegraDeNegocioException LinkRedefinicaoInvalido() =>
+        new("LINK_REDEFINICAO_INVALIDO", "Link inválido ou expirado",
+            "O link de redefinição de senha é inválido, já foi usado ou expirou. Peça um novo.", 400);
 
     private static RegraDeNegocioException TokenInvalido() =>
         new("TOKEN_INVALIDO", "Token inválido", "Sessão inválida ou expirada. Faça login novamente.", 401);

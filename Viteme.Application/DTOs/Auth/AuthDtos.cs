@@ -51,5 +51,28 @@ public sealed record RenovarResponse(string TokenAcesso, DateTime ExpiraEm);
 public sealed record LoginResultado(
     string TokenAcesso, DateTime ExpiraEm, UsuarioResumo Usuario, string RefreshToken, DateTime RefreshExpiraEm);
 
+/// <summary>E05 — pedido de redefinição de senha.</summary>
+public sealed record EsqueciSenhaRequest
+{
+    /// <example>maria@exemplo.com</example>
+    [Required(ErrorMessage = "Informe o e-mail.")]
+    [StringLength(160, ErrorMessage = "O e-mail deve ter no máximo 160 caracteres.")]
+    [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
+    public string Email { get; init; } = string.Empty;
+}
+
+/// <summary>E06 — nova senha, com o token recebido por e-mail.</summary>
+public sealed record RedefinirSenhaRequest
+{
+    [Required(ErrorMessage = "Informe o token.")]
+    [StringLength(200, ErrorMessage = "Token inválido.")]
+    public string Token { get; init; } = string.Empty;
+
+    /// <example>NovaSenha123</example>
+    [Required(ErrorMessage = "Informe a nova senha.")]
+    [SenhaForte]
+    public string NovaSenha { get; init; } = string.Empty;
+}
+
 /// <summary>Resultado interno da renovação.</summary>
 public sealed record RenovarResultado(string TokenAcesso, DateTime ExpiraEm, string RefreshToken, DateTime RefreshExpiraEm);

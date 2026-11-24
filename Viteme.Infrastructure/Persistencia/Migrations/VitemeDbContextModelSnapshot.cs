@@ -672,6 +672,47 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Viteme.Domain.Entities.TokenRedefinicaoSenha", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<DateTime>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expira_em");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<DateTime?>("UsadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("usado_em");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_token_redefinicao_senha");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_token_redefinicao_senha_token_hash");
+
+                    b.HasIndex("UsuarioId")
+                        .HasDatabaseName("ix_token_redefinicao_senha_usuario_id");
+
+                    b.ToTable("token_redefinicao_senha", (string)null);
+                });
+
             modelBuilder.Entity("Viteme.Domain.Entities.TokenRenovacao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -967,6 +1008,16 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pagamento_inscricao_inscricao_id");
+                });
+
+            modelBuilder.Entity("Viteme.Domain.Entities.TokenRedefinicaoSenha", b =>
+                {
+                    b.HasOne("Viteme.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_token_redefinicao_senha_usuarios_usuario_id");
                 });
 
             modelBuilder.Entity("Viteme.Domain.Entities.TokenRenovacao", b =>

@@ -18,6 +18,8 @@ public class VitemeDbContext(DbContextOptions<VitemeDbContext> options, IRelogio
 
     public DbSet<TokenRenovacao> TokensRenovacao => Set<TokenRenovacao>();
 
+    public DbSet<TokenRedefinicaoSenha> TokensRedefinicaoSenha => Set<TokenRedefinicaoSenha>();
+
     public DbSet<Evento> Eventos => Set<Evento>();
 
     public DbSet<AtividadeProgramacao> Atividades => Set<AtividadeProgramacao>();

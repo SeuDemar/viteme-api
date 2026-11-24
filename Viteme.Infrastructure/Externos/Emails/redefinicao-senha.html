@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redefinição de senha no Viteme</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:32px;">
+          <tr>
+            <td style="font-size:22px;font-weight:bold;color:#0e7490;padding-bottom:16px;">Viteme</td>
+          </tr>
+          <tr>
+            <td style="font-size:16px;line-height:24px;">
+              <p style="margin:0 0 16px;">Olá, {{nome}}!</p>
+              <p style="margin:0 0 24px;">Recebemos um pedido para redefinir a senha da sua conta no Viteme.</p>
+              <p style="margin:0 0 24px;">
+                <a href="{{link}}" style="display:inline-block;background:#0e7490;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px;">Escolher uma nova senha</a>
+              </p>
+              <p style="margin:0 0 16px;font-size:14px;color:#475569;">
+                Se o botão não funcionar, copie este endereço e cole no navegador:<br>
+                <span style="word-break:break-all;">{{link}}</span>
+              </p>
+              <p style="margin:0;font-size:14px;color:#475569;">
+                O link vale por {{prazo}} e só pode ser usado uma vez. Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

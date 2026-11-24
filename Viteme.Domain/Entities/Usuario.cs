@@ -77,6 +77,14 @@ public class Usuario
         BloqueadoAte = null;
     }
 
+    /// <summary>Troca a senha (redefinição por e-mail). Também encerra um eventual bloqueio por tentativas de login.</summary>
+    public void RedefinirSenha(string senhaHash)
+    {
+        SenhaHash = senhaHash;
+        TentativasLogin = 0;
+        BloqueadoAte = null;
+    }
+
     public void AtualizarNome(string nome) => Nome = nome;
 
     /// <summary>RN18: trocar o telefone desfaz a verificação e o aceite de SMS.</summary>

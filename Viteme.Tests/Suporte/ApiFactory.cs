@@ -26,7 +26,7 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Aplicação ligada ao banco temporário, com relógio e SMS controláveis.</summary>
     public WebApplicationFactory<Program> ComBanco(
         string conexao, RelogioFixo relogio, SmsEmMemoria sms, GatewayEmMemoria gateway, CnpjEmMemoria cnpj,
-        bool limitacao = false, bool tokenRealista = false) =>
+        EmailEmMemoria email, bool limitacao = false, bool tokenRealista = false) =>
         WithWebHostBuilder(b =>
         {
             b.UseSetting("ConnectionStrings:Default", conexao);
@@ -47,6 +47,8 @@ public class ApiFactory : WebApplicationFactory<Program>
                 servicos.AddSingleton<ISimuladorGateway>(gateway);
                 servicos.RemoveAll<IConsultaCnpj>();
                 servicos.AddSingleton<IConsultaCnpj>(cnpj);
+                servicos.RemoveAll<IEmailRedefinicaoSenha>();
+                servicos.AddSingleton<IEmailRedefinicaoSenha>(email);
             });
         });
 }
