@@ -25,13 +25,26 @@ public class AlteracaoEventoRegistrador(IEventoRepository eventos, NotificacaoSe
         var destinatarios = (await eventos.ListarDestinatariosAsync(evento.Id, incluirColaboradores: false, cancellationToken))
             .Where(id => id != autorId);
 
-        var campos = string.Join(", ", mudancas.Select(m => m.Campo).Distinct());
+        var campos = string.Join(", ", mudancas.Select(m => RotuloCampo(m.Campo)).Distinct());
         await notificacoes.NotificarAsync(
             destinatarios, evento.Id, TipoNotificacao.Alteracao,
             "Evento alterado",
             $"O evento \"{evento.Titulo}\" foi alterado ({campos}). Motivo: {motivo}",
             cancellationToken);
     }
+
+    /// <summary>Nome do campo no texto da notificação. O histórico guarda o nome técnico; o site traduz o dele.</summary>
+    public static string RotuloCampo(string campo) => campo switch
+    {
+        "titulo" => "título",
+        "dataInicio" => "início",
+        "dataFim" => "término",
+        "local" => "local",
+        "programacao" => "programação",
+        "preco" => "preço",
+        "capacidade" => "capacidade",
+        _ => campo,
+    };
 
     public static string Formatar(DateTime data) => data.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'");
 }
