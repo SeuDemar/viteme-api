@@ -84,6 +84,9 @@ URL do webhook a cadastrar no Asaas: `POST https://<api>/api/v1/pagamentos/webho
 - **E-mail da subconta:** não pode ser um e-mail já usado em outra conta Asaas (ex.: o da conta raiz). O formulário tem
   "E-mail da empresa" para isso.
 - **Chave no Azure:** cole no portal; por bash ou az cli o `$` do começo se perde (401 "chave inválida").
+- **Simulador na demonstração:** com `Gateway__Stub__HabilitarSimulador=true` e o Asaas no sandbox, "Simular pagamento
+  aprovado" confirma a cobrança no próprio sandbox (`POST /v3/sandbox/payment/{id}/confirm`) e já aprova a inscrição; o
+  webhook que chega depois não faz nada. "Recusar" responde 422 `SIMULACAO_INDISPONIVEL`. Fora do sandbox nunca confirma.
 
 ## Limites conhecidos do adaptador
 

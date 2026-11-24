@@ -207,6 +207,21 @@ public class GatewayPagamentoAsaasTests
     }
 
     [Fact]
+    public async Task Simulador_confirma_a_cobranca_no_sandbox_e_nunca_em_producao()
+    {
+        var roteiro = new Roteiro().Responde(HttpMethod.Post, "sandbox/payment/pay_1/confirm", """{"id":"pay_1","status":"RECEIVED"}""");
+        using var sandbox = Criar(roteiro);
+        using var producao = Criar(new Roteiro(), urlBase: "https://api.asaas.com/v3");
+
+        await sandbox.ConfirmarPagamentoAsync("pay_1");
+
+        Assert.True(sandbox.Disponivel);
+        Assert.Equal("/v3/sandbox/payment/pay_1/confirm", Assert.Single(roteiro.Chamadas).Rota);
+        Assert.False(producao.Disponivel);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => producao.ConfirmarPagamentoAsync("pay_1"));
+    }
+
+    [Fact]
     public async Task Sem_pagador_a_cobranca_falha()
     {
         var roteiro = new Roteiro().Responde(HttpMethod.Get, "payments?externalReference=", """{"data":[]}""");

@@ -51,6 +51,8 @@ public class ApiFactory : WebApplicationFactory<Program>
                 servicos.AddSingleton<IGatewayPagamento>(gateway);
                 servicos.RemoveAll<ISimuladorGateway>();
                 servicos.AddSingleton<ISimuladorGateway>(gateway);
+                servicos.RemoveAll<IConfirmacaoSandbox>();
+                servicos.AddSingleton<IConfirmacaoSandbox>(gateway);
                 servicos.RemoveAll<IConsultaCnpj>();
                 servicos.AddSingleton<IConsultaCnpj>(cnpj);
                 servicos.RemoveAll<IEmailRedefinicaoSenha>();

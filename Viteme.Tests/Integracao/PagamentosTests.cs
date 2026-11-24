@@ -632,4 +632,39 @@ public class PagamentosTests(BancoFixture banco, ApiFactory api) : IClassFixture
         Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
         Assert.Equal("APROVADO", await ambiente.StatusDoPagamentoAsync(c.Participante, pago.InscricaoId));
     }
+
+    [FactBanco]
+    public async Task Simulador_aceita_o_id_do_pagamento_no_lugar_do_id_da_transacao()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        var c = await EventoPagoAsync(ambiente);
+        var pago = await ambiente.InscreverEmEventoPagoAsync(c.Participante, c.Evento);
+
+        var resposta = await ambiente.PostAsync($"/api/v1/simulador/pagamentos/{pago.PagamentoId}/aprovar", token: c.Participante.Token);
+
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        Assert.Equal("APROVADO", await ambiente.StatusDoPagamentoAsync(c.Participante, pago.InscricaoId));
+    }
+
+    [FactBanco]
+    public async Task Simulador_com_gateway_no_sandbox_confirma_a_cobranca_no_proprio_gateway_e_so_aprova()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        ambiente.Gateway.Disponivel = true;
+        var c = await EventoPagoAsync(ambiente);
+        var pago = await ambiente.InscreverEmEventoPagoAsync(c.Participante, c.Evento);
+
+        var recusa = await ambiente.PostAsync($"/api/v1/simulador/pagamentos/{pago.PagamentoId}/recusar", token: c.Participante.Token);
+        var aprovacao = await ambiente.PostAsync($"/api/v1/simulador/pagamentos/{pago.PagamentoId}/aprovar", token: c.Participante.Token);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, recusa.StatusCode);
+        Assert.Equal("SIMULACAO_INDISPONIVEL", await AmbienteApi.CodigoErroAsync(recusa));
+        Assert.Equal(HttpStatusCode.OK, aprovacao.StatusCode);
+        Assert.Equal(pago.IdTransacao, Assert.Single(ambiente.Gateway.ConfirmadasNoSandbox));
+        Assert.Equal("APROVADO", await ambiente.StatusDoPagamentoAsync(c.Participante, pago.InscricaoId));
+
+        // O webhook que o gateway manda depois encontra o pagamento já aprovado e não faz nada.
+        var webhook = await ambiente.WebhookDeAsync(pago, "APROVADO");
+        Assert.False((await AmbienteApi.CorpoAsync(webhook)).GetProperty("processado").GetBoolean());
+    }
 }

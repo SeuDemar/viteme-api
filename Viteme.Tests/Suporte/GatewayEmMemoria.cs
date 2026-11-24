@@ -9,7 +9,7 @@ namespace Viteme.Tests.Suporte;
 /// <summary>Gateway falso: registra as chamadas, pode falhar sob comando e assina webhooks com um segredo conhecido.</summary>
 public class GatewayEmMemoria() : GatewayPagamentoStub(
     Options.Create(new GatewayStubOptions { SegredoWebhook = Segredo, HabilitarSimulador = true }),
-    NullLogger<GatewayPagamentoStub>.Instance)
+    NullLogger<GatewayPagamentoStub>.Instance), IConfirmacaoSandbox
 {
     public const string Segredo = "segredo-do-gateway-de-teste";
 
@@ -35,6 +35,18 @@ public class GatewayEmMemoria() : GatewayPagamentoStub(
 
     public override Task<Viteme.Domain.Enums.StatusPagamento> ConsultarCobrancaAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default) =>
         Task.FromResult(StatusNoGateway.TryGetValue(idTransacao, out var status) ? status : Viteme.Domain.Enums.StatusPagamento.Pendente);
+
+    /// <summary>Faz o "gateway" se comportar como o Asaas sandbox no simulador (padrão: desligado, como o stub).</summary>
+    public bool Disponivel { get; set; }
+
+    public ConcurrentQueue<string> ConfirmadasNoSandbox { get; } = new();
+
+    public Task ConfirmarPagamentoAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default)
+    {
+        ConfirmadasNoSandbox.Enqueue(idTransacao);
+        StatusNoGateway[idTransacao] = Viteme.Domain.Enums.StatusPagamento.Aprovado;
+        return Task.CompletedTask;
+    }
 
     public bool FalharAoCriar { get; set; }
 

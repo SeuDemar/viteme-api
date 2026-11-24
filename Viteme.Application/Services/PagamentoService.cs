@@ -168,6 +168,31 @@ public class PagamentoService(
         return corrigidos;
     }
 
+    /// <summary>
+    /// SOMENTE DEMONSTRAÇÃO (simulador com o Asaas sandbox): confirma a cobrança no sandbox e já aplica a aprovação, sem
+    /// esperar o webhook. Quando o webhook chega, encontra o pagamento aprovado e não faz nada (idempotente).
+    /// </summary>
+    public async Task<WebhookResponse> ConfirmarNoSandboxAsync(Guid pagamentoId, IConfirmacaoSandbox sandbox, CancellationToken cancellationToken = default)
+    {
+        var pagamento = await pagamentos.ObterPorIdAsync(pagamentoId, cancellationToken);
+        if (pagamento?.IdTransacaoGateway is not { } idTransacao)
+        {
+            throw new RegraDeNegocioException("TRANSACAO_DESCONHECIDA", "Transação desconhecida",
+                "Este pagamento ainda não tem cobrança no meio de pagamento.", 404);
+        }
+
+        var chave = await contasRecebimento.ChaveDaCobrancaAsync(pagamento.ContaRecebimentoId, cancellationToken);
+        await sandbox.ConfirmarPagamentoAsync(idTransacao, chave, cancellationToken);
+        var status = await gateway.ConsultarCobrancaAsync(idTransacao, chave, cancellationToken);
+        if (status != StatusPagamento.Aprovado)
+        {
+            return new WebhookResponse(false);
+        }
+
+        return await ProcessarAsync(
+            new NotificacaoPagamento(idTransacao, pagamento.Id, StatusPagamento.Aprovado, pagamento.Valor, "PIX"), cancellationToken);
+    }
+
     /// <summary>E29: retoma a cobrança pendente (200) ou gera uma nova após recusa ou expiração (201), enquanto a reserva valer.</summary>
     public async Task<CobrancaResultado> GerarCobrancaAsync(Guid inscricaoId, Guid usuarioId, CancellationToken cancellationToken = default)
     {

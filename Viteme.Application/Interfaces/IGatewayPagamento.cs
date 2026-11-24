@@ -64,6 +64,19 @@ public interface IGatewayPagamento
     NotificacaoPagamento? InterpretarWebhook(string corpoBruto);
 }
 
+/// <summary>
+/// SOMENTE DEMONSTRAÇÃO. Gateway real em ambiente de testes (Asaas sandbox): confirma a cobrança como se o Pix tivesse
+/// sido pago. O próprio gateway manda o webhook depois, como num pagamento de verdade.
+/// </summary>
+public interface IConfirmacaoSandbox
+{
+    /// <summary>Verdadeiro só quando o gateway aponta para o sandbox; em produção nunca confirma.</summary>
+    bool Disponivel { get; }
+
+    /// <param name="chaveRecebedor">Chave da subconta em que a cobrança foi criada (Fase 3); nula para cobrança da raiz.</param>
+    Task ConfirmarPagamentoAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default);
+}
+
 /// <summary>Só o stub implementa: permite simular o gateway na demonstração, assinando webhooks com o segredo dele.</summary>
 public interface ISimuladorGateway
 {

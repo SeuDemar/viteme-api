@@ -66,7 +66,9 @@ public static class DependencyInjection
                     "Gateway:Provedor é Asaas, mas Gateway:Asaas:ChaveApi não está configurada. Use user-secrets ou a variável Gateway__Asaas__ChaveApi.");
             }
 
-            servicos.AddSingleton<IGatewayPagamento, GatewayPagamentoAsaas>();
+            servicos.AddSingleton<GatewayPagamentoAsaas>();
+            servicos.AddSingleton<IGatewayPagamento>(sp => sp.GetRequiredService<GatewayPagamentoAsaas>());
+            servicos.AddSingleton<IConfirmacaoSandbox>(sp => sp.GetRequiredService<GatewayPagamentoAsaas>());
             servicos.AddSingleton<IContasRecebimento, ContasRecebimentoAsaas>();
         }
         else

@@ -130,7 +130,7 @@ public class EscrowAsaasOptions
 /// consulta a cobrança antes de pedir de novo (P30). O webhook é autenticado pelo cabeçalho <c>asaas-access-token</c>.
 /// Resposta fora de 2xx sobe como <see cref="HttpRequestException"/> (o serviço traduz para 502).
 /// </summary>
-public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
+public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IConfirmacaoSandbox, IDisposable
 {
     public const string CabecalhoToken = "asaas-access-token";
 
@@ -235,6 +235,24 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
             HttpMethod.Post, $"payments/{Uri.EscapeDataString(idTransacao)}/refund",
             new { value = valor, description = "Estorno de inscrição no Viteme" }, chaveRecebedor, cancellationToken);
         _logger.LogInformation("[Asaas] estorno de {Valor} solicitado para {IdTransacao}.", valor, idTransacao);
+    }
+
+    public bool Disponivel => Sandbox;
+
+    /// <summary>
+    /// Demonstração: marca a cobrança como recebida no sandbox (<c>POST /sandbox/payment/{id}/confirm</c>). Fora do
+    /// sandbox lança, para nunca "pagar" uma cobrança real.
+    /// </summary>
+    public async Task ConfirmarPagamentoAsync(string idTransacao, string? chaveRecebedor = null, CancellationToken cancellationToken = default)
+    {
+        if (!Sandbox)
+        {
+            throw new InvalidOperationException("A confirmação de pagamento só existe no sandbox do Asaas.");
+        }
+
+        await EnviarAsync<PagamentoAsaas>(
+            HttpMethod.Post, $"sandbox/payment/{Uri.EscapeDataString(idTransacao)}/confirm", null, chaveRecebedor, cancellationToken);
+        _logger.LogInformation("[Asaas] cobrança {IdTransacao} confirmada no sandbox (simulador).", idTransacao);
     }
 
     public bool ValidarAssinaturaWebhook(string corpoBruto, IReadOnlyDictionary<string, string> cabecalhos)
