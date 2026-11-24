@@ -47,7 +47,23 @@ public static class DependencyInjection
         // Gateway de pagamento ainda não escolhido na época da spec; hoje é um stub. O adaptador do Asaas o substituirá.
         servicos.Configure<GatewayStubOptions>(configuracao.GetSection(GatewayStubOptions.Secao));
         servicos.AddSingleton<GatewayPagamentoStub>();
-        servicos.AddSingleton<IGatewayPagamento>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
+
+        // Gateway:Provedor = Stub (padrão) | Asaas. O stub continua registrado como simulador (desligado por padrão).
+        servicos.Configure<GatewayAsaasOptions>(configuracao.GetSection(GatewayAsaasOptions.Secao));
+        if (string.Equals(configuracao["Gateway:Provedor"], "Asaas", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(configuracao[$"{GatewayAsaasOptions.Secao}:ChaveApi"]))
+            {
+                throw new InvalidOperationException(
+                    "Gateway:Provedor é Asaas, mas Gateway:Asaas:ChaveApi não está configurada. Use user-secrets ou a variável Gateway__Asaas__ChaveApi.");
+            }
+
+            servicos.AddSingleton<IGatewayPagamento, GatewayPagamentoAsaas>();
+        }
+        else
+        {
+            servicos.AddSingleton<IGatewayPagamento>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
+        }
         servicos.AddSingleton<ISimuladorGateway>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
 
         // Canais de notificação (RN16): o site sempre; o SMS só registra o envio, que uma tarefa entrega depois.

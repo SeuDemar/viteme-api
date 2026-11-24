@@ -13,6 +13,7 @@ public class PagamentoService(
     IPagamentoRepository pagamentos,
     IInscricaoRepository inscricoes,
     IEventoRepository eventos,
+    IUsuarioRepository usuarios,
     IGatewayPagamento gateway,
     EstornoService estornos,
     NotificacaoService notificacoes,
@@ -33,8 +34,10 @@ public class PagamentoService(
         CobrancaCriada cobranca;
         try
         {
+            var usuario = await usuarios.ObterPorIdAsync(inscricao.UsuarioId, cancellationToken);
+            var pagador = usuario is null ? null : new Pagador(usuario.Id, usuario.Nome, usuario.Email);
             cobranca = await gateway.CriarCobrancaAsync(
-                new PedidoCobranca(pagamento.Id, pagamento.Valor, $"Inscrição em {evento.Titulo}", inscricao.ReservadaAte ?? relogio.UtcAgora),
+                new PedidoCobranca(pagamento.Id, pagamento.Valor, $"Inscrição em {evento.Titulo}", inscricao.ReservadaAte ?? relogio.UtcAgora, pagador),
                 cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -132,14 +135,20 @@ public class PagamentoService(
                 "A assinatura do webhook não confere.", 401);
         }
 
-        NotificacaoPagamento notificacao;
+        NotificacaoPagamento? interpretada;
         try
         {
-            notificacao = gateway.InterpretarWebhook(corpoBruto);
+            interpretada = gateway.InterpretarWebhook(corpoBruto);
         }
         catch (FormatException ex)
         {
             throw new RegraDeNegocioException("WEBHOOK_INVALIDO", "Webhook inválido", ex.Message, 400);
+        }
+
+        // Evento válido que não muda o pagamento (ex.: cobrança criada): confirma o recebimento e não processa.
+        if (interpretada is not { } notificacao)
+        {
+            return new WebhookResponse(false);
         }
 
         for (var tentativa = 1; ; tentativa++)

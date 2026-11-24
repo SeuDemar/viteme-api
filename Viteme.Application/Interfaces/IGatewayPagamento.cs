@@ -2,8 +2,14 @@ using Viteme.Domain.Enums;
 
 namespace Viteme.Application.Interfaces;
 
-/// <summary>Cobrança a criar no gateway. <see cref="ReferenciaExterna"/> é o id do pagamento e serve de chave de idempotência.</summary>
-public sealed record PedidoCobranca(Guid ReferenciaExterna, decimal Valor, string Descricao, DateTime ValidaAte);
+/// <summary>Quem paga: o gateway real precisa de um cliente cadastrado para emitir a cobrança.</summary>
+public sealed record Pagador(Guid UsuarioId, string Nome, string Email);
+
+/// <summary>
+/// Cobrança a criar no gateway. <see cref="ReferenciaExterna"/> é o id do pagamento e serve de chave de idempotência.
+/// <see cref="Pagador"/> pode ser nulo (o stub não usa).
+/// </summary>
+public sealed record PedidoCobranca(Guid ReferenciaExterna, decimal Valor, string Descricao, DateTime ValidaAte, Pagador? Pagador = null);
 
 public sealed record CobrancaCriada(string IdTransacao, string UrlPagamento);
 
@@ -27,8 +33,12 @@ public interface IGatewayPagamento
     /// <summary>Confere a autenticidade do webhook (HMAC, token em cabeçalho etc., conforme o fornecedor).</summary>
     bool ValidarAssinaturaWebhook(string corpoBruto, IReadOnlyDictionary<string, string> cabecalhos);
 
-    /// <summary>Traduz o corpo do webhook do fornecedor. Lança <see cref="FormatException"/> se for inválido.</summary>
-    NotificacaoPagamento InterpretarWebhook(string corpoBruto);
+    /// <summary>
+    /// Traduz o corpo do webhook do fornecedor. Lança <see cref="FormatException"/> se for inválido. Retorna <c>null</c> para
+    /// um evento válido que não muda o pagamento (ex.: cobrança criada): o webhook responde 200 sem processar, para o
+    /// fornecedor não repetir nem pausar a fila de entregas.
+    /// </summary>
+    NotificacaoPagamento? InterpretarWebhook(string corpoBruto);
 }
 
 /// <summary>Só o stub implementa: permite simular o gateway na demonstração, assinando webhooks com o segredo dele.</summary>

@@ -6,7 +6,7 @@ Decisões da equipe em 2026-10-28:
 - Reembolso com o valor **retido** (Conta Escrow) até o evento acontecer.
 - Demonstração no **sandbox** do Asaas.
 
-Este documento é o plano. Nada daqui foi implementado ainda, exceto a Fase 1a (CNPJ).
+Este documento é o plano. Feito: Fase 1a (CNPJ) e o adaptador da Fase 1b (`GatewayPagamentoAsaas`, testado só com HTTP falso). O script da Fase 0 está escrito em [docs/asaas](../../docs/asaas/README.md), mas **não foi executado** (faltava a chave do sandbox): Q1–Q6 seguem sem resposta real.
 
 ## 1. Modelo
 
