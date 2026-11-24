@@ -72,6 +72,19 @@ As chaves já existem no código; ligar só depois do roteiro da seção 8.5 de 
 
 URL do webhook a cadastrar no Asaas: `POST https://<api>/api/v1/pagamentos/webhook`, eventos de cobrança.
 
+## Antes de usar subcontas no sandbox (aprendido em 2026-11-24)
+
+- **Modelo da operação:** Menu do usuário > Minha conta > Configurações > Sandbox > "Modelo da operação" = **Cliente Baas**.
+- **Período de avaliação:** ligado por padrão (até 10 subcontas, R$ 2.000 por subconta, 60 dias). Ao estourar, a criação de subcontas
+  responde 403 com "O limite de uso do teste controlado… homologação regulatória". No sandbox pode ser desligado na mesma tela;
+  em produção exige homologação com o Asaas.
+- **Aprovação:** a autoaprovação do painel deixa a subconta pendente; use `Gateway__Asaas__Subcontas__AprovarNoSandbox=true`.
+- **Whitelist de IPs** (Integrações > Segurança): se ligada, inclua os IPs de saída do App Service (Propriedades > "Endereços IP de
+  saída adicionais") e o IP de quem roda os scripts locais. A recusa por IP vem com `code: not_allowed_ip`.
+- **E-mail da subconta:** não pode ser um e-mail já usado em outra conta Asaas (ex.: o da conta raiz). O formulário tem
+  "E-mail da empresa" para isso.
+- **Chave no Azure:** cole no portal; por bash ou az cli o `$` do começo se perde (401 "chave inválida").
+
 ## Limites conhecidos do adaptador
 
 - Sem CPF/CNPJ do pagador (P1/Q4) a cobrança só funciona no sandbox, com o CPF padrão acima. Em produção a criação do cliente falha.

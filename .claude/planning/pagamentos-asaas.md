@@ -168,3 +168,23 @@ Fontes: [Introdução à Conta Escrow](https://docs.asaas.com/docs/introducao-co
 1. Criar a conta em sandbox.asaas.com como **PJ**, gerar a chave, preencher 8.2 (ainda com `Habilitar=false`).
 2. Rodar `docs/asaas/fase0-sandbox.ps1` de novo: responde Q1, Q2, Q3, Q6 e o escrow. Ajustar os pontos `// confirmar Qn`.
 3. Ligar `Subcontas__Habilitar`, depois `Escrow__Habilitar`, e fazer o fluxo da seção 4 (definição de pronto) com evidência em `docs/evidencias/`.
+
+### 8.6 Validação no ar (2026-11-24): conta de recebimento aberta pelo site publicado
+Resultado: a conta de recebimento do organizador de demonstração foi aberta em `https://viteme-web.pages.dev/perfil` pela API no Azure e ficou **APROVADA** (subconta `b6b4b59b-eba5-4ea1-b7e2-28a00ed5cb62`, CNPJ 81.190.070/0001-51, e-mail da empresa `financeiro.demonstracao.viteme@exemplo.com`). É a conta da apresentação. Até chegar nela, apareceram estes bloqueios, na ordem:
+
+| Sintoma | Causa | Solução |
+|---|---|---|
+| Seção "Recebimentos" não aparece no site | build da Cloudflare sem `VITE_RECEBIMENTOS=true` (a variável é lida no build; sem ela o código nem entra no pacote) | criar a variável em Production e publicar de novo; recarregar a página (o navegador guardava o build antigo) |
+| 502 com a página de erro da Cloudflare | a API respondeu 502 `GATEWAY_INDISPONIVEL` e a Cloudflare troca o corpo de qualquer 502 pela página dela | o motivo só aparece no Log stream do App Service (ver P58) |
+| `401 A chave de API fornecida é inválida` | `Gateway__Asaas__ChaveApi` no Azure diferente da chave PJ | colar de novo no portal (sem passar por terminal: o `$` inicial se perde no bash/az cli) e reiniciar o App Service |
+| `403` sem `errors` (antes lido como "sem detalhe") | resposta só com `message`: "O limite de uso do teste controlado para criação de subcontas foi atingido ou expirou o período permitido. Para continuar operando, é necessário concluir a homologação regulatória." | **período de avaliação** (abaixo). A API passou a ler `message` e a logar corpo e cabeçalhos de erros fora do padrão |
+| `403 not_allowed_ip` (desta máquina) | **Whitelist de IPs** ligada no Asaas durante a investigação | a lista precisa ter os **IPs de saída** do App Service (Propriedades > "Endereços IP de saída adicionais"; o IP de "Domínios personalizados" é o de entrada) e os IPs de quem roda scripts locais |
+| `400 O email … já está em uso` | e-mail do perfil = e-mail da conta raiz no Asaas | campo opcional "E-mail da empresa" em E41 |
+
+**Período de avaliação (regulatório).** Toda conta que cria subcontas pela API passa por ele: até **10 subcontas**, até **R$ 2.000 em cobranças por subconta** e no máximo **60 dias**; atingido qualquer limite, a criação de subcontas e as cobranças ficam bloqueadas até a **homologação regulatória**. Cobrança excluída antes do pagamento recompõe o limite; estornada, não. No **sandbox** o período vem ligado e pode ser desligado (Menu do usuário > Minha conta > Configurações > Sandbox); o sandbox também limita **20 subcontas por dia**. Em **produção** a homologação é obrigatória e é combinada com o gerente de contas (0800 009 0037, contato@asaas.com.br); a documentação não diz documentos nem prazo (P57).
+
+**Modelo da operação.** Em Configurações > Sandbox, "Modelo da operação" = **Cliente Baas** (subcontas de CNPJs diferentes, criadas e operadas pela API, sem acesso do organizador ao painel). "Cliente com filiais" usa o mesmo CNPJ; "parceiro de indicação" dá conta própria ao organizador. Com BaaS, subconta não pode ser encerrada pela API (`DELETE /v3/accounts/{id}` só vale para não-BaaS, sem login e com menos de 48 h).
+
+**Aprovação no sandbox.** A "Autoaprovação de subcontas" do painel aprovou só `commercialInfo`; `general` ficou `PENDING`. Por isso existe `Gateway__Asaas__Subcontas__AprovarNoSandbox=true` (aprova com `POST /v3/sandbox/myAccount/approve` e a chave da subconta logo após criar). A abertura leva ~14 s (criação ~7 s + aprovação), perto do timeout de 20 s do site.
+
+**Ainda não validado no ar:** fluxo pago de ponta a ponta (cobrança com split para a subconta, pagamento, webhook, inscrição confirmada); webhook da conta PJ cadastrado (P56); evento de webhook de situação de conta (nenhum chegou à API até 2 min depois da aprovação simulada: Q6 segue aberta); garantia (Fase 3) desligada no Azure.
