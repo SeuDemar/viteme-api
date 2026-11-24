@@ -126,6 +126,49 @@ public class ContasRecebimentoAsaasTests
         Assert.Equal("O CNPJ 11222333000181 já está em uso.", erro.Message);
     }
 
+    [Fact]
+    public async Task Erro_fora_do_formato_do_asaas_leva_corpo_e_cabecalhos_para_o_log_sem_a_chave()
+    {
+        var roteiro = new RoteiroHttp().Responde(HttpMethod.Post, "accounts", "<html>Request blocked</html>", HttpStatusCode.Forbidden);
+        using var contas = Criar(roteiro);
+
+        var erro = await Assert.ThrowsAnyAsync<HttpRequestException>(() => contas.CriarSubcontaAsync(Dados()));
+
+        Assert.Contains("403", erro.Message);
+        Assert.Contains("Request blocked", erro.Message);
+        Assert.Contains("Content-Type=application/json", erro.Message);
+        Assert.DoesNotContain("chave-raiz", erro.Message);
+    }
+
+    [Fact]
+    public async Task Recusa_so_com_message_mostra_a_frase_do_asaas()
+    {
+        var roteiro = new RoteiroHttp().Responde(
+            HttpMethod.Post, "accounts", """{"message":"Contas de pessoa física (CPF) não podem criar subcontas no Asaas."}""", HttpStatusCode.Forbidden);
+        using var contas = Criar(roteiro);
+
+        var erro = await Assert.ThrowsAnyAsync<HttpRequestException>(() => contas.CriarSubcontaAsync(Dados()));
+
+        Assert.Contains("403 em POST accounts: Contas de pessoa física (CPF) não podem criar subcontas", erro.Message);
+    }
+
+    [Fact]
+    public async Task Chave_com_espaco_ou_quebra_de_linha_nas_pontas_e_aparada()
+    {
+        var roteiro = new RoteiroHttp().Responde(HttpMethod.Post, "accounts/acc_1/escrow", "{}");
+        using var contas = new ContasRecebimentoAsaas(roteiro, Options.Create(new GatewayAsaasOptions
+        {
+            ChaveApi = "  chave-raiz\r\n",
+            ChaveCifragemSubcontas = Convert.ToBase64String(new byte[32]),
+            Subcontas = { Habilitar = true },
+            Escrow = { Habilitar = true },
+        }), NullLogger<ContasRecebimentoAsaas>.Instance);
+
+        await contas.HabilitarGarantiaAsync("acc_1");
+
+        Assert.Equal("chave-raiz", Chave(roteiro.Chamadas[0].Requisicao));
+    }
+
     [Theory]
     [InlineData("APPROVED", SituacaoContaRecebimento.Aprovada)]
     [InlineData("REJECTED", SituacaoContaRecebimento.Rejeitada)]
