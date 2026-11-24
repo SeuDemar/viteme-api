@@ -19,6 +19,9 @@ public class ContasEmMemoria : IContasRecebimento
 
     public bool FalharAoCriar { get; set; }
 
+    /// <summary>Quando definido, o "gateway" recusa os dados com este motivo (ex.: CNPJ já em uso no Asaas).</summary>
+    public string? RecusarComMotivo { get; set; }
+
     public ConcurrentQueue<DadosSubconta> Criadas { get; } = new();
 
     /// <summary>Chave de API de cada subconta criada, para conferir que só a cifrada vai para o banco.</summary>
@@ -35,7 +38,12 @@ public class ContasEmMemoria : IContasRecebimento
     {
         if (FalharAoCriar)
         {
-            throw new HttpRequestException("gateway recusou os dados");
+            throw new HttpRequestException("gateway fora do ar");
+        }
+
+        if (RecusarComMotivo is not null)
+        {
+            throw new Viteme.Application.Excecoes.DadosRecusadosPeloGatewayException(RecusarComMotivo);
         }
 
         Criadas.Enqueue(dados);

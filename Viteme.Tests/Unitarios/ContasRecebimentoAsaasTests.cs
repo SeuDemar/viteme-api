@@ -15,13 +15,13 @@ namespace Viteme.Tests.Unitarios;
 /// </summary>
 public class ContasRecebimentoAsaasTests
 {
-    private static ContasRecebimentoAsaas Criar(RoteiroHttp roteiro, string urlWebhook = "", bool escrow = false) =>
+    private static ContasRecebimentoAsaas Criar(RoteiroHttp roteiro, string urlWebhook = "", bool escrow = false, bool aprovarNoSandbox = false) =>
         new(roteiro, Options.Create(new GatewayAsaasOptions
         {
             ChaveApi = "chave-raiz",
             TokenWebhook = "token-webhook",
             ChaveCifragemSubcontas = Convert.ToBase64String(new byte[32]),
-            Subcontas = { Habilitar = true, UrlWebhook = urlWebhook },
+            Subcontas = { Habilitar = true, UrlWebhook = urlWebhook, AprovarNoSandbox = aprovarNoSandbox },
             Escrow = { Habilitar = escrow, DiasParaExpirar = 30, SubcontaPagaMensalidade = true },
         }), NullLogger<ContasRecebimentoAsaas>.Instance);
 
@@ -73,12 +73,57 @@ public class ContasRecebimentoAsaasTests
     }
 
     [Fact]
+    public async Task No_sandbox_com_aprovar_ligado_a_subconta_e_aprovada_com_a_chave_dela()
+    {
+        var roteiro = new RoteiroHttp()
+            .Responde(HttpMethod.Post, "accounts", """{"id":"acc_1","walletId":"wal_1","apiKey":"chave-sub"}""")
+            .Responde(HttpMethod.Post, "sandbox/myAccount/approve", """{"id":"acc_1","general":"APPROVED"}""");
+        using var contas = Criar(roteiro, aprovarNoSandbox: true);
+
+        await contas.CriarSubcontaAsync(Dados());
+
+        var aprovacao = Assert.Single(roteiro.Chamadas, c => c.Rota == "/v3/sandbox/myAccount/approve");
+        Assert.Equal("chave-sub", Chave(aprovacao.Requisicao));
+    }
+
+    [Fact]
+    public async Task Sem_aprovar_no_sandbox_nada_e_aprovado_e_falha_na_aprovacao_nao_desfaz_a_criacao()
+    {
+        var semAprovar = new RoteiroHttp().Responde(HttpMethod.Post, "accounts", """{"id":"acc_1","walletId":"wal_1","apiKey":"k"}""");
+        using (var contas = Criar(semAprovar))
+        {
+            await contas.CriarSubcontaAsync(Dados());
+        }
+
+        Assert.DoesNotContain(semAprovar.Chamadas, c => c.Rota.Contains("approve"));
+
+        var aprovacaoFalha = new RoteiroHttp()
+            .Responde(HttpMethod.Post, "accounts", """{"id":"acc_1","walletId":"wal_1","apiKey":"k"}""")
+            .Responde(HttpMethod.Post, "sandbox/myAccount/approve", "{}", HttpStatusCode.InternalServerError);
+        using var comFalha = Criar(aprovacaoFalha, aprovarNoSandbox: true);
+        Assert.Equal("acc_1", (await comFalha.CriarSubcontaAsync(Dados())).ContaId);
+    }
+
+    [Fact]
     public async Task Resposta_sem_a_chave_da_subconta_e_erro()
     {
         var roteiro = new RoteiroHttp().Responde(HttpMethod.Post, "accounts", """{"id":"acc_1","walletId":"wal_1"}""");
         using var contas = Criar(roteiro);
 
         await Assert.ThrowsAsync<HttpRequestException>(() => contas.CriarSubcontaAsync(Dados()));
+    }
+
+    [Fact]
+    public async Task Dados_recusados_pelo_asaas_voltam_com_o_motivo()
+    {
+        var roteiro = new RoteiroHttp().Responde(
+            HttpMethod.Post, "accounts", """{"errors":[{"code":"invalid_cpfCnpj","description":"O CNPJ 11222333000181 já está em uso."}]}""",
+            HttpStatusCode.BadRequest);
+        using var contas = Criar(roteiro);
+
+        var erro = await Assert.ThrowsAsync<Viteme.Application.Excecoes.DadosRecusadosPeloGatewayException>(() => contas.CriarSubcontaAsync(Dados()));
+
+        Assert.Equal("O CNPJ 11222333000181 já está em uso.", erro.Message);
     }
 
     [Theory]

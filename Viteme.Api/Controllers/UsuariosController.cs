@@ -96,13 +96,15 @@ public class UsuariosController(UsuarioService usuarios, ContaRecebimentoService
     /// <response code="403"><c>CNPJ_NAO_VERIFICADO</c>.</response>
     /// <response code="404"><c>RECEBIMENTOS_DESABILITADOS</c>.</response>
     /// <response code="409"><c>CONTA_RECEBIMENTO_EXISTENTE</c>.</response>
-    /// <response code="502"><c>GATEWAY_INDISPONIVEL</c>: o gateway recusou os dados ou não respondeu.</response>
+    /// <response code="422"><c>CONTA_RECEBIMENTO_RECUSADA</c>: o gateway recusou os dados (motivo no <c>detail</c>).</response>
+    /// <response code="502"><c>GATEWAY_INDISPONIVEL</c>: o gateway não respondeu.</response>
     [HttpPost("conta-recebimento")]
     [ProducesResponseType<ContaRecebimentoResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status502BadGateway, "application/problem+json")]
     public async Task<IActionResult> CriarContaRecebimento(
         [FromBody] CriarContaRecebimentoRequest requisicao, CancellationToken cancellationToken) =>

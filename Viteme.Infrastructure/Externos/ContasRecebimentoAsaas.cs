@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Viteme.Application.Excecoes;
 using Viteme.Application.Interfaces;
 using Viteme.Domain.Enums;
 
@@ -85,13 +86,28 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
 
         // A chave de API da subconta só vem nesta resposta. Se a gravação no Viteme falhar depois daqui, a subconta existe
         // no Asaas sem a chave guardada: recuperar pelo painel do Asaas (o reenvio daria CNPJ já cadastrado).
-        var criada = await _api.EnviarAsync<ContaAsaas>(HttpMethod.Post, "accounts", corpo, null, cancellationToken);
+        ContaAsaas criada;
+        try
+        {
+            criada = await _api.EnviarAsync<ContaAsaas>(HttpMethod.Post, "accounts", corpo, null, cancellationToken);
+        }
+        catch (ErroAsaasException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+        {
+            // Dados recusados (ex.: "O CNPJ ... já está em uso", quando a empresa já tem conta no Asaas): o motivo vai para a tela.
+            throw new DadosRecusadosPeloGatewayException(ex.Detalhe, ex);
+        }
+
         if (string.IsNullOrWhiteSpace(criada.Id) || string.IsNullOrWhiteSpace(criada.WalletId) || string.IsNullOrWhiteSpace(criada.ApiKey))
         {
             throw new HttpRequestException("Asaas criou a subconta sem devolver id, walletId ou apiKey.");
         }
 
         _logger.LogInformation("[Asaas] subconta {ContaId} criada para o usuário {UsuarioId}.", criada.Id, dados.UsuarioId);
+
+        if (_opcoes.Subcontas.AprovarNoSandbox)
+        {
+            await AprovarNoSandboxAsync(criada.Id, criada.ApiKey, cancellationToken);
+        }
         return new SubcontaCriada(criada.Id, criada.WalletId, criada.ApiKey, await ObterUrlOnboardingAsync(criada.ApiKey, cancellationToken));
     }
 
@@ -179,6 +195,20 @@ public sealed class ContasRecebimentoAsaas : IContasRecebimento, IDisposable
         "REJECTED" => SituacaoContaRecebimento.Rejeitada,
         _ => SituacaoContaRecebimento.Pendente,
     };
+
+    /// <summary>Melhor esforço: se a aprovação simulada falhar, a subconta continua criada e pendente.</summary>
+    private async Task AprovarNoSandboxAsync(string contaId, string chaveSubconta, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _api.EnviarAsync<JsonElement>(HttpMethod.Post, "sandbox/myAccount/approve", new { }, chaveSubconta, cancellationToken);
+            _logger.LogInformation("[Asaas] subconta {ContaId} aprovada no sandbox (Subcontas:AprovarNoSandbox).", contaId);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            _logger.LogWarning("[Asaas] não foi possível aprovar no sandbox a subconta {ContaId}: {Motivo}", contaId, ex.Message);
+        }
+    }
 
     /// <summary>O Viteme guarda o telefone em E.164 (+5544999990000); o Asaas espera só DDD e número.</summary>
     public static string TelefoneNacional(string telefone)

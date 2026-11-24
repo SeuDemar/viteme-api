@@ -39,6 +39,25 @@ public class GatewayAsaasOptionsTests
     }
 
     [Fact]
+    public void Aprovar_no_sandbox_e_recusado_com_a_url_de_producao()
+    {
+        var producao = new GatewayAsaasOptions
+        {
+            UrlBase = "https://api.asaas.com/v3",
+            ChaveCifragemSubcontas = ChaveValida,
+            Subcontas = { Habilitar = true, AprovarNoSandbox = true },
+        };
+        var sandbox = new GatewayAsaasOptions
+        {
+            ChaveCifragemSubcontas = ChaveValida,
+            Subcontas = { Habilitar = true, AprovarNoSandbox = true },
+        };
+
+        Assert.Contains(producao.Validar(), e => e.Contains("AprovarNoSandbox"));
+        Assert.Empty(sandbox.Validar());
+    }
+
+    [Fact]
     public void Garantia_sem_subconta_e_recusada()
     {
         var opcoes = new GatewayAsaasOptions { Escrow = { Habilitar = true } };

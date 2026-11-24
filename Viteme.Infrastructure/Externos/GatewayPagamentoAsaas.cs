@@ -65,6 +65,11 @@ public class GatewayAsaasOptions
             erros.Add("Gateway:Asaas:Subcontas:Habilitar exige Gateway:Asaas:ChaveCifragemSubcontas com 32 bytes em base64 (openssl rand -base64 32).");
         }
 
+        if (Subcontas.AprovarNoSandbox && !UrlBase.Contains("sandbox", StringComparison.OrdinalIgnoreCase))
+        {
+            erros.Add("Gateway:Asaas:Subcontas:AprovarNoSandbox só pode ser usado com a URL do sandbox do Asaas.");
+        }
+
         if (Escrow.Habilitar && Escrow.DiasParaExpirar is < 1 or > 365)
         {
             erros.Add("Gateway:Asaas:Escrow:DiasParaExpirar deve ficar entre 1 e 365.");
@@ -95,6 +100,13 @@ public class SubcontasAsaasOptions
     /// situação cadastral chegar na hora. Vazia: só a tarefa periódica atualiza a situação.
     /// </summary>
     public string UrlWebhook { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Só sandbox: aprova cada subconta logo depois de criá-la (<c>POST /v3/sandbox/myAccount/approve</c>, com a chave dela).
+    /// A autoaprovação do painel do sandbox aprova só os dados comerciais e a subconta fica pendente; sem isto não há como
+    /// aprovar, porque a chave da subconta só a API tem. A API não sobe com esta chave ligada fora do sandbox.
+    /// </summary>
+    public bool AprovarNoSandbox { get; set; }
 }
 
 public class EscrowAsaasOptions

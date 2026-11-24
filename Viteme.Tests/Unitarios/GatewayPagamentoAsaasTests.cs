@@ -223,7 +223,7 @@ public class GatewayPagamentoAsaasTests
             HttpStatusCode.Unauthorized);
         using var gateway = Criar(roteiro);
 
-        var erro = await Assert.ThrowsAsync<HttpRequestException>(() => gateway.CriarCobrancaAsync(Pedido()));
+        var erro = await Assert.ThrowsAnyAsync<HttpRequestException>(() => gateway.CriarCobrancaAsync(Pedido()));
 
         Assert.Contains("401", erro.Message);
         Assert.Contains("A chave de API informada é inválida.", erro.Message);
@@ -277,7 +277,7 @@ public class GatewayPagamentoAsaasTests
         var roteiro = new Roteiro().Responde(HttpMethod.Get, "payments/pay_1/pixQrCode", "{}", HttpStatusCode.InternalServerError);
         using var gateway = Criar(roteiro);
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => gateway.ObterPixAsync("pay_1"));
+        await Assert.ThrowsAnyAsync<HttpRequestException>(() => gateway.ObterPixAsync("pay_1"));
     }
 
     [Fact]

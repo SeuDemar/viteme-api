@@ -126,6 +126,7 @@ Fontes: [Introdução à Conta Escrow](https://docs.asaas.com/docs/introducao-co
 | `Gateway__Asaas__TokenWebhook` | token novo; recadastrar com `docs/asaas/registrar-webhook.ps1` (webhook é por conta) | idem |
 | `Gateway__Asaas__ChaveCifragemSubcontas` | 32 bytes em base64 (`openssl rand -base64 32`); cifra a chave de API de cada subconta | idem |
 | `Gateway__Asaas__Subcontas__Habilitar` | `true` liga E41/E42, split e RN25 | depois do roteiro 8.5 |
+| `Gateway__Asaas__Subcontas__AprovarNoSandbox` | `true` só no sandbox (aprova a subconta logo após criar; a autoaprovação do painel aprova só `commercialInfo`) | ambiente de demonstração |
 | `Gateway__Asaas__Subcontas__UrlWebhook` | `https://<api>/api/v1/pagamentos/webhook` (webhook de situação cadastrado em cada subconta) | junto com Subcontas |
 | `Gateway__Asaas__Escrow__Habilitar` | `true` liga a garantia (Fase 3) | depois de confirmar que o escrow existe no sandbox |
 | `Gateway__Asaas__Escrow__DiasParaExpirar` | ex.: `60` (trava se a tarefa de liberação falhar) | — |

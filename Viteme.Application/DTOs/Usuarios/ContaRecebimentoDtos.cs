@@ -5,7 +5,8 @@ using Viteme.Domain.Enums;
 namespace Viteme.Application.DTOs.Usuarios;
 
 /// <summary>
-/// E41 — dados da empresa para abrir a conta de recebimento (subconta no gateway). CNPJ, razão social e e-mail vêm do perfil.
+/// E41 — dados da empresa para abrir a conta de recebimento (subconta no gateway). CNPJ e razão social vêm do perfil; o e-mail
+/// também, a menos que outro seja informado (o gateway não aceita e-mail já usado em outra conta dele).
 /// Campos conforme <c>POST /v3/accounts</c> do Asaas para PJ (conferidos no sandbox PJ em 2026-11-24).
 /// </summary>
 public sealed record CriarContaRecebimentoRequest
@@ -46,6 +47,11 @@ public sealed record CriarContaRecebimentoRequest
     [Required(ErrorMessage = "Informe o bairro.")]
     [StringLength(100, ErrorMessage = "O bairro deve ter até 100 caracteres.")]
     public string Bairro { get; init; } = string.Empty;
+
+    /// <summary>E-mail da empresa no gateway. Vazio: o do perfil. Precisa ser outro se o do perfil já tiver conta no Asaas.</summary>
+    [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
+    [StringLength(254, ErrorMessage = "O e-mail deve ter até 254 caracteres.")]
+    public string? Email { get; init; }
 }
 
 /// <summary>E41/E42 — situação da conta de recebimento. <c>UrlOnboarding</c> é onde o organizador envia os documentos.</summary>

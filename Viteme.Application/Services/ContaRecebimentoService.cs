@@ -40,11 +40,18 @@ public class ContaRecebimentoService(
         {
             criada = await gateway.CriarSubcontaAsync(
                 new DadosSubconta(
-                    usuario.Id, usuario.Cnpj!, usuario.RazaoSocial ?? usuario.Nome, usuario.Email, requisicao.TipoEmpresa,
+                    usuario.Id, usuario.Cnpj!, usuario.RazaoSocial ?? usuario.Nome,
+                    string.IsNullOrWhiteSpace(requisicao.Email) ? usuario.Email : requisicao.Email.Trim(), requisicao.TipoEmpresa,
                     requisicao.Telefone, requisicao.FaturamentoMensal!.Value, new string(requisicao.Cep.Where(char.IsDigit).ToArray()),
                     requisicao.Endereco.Trim(), requisicao.Numero.Trim(), string.IsNullOrWhiteSpace(requisicao.Complemento) ? null : requisicao.Complemento.Trim(),
                     requisicao.Bairro.Trim()),
                 cancellationToken);
+        }
+        catch (DadosRecusadosPeloGatewayException ex)
+        {
+            logger.LogWarning("Gateway recusou os dados da subconta do usuário {UsuarioId}: {Motivo}", usuarioId, ex.Message);
+            throw new RegraDeNegocioException("CONTA_RECEBIMENTO_RECUSADA", "Dados recusados pelo meio de pagamento",
+                $"O meio de pagamento recusou os dados: {ex.Message}");
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
@@ -64,6 +71,12 @@ public class ContaRecebimentoService(
             // Duas requisições simultâneas: a outra gravou primeiro. A subconta criada aqui fica órfã no gateway.
             logger.LogError("Subconta {ContaId} criada no gateway, mas o usuário {UsuarioId} já tinha conta gravada.", criada.ContaId, usuarioId);
             throw ContaJaExiste();
+        }
+
+        // A análise pode ser imediata (ex.: aprovação simulada no sandbox): já responde com a situação atual do gateway.
+        if (await AtualizarDoGatewayAsync(conta, cancellationToken))
+        {
+            await unitOfWork.SalvarAsync(cancellationToken);
         }
 
         return Mapear(conta);

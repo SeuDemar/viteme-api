@@ -8,6 +8,13 @@ namespace Viteme.Infrastructure.Externos;
 /// Cliente HTTP do Asaas que aceita a chave por requisição: a conta raiz usa a da configuração; as chamadas da subconta
 /// (situação cadastral, garantia) usam a chave dela. Resposta fora de 2xx sobe como <see cref="HttpRequestException"/>.
 /// </summary>
+/// <summary>Resposta de erro do Asaas. <see cref="Detalhe"/> é a descrição devolvida por ele (texto para o usuário, em português).</summary>
+public sealed class ErroAsaasException(string mensagem, string detalhe, System.Net.HttpStatusCode status)
+    : HttpRequestException(mensagem, null, status)
+{
+    public string Detalhe { get; } = detalhe;
+}
+
 internal sealed class ApiAsaas : IDisposable
 {
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -39,7 +46,7 @@ internal sealed class ApiAsaas : IDisposable
         if (!resposta.IsSuccessStatusCode)
         {
             var detalhe = await LerErroAsync(resposta, cancellationToken);
-            throw new HttpRequestException($"Asaas respondeu {(int)resposta.StatusCode} em {metodo} {rota}: {detalhe}", null, resposta.StatusCode);
+            throw new ErroAsaasException($"Asaas respondeu {(int)resposta.StatusCode} em {metodo} {rota}: {detalhe}", detalhe, resposta.StatusCode);
         }
 
         return (await resposta.Content.ReadFromJsonAsync<T>(Json, cancellationToken))!;

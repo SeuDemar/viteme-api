@@ -133,10 +133,10 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Erros: 400; 401; 409 `CNPJ_JA_CADASTRADO`, `CNPJ_TRAVADO_POR_SUBCONTA` (já existe conta de recebimento, aberta com o CNPJ atual); 422 `CNPJ_NAO_ENCONTRADO`, `CNPJ_INATIVO`; 429; 502 `CONSULTA_CNPJ_INDISPONIVEL`.
 
 **E41 — POST /usuarios/me/conta-recebimento** (Autenticado, CNPJ verificado) · RN25, D55
-- Entrada: `{ tipoEmpresa (MEI | LIMITED | INDIVIDUAL | ASSOCIATION), telefone (E.164), faturamentoMensal, cep, endereco, numero, complemento?, bairro }`. CNPJ, razão social e e-mail vêm do perfil. Campos conforme `POST /v3/accounts` do Asaas (**confirmar Q3** na conta sandbox PJ).
+- Entrada: `{ tipoEmpresa (MEI | LIMITED | INDIVIDUAL | ASSOCIATION), telefone (E.164), faturamentoMensal, cep, endereco, numero, complemento?, bairro, email? }`. CNPJ e razão social vêm do perfil; `email` vazio usa o do perfil (o Asaas recusa e-mail ou CNPJ já usados em outra conta dele: 422 com o motivo). Campos conforme `POST /v3/accounts` do Asaas (**confirmar Q3** na conta sandbox PJ).
 - Efeitos: cria a subconta no gateway e grava `conta_recebimento` com a situação `PENDENTE`, a carteira (`walletId`) e a chave de API da subconta **cifrada** (AES-GCM, D55). Com `Gateway__Asaas__Subcontas__UrlWebhook`, a subconta já nasce com o webhook de situação de conta.
 - Saída: `201 { situacao, urlOnboarding?, criadoEm, aprovadaEm?, garantiaHabilitada }`.
-- Erros: 400; 401; 403 `CNPJ_NAO_VERIFICADO`; 404 `RECEBIMENTOS_DESABILITADOS`; 409 `CONTA_RECEBIMENTO_EXISTENTE`; 502 `GATEWAY_INDISPONIVEL` (dados recusados ou gateway fora do ar; nada é gravado).
+- Erros: 400; 401; 403 `CNPJ_NAO_VERIFICADO`; 404 `RECEBIMENTOS_DESABILITADOS`; 409 `CONTA_RECEBIMENTO_EXISTENTE`; 422 `CONTA_RECEBIMENTO_RECUSADA` (o gateway recusou os dados; o motivo dele vem no `detail`, ex.: CNPJ já em uso no Asaas); 502 `GATEWAY_INDISPONIVEL` (gateway fora do ar; nada é gravado).
 
 **E42 — GET /usuarios/me/conta-recebimento** (Autenticado) · RN25
 - Saída: `200` igual a E41. Enquanto não aprovada, consulta a situação no gateway antes de responder (melhor esforço). O webhook de conta (pela rota de E31) e a tarefa periódica também atualizam a situação.

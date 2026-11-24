@@ -63,6 +63,7 @@ As chaves já existem no código; ligar só depois do roteiro da seção 8.5 de 
 | Variável | Valor |
 |---|---|
 | `Gateway__Asaas__Subcontas__UrlWebhook` | `https://<api>/api/v1/pagamentos/webhook`: cadastrado em cada subconta nova, com o mesmo `TokenWebhook`, para a situação da conta chegar na hora. Vazio: só a tarefa periódica atualiza |
+| `Gateway__Asaas__Subcontas__AprovarNoSandbox` | `true` **só no sandbox**: a API aprova cada subconta logo depois de criá-la (a autoaprovação do painel do sandbox aprova só os dados comerciais e a subconta fica pendente). A API não sobe com ela ligada e a URL de produção |
 | `Gateway__Asaas__ChaveCifragemSubcontas` | 32 bytes em base64 (`openssl rand -base64 32`); cifra a chave de API de cada subconta. Obrigatória com `Subcontas__Habilitar=true`. Trocar torna ilegíveis as chaves já guardadas |
 | `Gateway__Asaas__Subcontas__Habilitar` | `false` (padrão). `true` liga a conta de recebimento do organizador (E41/E42), o split e a RN25 |
 | `Gateway__Asaas__Escrow__Habilitar` | `false` (padrão). `true` liga a garantia (Fase 3); exige `Subcontas__Habilitar=true` |

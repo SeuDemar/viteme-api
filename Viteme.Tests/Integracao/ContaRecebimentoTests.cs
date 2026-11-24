@@ -85,6 +85,40 @@ public class ContaRecebimentoTests(BancoFixture banco, ApiFactory api) : IClassF
     }
 
     [FactBanco]
+    public async Task E41_ja_responde_aprovada_quando_o_gateway_aprova_na_hora()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        ambiente.Contas.SubcontasHabilitadas = true;
+        ambiente.Contas.SituacaoNoGateway = SituacaoContaRecebimento.Aprovada;
+        var organizador = await ambiente.NovaSessaoOrganizadorAsync();
+
+        var corpo = await AmbienteApi.CorpoAsync(await ambiente.PostAsync(Rota, CorpoConta(), organizador.Token));
+
+        Assert.Equal("APROVADA", corpo.GetProperty("situacao").GetString());
+    }
+
+    [FactBanco]
+    public async Task E41_usa_o_email_informado_ou_o_do_perfil()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        ambiente.Contas.SubcontasHabilitadas = true;
+        var comEmail = await ambiente.NovaSessaoOrganizadorAsync();
+        var semEmail = await ambiente.NovaSessaoOrganizadorAsync();
+        var perfil = await AmbienteApi.CorpoAsync(await ambiente.GetAsync("/api/v1/usuarios/me", semEmail.Token));
+
+        (await ambiente.PostAsync(Rota, new
+        {
+            tipoEmpresa = "LIMITED", telefone = "+5544999990000", faturamentoMensal = 5000m, cep = "87020-000",
+            endereco = "Rua A", numero = "100", bairro = "Centro", email = "financeiro@empresa.com.br",
+        }, comEmail.Token)).EnsureSuccessStatusCode();
+        (await ambiente.PostAsync(Rota, CorpoConta(), semEmail.Token)).EnsureSuccessStatusCode();
+
+        var criadas = ambiente.Contas.Criadas.ToList();
+        Assert.Equal("financeiro@empresa.com.br", criadas[0].Email);
+        Assert.Equal(perfil.GetProperty("email").GetString(), criadas[1].Email);
+    }
+
+    [FactBanco]
     public async Task E41_exige_cnpj_verificado_e_so_uma_conta_por_organizador()
     {
         using var ambiente = new AmbienteApi(banco, api);
@@ -115,6 +149,22 @@ public class ContaRecebimentoTests(BancoFixture banco, ApiFactory api) : IClassF
 
         Assert.Equal(HttpStatusCode.BadGateway, resposta.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await ambiente.GetAsync(Rota, organizador.Token)).StatusCode);
+    }
+
+    [FactBanco]
+    public async Task E41_dados_recusados_pelo_gateway_respondem_422_com_o_motivo()
+    {
+        using var ambiente = new AmbienteApi(banco, api);
+        ambiente.Contas.SubcontasHabilitadas = true;
+        ambiente.Contas.RecusarComMotivo = "O CNPJ 11222333000181 já está em uso.";
+        var organizador = await ambiente.NovaSessaoOrganizadorAsync();
+
+        var resposta = await ambiente.PostAsync(Rota, CorpoConta(), organizador.Token);
+        var corpo = await AmbienteApi.CorpoAsync(resposta);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, resposta.StatusCode);
+        Assert.Equal("CONTA_RECEBIMENTO_RECUSADA", corpo.GetProperty("codigo").GetString());
+        Assert.Contains("já está em uso", corpo.GetProperty("detail").GetString());
     }
 
     [FactBanco]
