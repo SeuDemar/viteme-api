@@ -5,6 +5,8 @@ using Microsoft.Extensions.Options;
 using Viteme.Application.Interfaces;
 using Viteme.Domain.Enums;
 using Viteme.Infrastructure.Externos;
+using Viteme.Tests.Suporte;
+using Roteiro = Viteme.Tests.Suporte.RoteiroHttp;
 
 namespace Viteme.Tests.Unitarios;
 
@@ -13,33 +15,6 @@ public class GatewayPagamentoAsaasTests
 {
     private const string Token = "token-do-webhook-de-teste";
     private static readonly Guid Referencia = Guid.Parse("11111111-2222-3333-4444-555555555555");
-
-    private sealed class Roteiro : HttpMessageHandler
-    {
-        private readonly List<(Func<HttpRequestMessage, bool> Casa, HttpStatusCode Status, string Corpo)> _respostas = [];
-
-        public List<(HttpMethod Metodo, string Rota, string? Corpo, HttpRequestMessage Requisicao)> Chamadas { get; } = [];
-
-        public Roteiro Responde(HttpMethod metodo, string rotaComeca, string corpo, HttpStatusCode status = HttpStatusCode.OK)
-        {
-            _respostas.Add((r => r.Method == metodo && r.RequestUri!.PathAndQuery.StartsWith("/v3/" + rotaComeca, StringComparison.Ordinal), status, corpo));
-            return this;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage requisicao, CancellationToken cancellationToken)
-        {
-            var corpo = requisicao.Content is null ? null : await requisicao.Content.ReadAsStringAsync(cancellationToken);
-            Chamadas.Add((requisicao.Method, requisicao.RequestUri!.PathAndQuery, corpo, requisicao));
-
-            var resposta = _respostas.FirstOrDefault(r => r.Casa(requisicao));
-            if (resposta.Casa is null)
-            {
-                return new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("{}") };
-            }
-
-            return new HttpResponseMessage(resposta.Status) { Content = new StringContent(resposta.Corpo, Encoding.UTF8, "application/json") };
-        }
-    }
 
     private static GatewayPagamentoAsaas Criar(Roteiro roteiro, string urlBase = "https://api-sandbox.asaas.com/v3", string cpfPadrao = "24971563792") =>
         new(roteiro, Options.Create(new GatewayAsaasOptions
@@ -79,6 +54,22 @@ public class GatewayPagamentoAsaasTests
         Assert.Contains("\"value\":50", pagamento.Corpo);
         Assert.Contains($"\"externalReference\":\"{Referencia}\"", pagamento.Corpo);
         Assert.Matches("\"dueDate\":\"\\d{4}-\\d{2}-\\d{2}\"", pagamento.Corpo);
+        Assert.DoesNotContain("split", pagamento.Corpo);
+    }
+
+    [Fact]
+    public async Task Com_carteira_do_organizador_a_cobranca_leva_split_de_100_por_cento()
+    {
+        var roteiro = new Roteiro()
+            .Responde(HttpMethod.Get, "payments?externalReference=", """{"data":[]}""")
+            .Responde(HttpMethod.Get, "customers?externalReference=", """{"data":[{"id":"cus_1","deleted":false}]}""")
+            .Responde(HttpMethod.Post, "payments", """{"id":"pay_1","status":"PENDING","invoiceUrl":"u"}""");
+        using var gateway = Criar(roteiro);
+
+        await gateway.CriarCobrancaAsync(Pedido() with { WalletRecebedor = "wal_org" });
+
+        var pagamento = roteiro.Chamadas.Single(c => c.Metodo == HttpMethod.Post && c.Rota.EndsWith("/payments"));
+        Assert.Contains("\"split\":[{\"walletId\":\"wal_org\",\"percentualValue\":100}]", pagamento.Corpo);
     }
 
     [Fact]

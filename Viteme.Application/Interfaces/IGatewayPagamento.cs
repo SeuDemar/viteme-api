@@ -7,9 +7,11 @@ public sealed record Pagador(Guid UsuarioId, string Nome, string Email, string? 
 
 /// <summary>
 /// Cobrança a criar no gateway. <see cref="ReferenciaExterna"/> é o id do pagamento e serve de chave de idempotência.
-/// <see cref="Pagador"/> pode ser nulo (o stub não usa).
+/// <see cref="Pagador"/> pode ser nulo (o stub não usa). <see cref="WalletRecebedor"/> é a carteira da subconta do organizador
+/// (Fase 2): com ela, o valor vai para o organizador pelo split; sem ela, fica na conta raiz.
 /// </summary>
-public sealed record PedidoCobranca(Guid ReferenciaExterna, decimal Valor, string Descricao, DateTime ValidaAte, Pagador? Pagador = null);
+public sealed record PedidoCobranca(
+    Guid ReferenciaExterna, decimal Valor, string Descricao, DateTime ValidaAte, Pagador? Pagador = null, string? WalletRecebedor = null);
 
 public sealed record CobrancaCriada(string IdTransacao, string UrlPagamento);
 

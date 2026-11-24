@@ -62,6 +62,7 @@ As chaves já existem no código; ligar só depois do roteiro da seção 8.5 de 
 
 | Variável | Valor |
 |---|---|
+| `Gateway__Asaas__Subcontas__UrlWebhook` | `https://<api>/api/v1/pagamentos/webhook`: cadastrado em cada subconta nova, com o mesmo `TokenWebhook`, para a situação da conta chegar na hora. Vazio: só a tarefa periódica atualiza |
 | `Gateway__Asaas__ChaveCifragemSubcontas` | 32 bytes em base64 (`openssl rand -base64 32`); cifra a chave de API de cada subconta. Obrigatória com `Subcontas__Habilitar=true`. Trocar torna ilegíveis as chaves já guardadas |
 | `Gateway__Asaas__Subcontas__Habilitar` | `false` (padrão). `true` liga a conta de recebimento do organizador (E41/E42), o split e a RN25 |
 | `Gateway__Asaas__Escrow__Habilitar` | `false` (padrão). `true` liga a garantia (Fase 3); exige `Subcontas__Habilitar=true` |
@@ -73,7 +74,8 @@ URL do webhook a cadastrar no Asaas: `POST https://<api>/api/v1/pagamentos/webho
 ## Limites conhecidos do adaptador
 
 - Sem CPF/CNPJ do pagador (P1/Q4) a cobrança só funciona no sandbox, com o CPF padrão acima. Em produção a criação do cliente falha.
-- Sem subconta/split (Fase 2) e sem escrow (Fase 3): a cobrança cai na conta raiz.
+- Subconta/split (Fase 2) e escrow (Fase 3) estão no código, desligados: a cobrança cai na conta raiz até ligar as chaves acima.
+  Os pontos que dependem da conta sandbox PJ estão marcados com `confirmar Qn` em `ContasRecebimentoAsaas.cs`.
 - `UrlPagamento` é a `invoiceUrl` do Asaas (página com o QR Code). Mostrar o QR Code e o "copia e cola" no próprio site
   (`GET /payments/{id}/pixQrCode`) é a Fase 4.
 - O vencimento do Asaas é por data (dia, horário de Brasília); a reserva do Viteme é por minuto. Uma cobrança paga depois do fim da

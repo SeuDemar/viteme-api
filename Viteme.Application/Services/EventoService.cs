@@ -17,6 +17,8 @@ public class EventoService(
     CancelamentoEventoService cancelamento,
     EstornoService estornos,
     AlteracaoEventoRegistrador registrador,
+    ContaRecebimentoService contasRecebimento,
+    IContasRecebimento gatewayContas,
     IUnitOfWork unitOfWork,
     IRelogio relogio)
 {
@@ -112,6 +114,12 @@ public class EventoService(
                 "O preço não pode ser alterado enquanto houver inscrições ativas no evento.");
         }
 
+        // RN25: evento já no ar que passa a ser pago exige a conta de recebimento aprovada.
+        if (evento.Gratuito && dados.Preco > 0 && evento.Status is StatusEvento.Publicado or StatusEvento.Oculto)
+        {
+            await GarantirContaParaEventoPagoAsync(evento.OrganizadorId, cancellationToken);
+        }
+
         if (dados.Capacidade is { } capacidade)
         {
             var ocupadas = await eventos.ContarVagasOcupadasAsync(evento.Id, agora, cancellationToken);
@@ -149,12 +157,31 @@ public class EventoService(
         return await ObterDetalheAsync(evento.Id, usuarioId, cancellationToken);
     }
 
-    /// <summary>E14. RN24: o organizador precisa ter CNPJ verificado (vale também para rascunhos anteriores à regra).</summary>
+    /// <summary>
+    /// RN25 (só com a Fase 2 ligada): o dinheiro de evento pago vai para a subconta do organizador, então ela precisa estar
+    /// aprovada. Desligada, o recebimento é na conta raiz e nada é exigido.
+    /// </summary>
+    private async Task GarantirContaParaEventoPagoAsync(Guid organizadorId, CancellationToken cancellationToken)
+    {
+        if (gatewayContas.SubcontasHabilitadas)
+        {
+            await contasRecebimento.ObterAprovadaAsync(organizadorId, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// E14. RN24: o organizador precisa ter CNPJ verificado (vale também para rascunhos anteriores à regra).
+    /// RN25: evento pago exige a conta de recebimento aprovada, com a Fase 2 ligada.
+    /// </summary>
     public async Task<StatusEventoResponse> PublicarAsync(Guid eventoId, CancellationToken cancellationToken = default)
     {
         var evento = await eventos.ObterPorIdAsync(eventoId, cancellationToken) ?? throw EventoNaoEncontrado();
         var organizador = await usuarios.ObterPorIdAsync(evento.OrganizadorId, cancellationToken) ?? throw EventoNaoEncontrado();
         organizador.GarantirPodeOrganizar();
+        if (!evento.Gratuito)
+        {
+            await GarantirContaParaEventoPagoAsync(organizador.Id, cancellationToken);
+        }
 
         evento.Publicar(relogio.UtcAgora);
         await unitOfWork.SalvarAsync(cancellationToken);

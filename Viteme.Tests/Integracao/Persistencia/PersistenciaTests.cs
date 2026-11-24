@@ -21,6 +21,52 @@ public class PersistenciaTests(BancoFixture banco) : IClassFixture<BancoFixture>
     }
 
     [FactBanco]
+    public async Task Conta_de_recebimento_grava_situacao_em_texto_e_e_unica_por_usuario()
+    {
+        await using var contexto = banco.CriarContexto();
+        var usuario = Dados.NovoUsuario();
+        var conta = new ContaRecebimento(usuario.Id, $"acc_{Guid.NewGuid():N}", "wallet_1", "cifrada", null);
+        conta.AtualizarSituacao(SituacaoContaRecebimento.Aprovada, Dados.Agora);
+        contexto.AddRange(usuario, conta);
+        await contexto.SaveChangesAsync();
+
+        await using var leitura = banco.CriarContexto();
+        var salva = await new Viteme.Infrastructure.Persistencia.Repositorios.ContaRecebimentoRepository(leitura)
+            .ObterPorUsuarioAsync(usuario.Id);
+        var rotulo = await leitura.Database
+            .SqlQuery<string>($"SELECT situacao AS \"Value\" FROM conta_recebimento WHERE id = {conta.Id}")
+            .SingleAsync();
+        Assert.Equal(SituacaoContaRecebimento.Aprovada, salva!.Situacao);
+        Assert.Equal("APROVADA", rotulo);
+        Assert.Equal(Dados.Agora, salva.AprovadaEm);
+
+        await using var outro = banco.CriarContexto();
+        outro.Add(new ContaRecebimento(usuario.Id, $"acc_{Guid.NewGuid():N}", "wallet_2", "cifrada", null));
+        var erro = await Assert.ThrowsAsync<DbUpdateException>(() => outro.SaveChangesAsync());
+        Assert.Equal(PostgresErrorCodes.UniqueViolation, ((PostgresException)erro.InnerException!).SqlState);
+    }
+
+    [FactBanco]
+    public async Task Pagamento_grava_o_id_e_a_liberacao_da_garantia()
+    {
+        await using var contexto = banco.CriarContexto();
+        var (_, evento) = await CriarEventoPublicadoAsync(contexto, preco: 50m);
+        var participante = Dados.NovoUsuario();
+        var inscricao = Inscricao.CriarPendentePagamento(evento.Id, participante.Id, Codigo(), Dados.Agora);
+        var pagamento = new Pagamento(inscricao.Id, 50m);
+        pagamento.Aprovar("PIX");
+        pagamento.RegistrarGarantia("esc_1");
+        pagamento.LiberarGarantia(Dados.Agora);
+        contexto.AddRange(participante, inscricao, pagamento);
+        await contexto.SaveChangesAsync();
+
+        await using var leitura = banco.CriarContexto();
+        var salvo = await leitura.Pagamentos.SingleAsync(p => p.Id == pagamento.Id);
+        Assert.Equal("esc_1", salvo.GarantiaId);
+        Assert.Equal(Dados.Agora, salvo.GarantiaLiberadaEm);
+    }
+
+    [FactBanco]
     public async Task Datas_automaticas_sao_preenchidas_em_utc_pelo_relogio()
     {
         var relogio = new RelogioFixo();

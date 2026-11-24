@@ -43,6 +43,7 @@ public static class DependencyInjection
         servicos.AddScoped<IDenunciaRepository, DenunciaRepository>();
         servicos.AddScoped<ICertificadoRepository, CertificadoRepository>();
         servicos.AddScoped<IEnvioSmsRepository, EnvioSmsRepository>();
+        servicos.AddScoped<IContaRecebimentoRepository, ContaRecebimentoRepository>();
 
         // Gateway de pagamento ainda não escolhido na época da spec; hoje é um stub. O adaptador do Asaas o substituirá.
         servicos.Configure<GatewayStubOptions>(configuracao.GetSection(GatewayStubOptions.Secao));
@@ -66,12 +67,15 @@ public static class DependencyInjection
             }
 
             servicos.AddSingleton<IGatewayPagamento, GatewayPagamentoAsaas>();
+            servicos.AddSingleton<IContasRecebimento, ContasRecebimentoAsaas>();
         }
         else
         {
             servicos.AddSingleton<IGatewayPagamento>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
+            servicos.AddSingleton<IContasRecebimento, ContasRecebimentoStub>();
         }
         servicos.AddSingleton<ISimuladorGateway>(sp => sp.GetRequiredService<GatewayPagamentoStub>());
+        servicos.AddSingleton<ICifradorSegredos, CifradorSegredosAesGcm>();
 
         // Canais de notificação (RN16): o site sempre; o SMS só registra o envio, que uma tarefa entrega depois.
         servicos.AddScoped<INotificationSender, NotificacaoSiteSender>();
@@ -118,6 +122,7 @@ public static class DependencyInjection
         servicos.AddHostedService<EncerrarEventosWorker>();
         servicos.AddHostedService<ReservasEEstornosWorker>();
         servicos.AddHostedService<ReconciliacaoPagamentosWorker>();
+        servicos.AddHostedService<ContasEGarantiasWorker>();
         servicos.AddHostedService<EnvioSmsWorker>();
         servicos.AddHostedService<LembretesWorker>();
 

@@ -58,5 +58,21 @@ public class PagamentoRepository(VitemeDbContext contexto) : IPagamentoRepositor
         return itens.Select(x => new PagamentoParaReconciliacao(x.Id, x.IdTransacaoGateway!, x.Valor)).ToList();
     }
 
+    public async Task<IReadOnlyList<PagamentoComGarantia>> ListarGarantiasParaLiberarAsync(
+        DateTime terminoAntes, int limite, CancellationToken cancellationToken = default)
+    {
+        var itens = await (from p in contexto.Pagamentos.AsNoTracking()
+                           where p.Status == StatusPagamento.Aprovado && p.GarantiaLiberadaEm == null && p.IdTransacaoGateway != null
+                           join i in contexto.Inscricoes.AsNoTracking() on p.InscricaoId equals i.Id
+                           where i.Status == StatusInscricao.Confirmada
+                           join e in contexto.Eventos.AsNoTracking() on i.EventoId equals e.Id
+                           where e.Status == StatusEvento.Encerrado && e.DataFim < terminoAntes
+                           orderby e.DataFim, p.CriadoEm
+                           select new { p.Id, p.IdTransacaoGateway, p.GarantiaId, e.OrganizadorId, p.CriadoEm })
+            .Take(limite)
+            .ToListAsync(cancellationToken);
+        return itens.Select(x => new PagamentoComGarantia(x.Id, x.IdTransacaoGateway!, x.GarantiaId, x.OrganizadorId, x.CriadoEm)).ToList();
+    }
+
     public void Adicionar(Pagamento pagamento) => contexto.Pagamentos.Add(pagamento);
 }

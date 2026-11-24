@@ -42,6 +42,8 @@ public class VitemeDbContext(DbContextOptions<VitemeDbContext> options, IRelogio
 
     public DbSet<Certificado> Certificados => Set<Certificado>();
 
+    public DbSet<ContaRecebimento> ContasRecebimento => Set<ContaRecebimento>();
+
     /// <summary>Configura Npgsql, os enums nativos e a convenção snake_case (usado pela API e pelo design-time).</summary>
     public static DbContextOptionsBuilder ConfigurarOpcoes(DbContextOptionsBuilder opcoes, string stringConexao) =>
         opcoes

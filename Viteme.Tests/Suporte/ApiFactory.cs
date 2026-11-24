@@ -14,6 +14,9 @@ public class ApiFactory : WebApplicationFactory<Program>
 {
     public const string ChaveJwt = "chave-de-teste-com-mais-de-32-caracteres-0123456789";
 
+    /// <summary>32 bytes em base64, só para os testes.</summary>
+    public const string ChaveCifragem = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("Jwt:Chave", ChaveJwt);
@@ -26,7 +29,7 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Aplicação ligada ao banco temporário, com relógio e SMS controláveis.</summary>
     public WebApplicationFactory<Program> ComBanco(
         string conexao, RelogioFixo relogio, SmsEmMemoria sms, GatewayEmMemoria gateway, CnpjEmMemoria cnpj,
-        EmailEmMemoria email, bool limitacao = false, bool tokenRealista = false) =>
+        EmailEmMemoria email, ContasEmMemoria contas, bool limitacao = false, bool tokenRealista = false) =>
         WithWebHostBuilder(b =>
         {
             b.UseSetting("ConnectionStrings:Default", conexao);
@@ -35,6 +38,9 @@ public class ApiFactory : WebApplicationFactory<Program>
             // O relógio dos testes salta horas e dias; por padrão o token de acesso dura o suficiente para o teste não
             // precisar renová-lo. Os testes de expiração pedem a validade real (15 min).
             b.UseSetting("Jwt:MinutosAcesso", tokenRealista ? "15" : "525600");
+
+            // Chave mestra de teste da cifragem das subcontas. As Fases 2 e 3 em si são ligadas pelo dublê ContasEmMemoria.
+            b.UseSetting("Gateway:Asaas:ChaveCifragemSubcontas", ChaveCifragem);
             b.ConfigureServices(servicos =>
             {
                 servicos.RemoveAll<IRelogio>();
@@ -49,6 +55,8 @@ public class ApiFactory : WebApplicationFactory<Program>
                 servicos.AddSingleton<IConsultaCnpj>(cnpj);
                 servicos.RemoveAll<IEmailRedefinicaoSenha>();
                 servicos.AddSingleton<IEmailRedefinicaoSenha>(email);
+                servicos.RemoveAll<IContasRecebimento>();
+                servicos.AddSingleton<IContasRecebimento>(contas);
             });
         });
 }

@@ -1,4 +1,4 @@
-# Endpoints (E01–E40, E43–E46)
+# Endpoints (E01–E46)
 
 Prefixo `/api/v1`. Convenções e erros: [convencoes-e-erros.md](convencoes-e-erros.md). Regras: [regras-de-negocio.md](regras-de-negocio.md).
 
@@ -48,13 +48,15 @@ Legenda de acesso: **Público** · **Autenticado** · **Organizador** · **Org./
 | E38 | GET | `/inscricoes/{id}/certificado` | Dono | Emitir (1ª vez) e baixar PDF |
 | E39 | GET | `/certificados/{codigo}/validacao` | Público | Validar autenticidade |
 | E40 | PUT | `/usuarios/me/cnpj` | Autenticado | Cadastrar o CNPJ do organizador (RN24) |
+| E41 | POST | `/usuarios/me/conta-recebimento` | Autenticado | Abrir a conta de recebimento (subconta Asaas) do organizador |
+| E42 | GET | `/usuarios/me/conta-recebimento` | Autenticado | Situação da conta de recebimento e link dos documentos |
 | E43 | POST | `/auth/esqueci-senha` | Público | Pedir o e-mail de redefinição de senha |
 | E44 | POST | `/auth/redefinir-senha` | Público | Definir a nova senha com o token do e-mail |
 
 | E45 | PUT | `/usuarios/me/cpf` | Autenticado | Informar o CPF do pagador (exigido pelo Asaas) |
 | E46 | GET | `/inscricoes/{id}/pagamento/pix` | Dono | QR Code e "copia e cola" do Pix pendente |
 
-> E41 e E42 estão reservados à conta de recebimento do organizador ([../pagamentos-asaas.md](../pagamentos-asaas.md)); por isso a redefinição de senha usa E43 e E44.
+> E41 e E42 (conta de recebimento) só existem com a Fase 2 do Asaas ligada (`Gateway__Asaas__Subcontas__Habilitar=true`); desligada, respondem `404 RECEBIMENTOS_DESABILITADOS`. Plano em [../pagamentos-asaas.md](../pagamentos-asaas.md), seção 8.
 
 ## 2. Especificação
 
@@ -128,7 +130,17 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 **E40 — PUT /usuarios/me/cnpj** (Autenticado) · RN24
 - Entrada: `{ cnpj }`, com ou sem máscara; aceita o formato alfanumérico. Saída: `200` perfil (E05) com `cnpj`, `razaoSocial`, `cnpjVerificadoEm`, `podeOrganizar: true`.
 - Valida os dígitos verificadores (400), confere que não pertence a outra conta e consulta a BrasilAPI (situação ATIVA). Limite: 5/min por usuário.
-- Erros: 400; 401; 409 `CNPJ_JA_CADASTRADO`; 422 `CNPJ_NAO_ENCONTRADO`, `CNPJ_INATIVO`; 429; 502 `CONSULTA_CNPJ_INDISPONIVEL`.
+- Erros: 400; 401; 409 `CNPJ_JA_CADASTRADO`, `CNPJ_TRAVADO_POR_SUBCONTA` (já existe conta de recebimento, aberta com o CNPJ atual); 422 `CNPJ_NAO_ENCONTRADO`, `CNPJ_INATIVO`; 429; 502 `CONSULTA_CNPJ_INDISPONIVEL`.
+
+**E41 — POST /usuarios/me/conta-recebimento** (Autenticado, CNPJ verificado) · RN25, D55
+- Entrada: `{ tipoEmpresa (MEI | LIMITED | INDIVIDUAL | ASSOCIATION), telefone (E.164), faturamentoMensal, cep, endereco, numero, complemento?, bairro }`. CNPJ, razão social e e-mail vêm do perfil. Campos conforme `POST /v3/accounts` do Asaas (**confirmar Q3** na conta sandbox PJ).
+- Efeitos: cria a subconta no gateway e grava `conta_recebimento` com a situação `PENDENTE`, a carteira (`walletId`) e a chave de API da subconta **cifrada** (AES-GCM, D55). Com `Gateway__Asaas__Subcontas__UrlWebhook`, a subconta já nasce com o webhook de situação de conta.
+- Saída: `201 { situacao, urlOnboarding?, criadoEm, aprovadaEm?, garantiaHabilitada }`.
+- Erros: 400; 401; 403 `CNPJ_NAO_VERIFICADO`; 404 `RECEBIMENTOS_DESABILITADOS`; 409 `CONTA_RECEBIMENTO_EXISTENTE`; 502 `GATEWAY_INDISPONIVEL` (dados recusados ou gateway fora do ar; nada é gravado).
+
+**E42 — GET /usuarios/me/conta-recebimento** (Autenticado) · RN25
+- Saída: `200` igual a E41. Enquanto não aprovada, consulta a situação no gateway antes de responder (melhor esforço). O webhook de conta (pela rota de E31) e a tarefa periódica também atualizam a situação.
+- Erros: 401; 404 `RECEBIMENTOS_DESABILITADOS`, `CONTA_RECEBIMENTO_NAO_ENCONTRADA`.
 
 ### 2.2 Eventos e programação
 

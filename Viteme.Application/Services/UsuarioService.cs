@@ -15,6 +15,7 @@ public class UsuarioService(
     IGeradorAleatorio aleatorio,
     IProvedorSms provedorSms,
     IConsultaCnpj consultaCnpj,
+    IContaRecebimentoRepository contasRecebimento,
     IUnitOfWork unitOfWork,
     IRelogio relogio)
 {
@@ -164,6 +165,14 @@ public class UsuarioService(
         if (usuario.Cnpj == cnpj && usuario.PodeOrganizar)
         {
             return Mapear(usuario);
+        }
+
+        // A subconta do gateway é aberta com o CNPJ: trocá-lo depois deixaria o dinheiro numa empresa e o perfil em outra.
+        if (usuario.Cnpj is not null && usuario.Cnpj != cnpj
+            && await contasRecebimento.ObterPorUsuarioAsync(usuario.Id, cancellationToken) is not null)
+        {
+            throw new RegraDeNegocioException("CNPJ_TRAVADO_POR_SUBCONTA", "CNPJ travado",
+                "O CNPJ não pode ser trocado depois de aberta a conta de recebimento. Fale com o suporte.", 409);
         }
 
         if (await usuarios.CnpjEmUsoPorOutroAsync(cnpj, usuario.Id, cancellationToken))

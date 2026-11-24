@@ -15,6 +15,9 @@ public class PagamentoService(
     IEventoRepository eventos,
     IUsuarioRepository usuarios,
     IGatewayPagamento gateway,
+    IContasRecebimento gatewayContas,
+    ContaRecebimentoService contasRecebimento,
+    GarantiaService garantias,
     EstornoService estornos,
     NotificacaoService notificacoes,
     IUnitOfWork unitOfWork,
@@ -37,13 +40,36 @@ public class PagamentoService(
     public async Task CriarCobrancaAsync(
         Pagamento pagamento, Inscricao inscricao, Evento evento, bool expirarInscricaoEmFalha, CancellationToken cancellationToken = default)
     {
+        // Fase 2 (split): sem a conta de recebimento aprovada não há para onde mandar o dinheiro (RN25). Só acontece se a
+        // conta for rejeitada depois de o evento estar no ar; a publicação já exige a aprovação.
+        string? walletRecebedor = null;
+        if (gatewayContas.SubcontasHabilitadas)
+        {
+            try
+            {
+                walletRecebedor = (await contasRecebimento.ObterAprovadaAsync(evento.OrganizadorId, cancellationToken)).WalletId;
+            }
+            catch (RegraDeNegocioException)
+            {
+                pagamento.Expirar();
+                if (expirarInscricaoEmFalha)
+                {
+                    inscricao.Expirar();
+                }
+
+                await unitOfWork.SalvarAsync(cancellationToken);
+                throw new RegraDeNegocioException("CONTA_RECEBIMENTO_PENDENTE", "Evento sem recebimento",
+                    "O organizador ainda não pode receber pagamentos. Tente mais tarde.");
+            }
+        }
+
         CobrancaCriada cobranca;
         try
         {
             var usuario = await usuarios.ObterPorIdAsync(inscricao.UsuarioId, cancellationToken);
             var pagador = usuario is null ? null : new Pagador(usuario.Id, usuario.Nome, usuario.Email, usuario.Cpf);
             cobranca = await gateway.CriarCobrancaAsync(
-                new PedidoCobranca(pagamento.Id, pagamento.Valor, $"Inscrição em {evento.Titulo}", inscricao.ReservadaAte ?? relogio.UtcAgora, pagador),
+                new PedidoCobranca(pagamento.Id, pagamento.Valor, $"Inscrição em {evento.Titulo}", inscricao.ReservadaAte ?? relogio.UtcAgora, pagador, walletRecebedor),
                 cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -250,9 +276,10 @@ public class PagamentoService(
         }
 
         // Evento válido que não muda o pagamento (ex.: cobrança criada): confirma o recebimento e não processa.
+        // Pode ser um evento de situação da subconta (Fase 2), que vai para a conta de recebimento.
         if (interpretada is not { } notificacao)
         {
-            return new WebhookResponse(false);
+            return await ProcessarWebhookContaAsync(corpoBruto, cancellationToken);
         }
 
         for (var tentativa = 1; ; tentativa++)
@@ -272,6 +299,26 @@ public class PagamentoService(
                     "O pagamento está sendo processado por outra operação. Tente novamente.", 409);
             }
         }
+    }
+
+    private async Task<WebhookResponse> ProcessarWebhookContaAsync(string corpoBruto, CancellationToken cancellationToken)
+    {
+        if (!gatewayContas.SubcontasHabilitadas)
+        {
+            return new WebhookResponse(false);
+        }
+
+        NotificacaoConta? conta;
+        try
+        {
+            conta = gatewayContas.InterpretarWebhookConta(corpoBruto);
+        }
+        catch (FormatException ex)
+        {
+            throw new RegraDeNegocioException("WEBHOOK_INVALIDO", "Webhook inválido", ex.Message, 400);
+        }
+
+        return new WebhookResponse(conta is not null && await contasRecebimento.ProcessarNotificacaoAsync(conta, cancellationToken));
     }
 
     private async Task<WebhookResponse> ProcessarAsync(NotificacaoPagamento n, CancellationToken cancellationToken)
@@ -348,6 +395,9 @@ public class PagamentoService(
                 "Seu pagamento foi aprovado e a inscrição está confirmada. O código de check-in está em Minhas inscrições.",
                 cancellationToken);
             await unitOfWork.SalvarAsync(cancellationToken);
+
+            // Fase 3: guarda o id da garantia agora (melhor esforço); se falhar, a tarefa de liberação busca depois.
+            await garantias.TentarRegistrarAsync(pagamento, inscricao.EventoId, cancellationToken);
             return new WebhookResponse(true);
         }
 

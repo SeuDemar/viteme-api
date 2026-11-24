@@ -239,6 +239,78 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                     b.ToTable("colaborador_evento", (string)null);
                 });
 
+            modelBuilder.Entity("Viteme.Domain.Entities.ContaRecebimento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AprovadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aprovada_em");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizado_em");
+
+                    b.Property<string>("ChaveApiCifrada")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("chave_api_cifrada");
+
+                    b.Property<string>("ContaGatewayId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("conta_gateway_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<DateTime?>("GarantiaHabilitadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("garantia_habilitada_em");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("situacao");
+
+                    b.Property<string>("UrlOnboarding")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("url_onboarding");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<string>("WalletId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("wallet_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_conta_recebimento");
+
+                    b.HasIndex("ContaGatewayId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_conta_recebimento_conta_gateway_id");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_conta_recebimento_usuario_id");
+
+                    b.ToTable("conta_recebimento", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_conta_recebimento_situacao", "situacao IN ('PENDENTE', 'APROVADA', 'REJEITADA')");
+                        });
+                });
+
             modelBuilder.Entity("Viteme.Domain.Entities.Denuncia", b =>
                 {
                     b.Property<Guid>("Id")
@@ -622,6 +694,15 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");
 
+                    b.Property<string>("GarantiaId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("garantia_id");
+
+                    b.Property<DateTime?>("GarantiaLiberadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("garantia_liberada_em");
+
                     b.Property<string>("IdTransacaoGateway")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -918,6 +999,16 @@ namespace Viteme.Infrastructure.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_colaborador_evento_usuarios_usuario_id");
+                });
+
+            modelBuilder.Entity("Viteme.Domain.Entities.ContaRecebimento", b =>
+                {
+                    b.HasOne("Viteme.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_conta_recebimento_usuarios_usuario_id");
                 });
 
             modelBuilder.Entity("Viteme.Domain.Entities.Denuncia", b =>

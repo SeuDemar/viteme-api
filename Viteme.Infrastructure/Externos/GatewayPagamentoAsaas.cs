@@ -89,6 +89,12 @@ public class SubcontasAsaasOptions
 {
     /// <summary><c>true</c> liga E41/E42 (conta de recebimento), o split na cobrança e a RN25.</summary>
     public bool Habilitar { get; set; }
+
+    /// <summary>
+    /// URL do webhook da API (<c>https://&lt;api&gt;/api/v1/pagamentos/webhook</c>) cadastrada em cada subconta nova, para a
+    /// situação cadastral chegar na hora. Vazia: só a tarefa periódica atualiza a situação.
+    /// </summary>
+    public string UrlWebhook { get; set; } = string.Empty;
 }
 
 public class EscrowAsaasOptions
@@ -158,15 +164,22 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         var pagador = pedido.Pagador ?? throw new InvalidOperationException("O Asaas exige os dados do pagador para criar a cobrança.");
         var cliente = await ObterOuCriarClienteAsync(pagador, cancellationToken);
 
-        var corpo = new
+        var corpo = new Dictionary<string, object>
         {
-            customer = cliente,
-            billingType = "PIX",
-            value = pedido.Valor,
-            dueDate = VencimentoDe(pedido.ValidaAte).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            description = pedido.Descricao.Length > 500 ? pedido.Descricao[..500] : pedido.Descricao,
-            externalReference = referencia,
+            ["customer"] = cliente,
+            ["billingType"] = "PIX",
+            ["value"] = pedido.Valor,
+            ["dueDate"] = VencimentoDe(pedido.ValidaAte).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["description"] = pedido.Descricao.Length > 500 ? pedido.Descricao[..500] : pedido.Descricao,
+            ["externalReference"] = referencia,
         };
+
+        // Fase 2: o valor líquido vai inteiro para a subconta do organizador. Com a Conta Escrow ligada nela (Fase 3), fica
+        // retido até a liberação (RN26). Taxa da plataforma sobre o split: decisão em aberto (hoje 100% ao organizador).
+        if (!string.IsNullOrWhiteSpace(pedido.WalletRecebedor))
+        {
+            corpo["split"] = new[] { new { walletId = pedido.WalletRecebedor, percentualValue = 100 } };
+        }
 
         var criada = await EnviarAsync<PagamentoAsaas>(HttpMethod.Post, "payments", corpo, cancellationToken);
         _logger.LogInformation("[Asaas] cobrança {IdTransacao} de {Valor} criada para a referência {Referencia}.", criada.Id, pedido.Valor, referencia);

@@ -29,7 +29,7 @@ public sealed class AmbienteApi : IDisposable
     public AmbienteApi(BancoFixture banco, ApiFactory api, bool limitacao = false, bool tokenRealista = false)
     {
         Banco = banco;
-        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, Gateway, Cnpj, Email, limitacao, tokenRealista);
+        _fabrica = api.ComBanco(banco.Conexao, Relogio, Sms, Gateway, Cnpj, Email, Contas, limitacao, tokenRealista);
         Cliente = _fabrica.CreateClient(new WebApplicationFactoryClientOptions
         {
             HandleCookies = false,
@@ -48,6 +48,9 @@ public sealed class AmbienteApi : IDisposable
     public CnpjEmMemoria Cnpj { get; } = new();
 
     public EmailEmMemoria Email { get; } = new();
+
+    /// <summary>Subconta e garantia (Fases 2 e 3), desligadas até o teste ligar.</summary>
+    public ContasEmMemoria Contas { get; } = new();
 
     public HttpClient Cliente { get; }
 

@@ -16,6 +16,8 @@ public static class DependencyInjection
         servicos.AddScoped<ColaboradorService>();
         servicos.AddScoped<EncerramentoEventosService>();
         servicos.AddScoped<EstornoService>();
+        servicos.AddScoped<ContaRecebimentoService>();
+        servicos.AddScoped<GarantiaService>();
         servicos.AddScoped<PagamentoService>();
         servicos.AddScoped<InscricaoService>();
         servicos.AddScoped<ExpiracaoReservasService>();

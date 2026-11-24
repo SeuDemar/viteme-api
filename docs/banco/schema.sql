@@ -291,3 +291,64 @@ VALUES ('20261028224208_CnpjUsuario', '10.0.13');
 
 COMMIT;
 
+START TRANSACTION;
+CREATE TABLE token_redefinicao_senha (
+    id uuid NOT NULL,
+    usuario_id uuid NOT NULL,
+    token_hash character varying(255) NOT NULL,
+    expira_em timestamp with time zone NOT NULL,
+    usado_em timestamp with time zone,
+    criado_em timestamp with time zone NOT NULL,
+    CONSTRAINT pk_token_redefinicao_senha PRIMARY KEY (id),
+    CONSTRAINT fk_token_redefinicao_senha_usuarios_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX ix_token_redefinicao_senha_token_hash ON token_redefinicao_senha (token_hash);
+
+CREATE INDEX ix_token_redefinicao_senha_usuario_id ON token_redefinicao_senha (usuario_id);
+
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20261123120000_RedefinicaoSenha', '10.0.13');
+
+COMMIT;
+
+START TRANSACTION;
+ALTER TABLE usuario ADD cpf character varying(11);
+
+ALTER TABLE usuario ADD CONSTRAINT ck_usuario_cpf_formato CHECK (cpf IS NULL OR cpf ~ '^[0-9]{11}$');
+
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20261124120000_CpfUsuario', '10.0.13');
+
+COMMIT;
+
+START TRANSACTION;
+ALTER TABLE pagamento ADD garantia_id character varying(100);
+
+ALTER TABLE pagamento ADD garantia_liberada_em timestamp with time zone;
+
+CREATE TABLE conta_recebimento (
+    id uuid NOT NULL,
+    usuario_id uuid NOT NULL,
+    conta_gateway_id character varying(100) NOT NULL,
+    wallet_id character varying(100) NOT NULL,
+    chave_api_cifrada character varying(1000) NOT NULL,
+    situacao character varying(20) NOT NULL,
+    url_onboarding character varying(500),
+    aprovada_em timestamp with time zone,
+    garantia_habilitada_em timestamp with time zone,
+    criado_em timestamp with time zone NOT NULL,
+    atualizado_em timestamp with time zone NOT NULL,
+    CONSTRAINT pk_conta_recebimento PRIMARY KEY (id),
+    CONSTRAINT ck_conta_recebimento_situacao CHECK (situacao IN ('PENDENTE', 'APROVADA', 'REJEITADA')),
+    CONSTRAINT fk_conta_recebimento_usuarios_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id) ON DELETE RESTRICT
+);
+
+CREATE UNIQUE INDEX ix_conta_recebimento_conta_gateway_id ON conta_recebimento (conta_gateway_id);
+
+CREATE UNIQUE INDEX ix_conta_recebimento_usuario_id ON conta_recebimento (usuario_id);
+
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20261124150000_ContaRecebimento', '10.0.13');
+
+COMMIT;

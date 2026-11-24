@@ -197,3 +197,31 @@ public class ReconciliacaoPagamentosWorker(IServiceScopeFactory escopos, IOption
         }
     }
 }
+
+/// <summary>
+/// Fases 2 e 3 do Asaas (só fazem algo com elas ligadas): confere as contas de recebimento pendentes, liga a garantia nas
+/// aprovadas e libera as garantias dos eventos encerrados (RN26). Mesmo intervalo da reconciliação.
+/// </summary>
+public class ContasEGarantiasWorker(IServiceScopeFactory escopos, IOptions<TarefasOptions> opcoes, ILogger<ContasEGarantiasWorker> logger)
+    : TarefaPeriodicaWorker(escopos, logger)
+{
+    private const int LoteMaximo = 50;
+
+    private readonly ILogger _logger = logger;
+
+    protected override string Nome => "contas de recebimento e garantias";
+
+    protected override bool Habilitada => opcoes.Value.Habilitar;
+
+    protected override TimeSpan Intervalo => TimeSpan.FromMinutes(Math.Max(1, opcoes.Value.IntervaloReconciliacaoMinutos));
+
+    protected override async Task ExecutarAsync(IServiceProvider servicos, CancellationToken cancellationToken)
+    {
+        var contas = await servicos.GetRequiredService<ContaRecebimentoService>().SincronizarAsync(LoteMaximo, cancellationToken);
+        var liberadas = await servicos.GetRequiredService<GarantiaService>().LiberarVencidasAsync(LoteMaximo, cancellationToken);
+        if (contas > 0 || liberadas > 0)
+        {
+            _logger.LogInformation("{Contas} conta(s) de recebimento atualizada(s); {Liberadas} garantia(s) liberada(s).", contas, liberadas);
+        }
+    }
+}

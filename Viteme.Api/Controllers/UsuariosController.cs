@@ -14,7 +14,7 @@ namespace Viteme.Api.Controllers;
 [Route("api/v1/usuarios/me")]
 [Produces("application/json")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
-public class UsuariosController(UsuarioService usuarios) : ControllerBase
+public class UsuariosController(UsuarioService usuarios, ContaRecebimentoService contasRecebimento) : ControllerBase
 {
     /// <summary>Consulta o próprio perfil (E05).</summary>
     [HttpGet]
@@ -61,12 +61,8 @@ public class UsuariosController(UsuarioService usuarios) : ControllerBase
     public async Task<IActionResult> DefinirPreferenciasSms([FromBody] PreferenciasSmsRequest requisicao, CancellationToken cancellationToken) =>
         Ok(await usuarios.DefinirPreferenciasSmsAsync(User.ObterUsuarioId(), requisicao, cancellationToken));
 
-    /// <summary>Cadastra o CNPJ do organizador (E40), conferindo na Receita se está ativo. Necessário para criar eventos (RN24).</summary>
-    /// <response code="400">CNPJ ausente ou com dígitos verificadores inválidos.</response>
-    /// <response code="409"><c>CNPJ_JA_CADASTRADO</c>: o CNPJ pertence a outra conta.</response>
-    /// <response code="422"><c>CNPJ_NAO_ENCONTRADO</c> ou <c>CNPJ_INATIVO</c>.</response>
-    /// <response code="429">Limite de consultas excedido.</response>
-    /// <response code="502"><c>CONSULTA_CNPJ_INDISPONIVEL</c>.</response>
+    /// <summary>Guarda o CPF do pagador (E45), exigido pelo gateway para cobrar inscrições pagas.</summary>
+    /// <response code="400">CPF ausente ou com dígitos verificadores inválidos.</response>
     [HttpPut("cpf")]
     [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
@@ -74,6 +70,12 @@ public class UsuariosController(UsuarioService usuarios) : ControllerBase
     public async Task<IActionResult> DefinirCpf([FromBody] DefinirCpfRequest requisicao, CancellationToken cancellationToken) =>
         Ok(await usuarios.DefinirCpfAsync(User.ObterUsuarioId(), requisicao, cancellationToken));
 
+    /// <summary>Cadastra o CNPJ do organizador (E40), conferindo na Receita se está ativo. Necessário para criar eventos (RN24).</summary>
+    /// <response code="400">CNPJ ausente ou com dígitos verificadores inválidos.</response>
+    /// <response code="409"><c>CNPJ_JA_CADASTRADO</c>: o CNPJ pertence a outra conta. <c>CNPJ_TRAVADO_POR_SUBCONTA</c>: já há conta de recebimento.</response>
+    /// <response code="422"><c>CNPJ_NAO_ENCONTRADO</c> ou <c>CNPJ_INATIVO</c>.</response>
+    /// <response code="429">Limite de consultas excedido.</response>
+    /// <response code="502"><c>CONSULTA_CNPJ_INDISPONIVEL</c>.</response>
     [HttpPut("cnpj")]
     [EnableRateLimiting(LimitacaoExtensions.ConsultaCnpj)]
     [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
@@ -84,4 +86,33 @@ public class UsuariosController(UsuarioService usuarios) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status502BadGateway, "application/problem+json")]
     public async Task<IActionResult> DefinirCnpj([FromBody] DefinirCnpjRequest requisicao, CancellationToken cancellationToken) =>
         Ok(await usuarios.DefinirCnpjAsync(User.ObterUsuarioId(), requisicao, cancellationToken));
+
+    /// <summary>
+    /// Abre a conta de recebimento do organizador (E41): subconta no gateway, com o CNPJ verificado do perfil, que recebe o
+    /// valor das inscrições pagas. Só existe com a Fase 2 ligada (<c>Gateway__Asaas__Subcontas__Habilitar</c>).
+    /// </summary>
+    /// <response code="201">Conta aberta; normalmente fica PENDENTE até a análise do gateway.</response>
+    /// <response code="400">Dados ausentes ou inválidos.</response>
+    /// <response code="403"><c>CNPJ_NAO_VERIFICADO</c>.</response>
+    /// <response code="404"><c>RECEBIMENTOS_DESABILITADOS</c>.</response>
+    /// <response code="409"><c>CONTA_RECEBIMENTO_EXISTENTE</c>.</response>
+    /// <response code="502"><c>GATEWAY_INDISPONIVEL</c>: o gateway recusou os dados ou não respondeu.</response>
+    [HttpPost("conta-recebimento")]
+    [ProducesResponseType<ContaRecebimentoResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status502BadGateway, "application/problem+json")]
+    public async Task<IActionResult> CriarContaRecebimento(
+        [FromBody] CriarContaRecebimentoRequest requisicao, CancellationToken cancellationToken) =>
+        StatusCode(StatusCodes.Status201Created, await contasRecebimento.CriarAsync(User.ObterUsuarioId(), requisicao, cancellationToken));
+
+    /// <summary>Situação da conta de recebimento (E42) e o link para enviar os documentos ao gateway.</summary>
+    /// <response code="404"><c>RECEBIMENTOS_DESABILITADOS</c> ou <c>CONTA_RECEBIMENTO_NAO_ENCONTRADA</c>.</response>
+    [HttpGet("conta-recebimento")]
+    [ProducesResponseType<ContaRecebimentoResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> ObterContaRecebimento(CancellationToken cancellationToken) =>
+        Ok(await contasRecebimento.ObterAsync(User.ObterUsuarioId(), cancellationToken));
 }

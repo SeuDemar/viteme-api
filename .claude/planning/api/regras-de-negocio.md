@@ -1,4 +1,4 @@
-# Regras de negócio (RN01–RN24)
+# Regras de negócio (RN01–RN26)
 
 Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste em [../testes.md](../testes.md) (matriz de rastreabilidade).
 
@@ -28,6 +28,8 @@ Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste
 | RN22 | Evento | Um evento PUBLICADO passa automaticamente a ENCERRADO após a data de término |
 | RN23 | Webhook | O webhook só é processado com assinatura válida e de forma idempotente (a mesma transação e o mesmo status não são processados duas vezes). Pagamento aprovado para inscrição já expirada ou cancelada gera estorno automático |
 | RN24 | Organizador | Só cria e publica eventos (gratuitos ou pagos) quem tem CNPJ verificado no perfil: dígitos verificadores válidos, situação ATIVA na Receita Federal e não vinculado a outra conta. Participar e colaborar não exigem CNPJ |
+| RN25 | Recebimento | Com a Fase 2 do Asaas ligada, publicar evento pago, ou tornar pago um evento já no ar, exige a conta de recebimento do organizador APROVADA; o valor das inscrições vai para ela pelo split. Sem conta aprovada, a cobrança não é criada e a reserva expira. Evento gratuito não muda |
+| RN26 | Recebimento | Com a Fase 3 ligada (garantia), o valor fica retido na subconta e é liberado ao organizador 2 dias depois do término do evento. Estornos (RN14, RN15, RN23) continuam pela cobrança. Pagamento recebido antes de a garantia ser ligada sai da fila de liberação sem chamar o gateway |
 
 ## Notas de implementação
 
@@ -37,5 +39,7 @@ Aplicadas nos **services**. Cada regra está ligada a endpoints e casos de teste
 - **RN16:** a falha de SMS nunca propaga erro para a operação de origem; o reenvio é feito pela tarefa de 1 minuto.
 - **RN19:** contar denúncias *após* `reaberto_em` para decidir entre ocultar e cancelar; guardar a contagem de forma coerente com a republicação.
 - **RN24:** a consulta à Receita (BrasilAPI) acontece só ao cadastrar o CNPJ (E40), não a cada evento; reenviar o mesmo CNPJ já verificado não consulta de novo. A publicação também confere o CNPJ, para cobrir rascunhos criados antes da regra.
+- **RN25:** `CONTA_RECEBIMENTO_PENDENTE` (422) na publicação (E14), na edição que torna pago um evento no ar (E13) e na criação da cobrança (E24/E29), que também expira o pagamento e a reserva.
+- **RN26:** tarefa periódica (mesmo intervalo da reconciliação): pagamentos APROVADOS com inscrição CONFIRMADA de eventos ENCERRADOS há mais de 2 dias. Cada um é gravado à parte; o encerramento no gateway consulta a garantia antes, para não repetir.
 - **RN23:** idempotência por (`id_transacao_gateway`, status); aprovação tardia → estorno automático e inscrição permanece não confirmada.
 - **Papéis (RN04):** nunca vão no JWT; o papel é consultado no banco a cada requisição protegida por política.
