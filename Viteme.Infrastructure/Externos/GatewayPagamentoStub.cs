@@ -40,6 +40,8 @@ public class GatewayPagamentoStub(IOptions<GatewayStubOptions> opcoes, ILogger<G
 
     public bool Habilitado => opcoes.Value.HabilitarSimulador;
 
+    public virtual bool ExigeDocumentoDoPagador => false;
+
     public string NomeCabecalhoAssinatura => CabecalhoAssinatura;
 
     public virtual Task<CobrancaCriada> CriarCobrancaAsync(PedidoCobranca pedido, CancellationToken cancellationToken = default)
@@ -49,6 +51,9 @@ public class GatewayPagamentoStub(IOptions<GatewayStubOptions> opcoes, ILogger<G
         logger.LogInformation("[Gateway stub] cobrança {IdTransacao} de {Valor} criada.", id, pedido.Valor);
         return Task.FromResult(new CobrancaCriada(id, $"{opcoes.Value.UrlBase.TrimEnd('/')}/{id}"));
     }
+
+    public virtual Task<PixCobranca?> ObterPixAsync(string idTransacao, CancellationToken cancellationToken = default) =>
+        Task.FromResult<PixCobranca?>(null);
 
     public virtual Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, CancellationToken cancellationToken = default) =>
         Task.FromResult(StatusPagamento.Pendente);

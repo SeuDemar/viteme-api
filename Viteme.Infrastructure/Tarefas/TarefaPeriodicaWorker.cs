@@ -24,6 +24,9 @@ public class TarefasOptions
 
     /// <summary>Intervalo da geração de lembretes (RN17).</summary>
     public int IntervaloLembretesMinutos { get; set; } = 15;
+
+    /// <summary>Intervalo da reconciliação de cobranças com o gateway (P29).</summary>
+    public int IntervaloReconciliacaoMinutos { get; set; } = 5;
 }
 
 /// <summary>
@@ -167,6 +170,30 @@ public class LembretesWorker(IServiceScopeFactory escopos, IOptions<TarefasOptio
         if (gerados > 0)
         {
             _logger.LogInformation("{Quantidade} lembrete(s) gerado(s).", gerados);
+        }
+    }
+}
+
+/// <summary>Confere no gateway as cobranças sem desfecho, para o caso de um webhook se perder (P29), a cada 5 minutos.</summary>
+public class ReconciliacaoPagamentosWorker(IServiceScopeFactory escopos, IOptions<TarefasOptions> opcoes, ILogger<ReconciliacaoPagamentosWorker> logger)
+    : TarefaPeriodicaWorker(escopos, logger)
+{
+    private const int LoteMaximo = 50;
+
+    private readonly ILogger _logger = logger;
+
+    protected override string Nome => "reconciliação de pagamentos";
+
+    protected override bool Habilitada => opcoes.Value.Habilitar;
+
+    protected override TimeSpan Intervalo => TimeSpan.FromMinutes(Math.Max(1, opcoes.Value.IntervaloReconciliacaoMinutos));
+
+    protected override async Task ExecutarAsync(IServiceProvider servicos, CancellationToken cancellationToken)
+    {
+        var corrigidos = await servicos.GetRequiredService<PagamentoService>().ReconciliarPendentesAsync(LoteMaximo, cancellationToken);
+        if (corrigidos > 0)
+        {
+            _logger.LogWarning("{Quantidade} pagamento(s) corrigido(s) pela reconciliação com o gateway.", corrigidos);
         }
     }
 }

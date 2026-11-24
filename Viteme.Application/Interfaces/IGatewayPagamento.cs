@@ -3,7 +3,7 @@ using Viteme.Domain.Enums;
 namespace Viteme.Application.Interfaces;
 
 /// <summary>Quem paga: o gateway real precisa de um cliente cadastrado para emitir a cobrança.</summary>
-public sealed record Pagador(Guid UsuarioId, string Nome, string Email);
+public sealed record Pagador(Guid UsuarioId, string Nome, string Email, string? CpfCnpj = null);
 
 /// <summary>
 /// Cobrança a criar no gateway. <see cref="ReferenciaExterna"/> é o id do pagamento e serve de chave de idempotência.
@@ -12,6 +12,9 @@ public sealed record Pagador(Guid UsuarioId, string Nome, string Email);
 public sealed record PedidoCobranca(Guid ReferenciaExterna, decimal Valor, string Descricao, DateTime ValidaAte, Pagador? Pagador = null);
 
 public sealed record CobrancaCriada(string IdTransacao, string UrlPagamento);
+
+/// <summary>Pix da cobrança para pagar sem sair do site: "copia e cola" e imagem do QR Code (PNG em base64).</summary>
+public sealed record PixCobranca(string CopiaECola, string ImagemBase64, DateTime? ExpiraEm);
 
 /// <summary>Mudança de status de um pagamento, já traduzida do formato do gateway para o do Viteme.</summary>
 public sealed record NotificacaoPagamento(
@@ -23,8 +26,17 @@ public sealed record NotificacaoPagamento(
 /// </summary>
 public interface IGatewayPagamento
 {
+    /// <summary>O gateway só cobra com o CPF/CNPJ do pagador (Asaas): sem ele a inscrição paga é recusada antes de reservar a vaga.</summary>
+    bool ExigeDocumentoDoPagador { get; }
+
     /// <summary>Cria a cobrança. Deve ser idempotente para a mesma <see cref="PedidoCobranca.ReferenciaExterna"/>.</summary>
     Task<CobrancaCriada> CriarCobrancaAsync(PedidoCobranca pedido, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// QR Code e "copia e cola" da cobrança, ou <c>null</c> se o gateway não os oferece agora (ex.: conta sem chave Pix).
+    /// Nesse caso a tela usa o link de pagamento (<see cref="CobrancaCriada.UrlPagamento"/>).
+    /// </summary>
+    Task<PixCobranca?> ObterPixAsync(string idTransacao, CancellationToken cancellationToken = default);
 
     Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, CancellationToken cancellationToken = default);
 

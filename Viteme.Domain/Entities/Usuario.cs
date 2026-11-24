@@ -49,6 +49,9 @@ public class Usuario
 
     public DateTime? CnpjVerificadoEm { get; private set; }
 
+    /// <summary>CPF do pagador (só dígitos, 11). Exigido pelo gateway de pagamento para cobrar; coletado só ao pagar.</summary>
+    public string? Cpf { get; private set; }
+
     public DateTime CriadoEm { get; private set; }
 
     public DateTime AtualizadoEm { get; private set; }
@@ -138,6 +141,11 @@ public class Usuario
         RazaoSocial = razaoSocial;
         CnpjVerificadoEm = agora;
     }
+
+    /// <summary>Registra o CPF já validado (dígitos verificadores) para o gateway emitir cobranças em nome do usuário.</summary>
+    public void DefinirCpf(string cpf) => Cpf = cpf;
+
+    public bool TemCpf => Cpf is not null;
 
     public void GarantirPodeOrganizar()
     {

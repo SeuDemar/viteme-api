@@ -23,6 +23,12 @@ public class PagamentoService(
 {
     private const int TentativasWebhook = 3;
 
+    /// <summary>Só reconcilia cobranças com alguns minutos de vida (o webhook normal costuma chegar antes).</summary>
+    private static readonly TimeSpan TempoMinimoReconciliacao = TimeSpan.FromMinutes(3);
+
+    /// <summary>Cobranças mais antigas que isto não são mais consultadas (o Pix vence junto com a reserva).</summary>
+    private static readonly TimeSpan JanelaReconciliacao = TimeSpan.FromHours(24);
+
     /// <summary>
     /// Cria a cobrança de um pagamento já gravado. O id do pagamento é a referência externa (idempotência), então
     /// nunca existe cobrança sem o registro correspondente no banco. Em falha do gateway o pagamento expira e
@@ -35,7 +41,7 @@ public class PagamentoService(
         try
         {
             var usuario = await usuarios.ObterPorIdAsync(inscricao.UsuarioId, cancellationToken);
-            var pagador = usuario is null ? null : new Pagador(usuario.Id, usuario.Nome, usuario.Email);
+            var pagador = usuario is null ? null : new Pagador(usuario.Id, usuario.Nome, usuario.Email, usuario.Cpf);
             cobranca = await gateway.CriarCobrancaAsync(
                 new PedidoCobranca(pagamento.Id, pagamento.Valor, $"Inscrição em {evento.Titulo}", inscricao.ReservadaAte ?? relogio.UtcAgora, pagador),
                 cancellationToken);
@@ -59,6 +65,71 @@ public class PagamentoService(
         await unitOfWork.SalvarAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// O gateway só cobra com o CPF do pagador. Sem ele, a inscrição paga é recusada (422) antes de reservar a vaga, e a
+    /// tela pede o CPF e tenta de novo.
+    /// </summary>
+    public async Task GarantirDocumentoDoPagadorAsync(Guid usuarioId, CancellationToken cancellationToken = default)
+    {
+        if (!gateway.ExigeDocumentoDoPagador)
+        {
+            return;
+        }
+
+        var usuario = await usuarios.ObterPorIdAsync(usuarioId, cancellationToken);
+        if (usuario is { TemCpf: false })
+        {
+            throw new RegraDeNegocioException("CPF_OBRIGATORIO", "CPF obrigatório",
+                "Informe seu CPF para pagar esta inscrição. Ele é exigido pelo meio de pagamento.");
+        }
+    }
+
+    /// <summary>
+    /// Reconciliação com o gateway (P29): consulta as cobranças que o webhook pode ter perdido (pendentes, ou expiradas há
+    /// pouco) e, se o gateway já recebeu o valor, aplica a mesma regra do webhook de aprovação (RN23). Idempotente.
+    /// </summary>
+    public async Task<int> ReconciliarPendentesAsync(int limite, CancellationToken cancellationToken = default)
+    {
+        var agora = relogio.UtcAgora;
+        var candidatos = await pagamentos.ListarParaReconciliacaoAsync(
+            criadosAntes: agora - TempoMinimoReconciliacao, criadosDepois: agora - JanelaReconciliacao, limite, cancellationToken);
+
+        var corrigidos = 0;
+        foreach (var candidato in candidatos)
+        {
+            try
+            {
+                var status = await gateway.ConsultarCobrancaAsync(candidato.IdTransacao, cancellationToken);
+                if (status != StatusPagamento.Aprovado)
+                {
+                    continue;
+                }
+
+                var resposta = await ProcessarAsync(
+                    new NotificacaoPagamento(candidato.IdTransacao, candidato.PagamentoId, StatusPagamento.Aprovado, candidato.Valor, null),
+                    cancellationToken);
+                if (resposta.Processado)
+                {
+                    corrigidos++;
+                    logger.LogWarning("Pagamento {PagamentoId} aprovado no gateway sem webhook; corrigido pela reconciliação.", candidato.PagamentoId);
+                }
+            }
+            catch (ConflitoDeConcorrenciaException)
+            {
+                // Outra operação mexeu no pagamento: o próximo ciclo reavalia.
+                unitOfWork.LimparRastreamento();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Gateway indisponível ou resposta inesperada: não derruba o ciclo; tenta de novo adiante.
+                logger.LogWarning(ex, "Falha ao reconciliar o pagamento {PagamentoId}.", candidato.PagamentoId);
+                unitOfWork.LimparRastreamento();
+            }
+        }
+
+        return corrigidos;
+    }
+
     /// <summary>E29: retoma a cobrança pendente (200) ou gera uma nova após recusa ou expiração (201), enquanto a reserva valer.</summary>
     public async Task<CobrancaResultado> GerarCobrancaAsync(Guid inscricaoId, Guid usuarioId, CancellationToken cancellationToken = default)
     {
@@ -69,6 +140,8 @@ public class PagamentoService(
         {
             throw new RegraDeNegocioException("EVENTO_GRATUITO", "Evento gratuito", "Este evento não tem cobrança.");
         }
+
+        await GarantirDocumentoDoPagadorAsync(usuarioId, cancellationToken);
 
         var existentes = await pagamentos.ListarDaInscricaoAsync(inscricao.Id, cancellationToken);
         if (existentes.Any(p => p.Status == StatusPagamento.Aprovado) || inscricao.Status == StatusInscricao.Confirmada)
@@ -110,6 +183,37 @@ public class PagamentoService(
         await CriarCobrancaAsync(novo, inscricao, evento, expirarInscricaoEmFalha: false, cancellationToken);
         return new CobrancaResultado(Mapear(novo), true);
     }
+
+    /// <summary>
+    /// E46: QR Code e "copia e cola" do Pix da cobrança pendente. 404 <c>PIX_INDISPONIVEL</c> quando não há cobrança pendente ou o
+    /// gateway não oferece o QR agora; a tela usa o link de pagamento da cobrança (E29).
+    /// </summary>
+    public async Task<PixResponse> ObterPixAsync(Guid inscricaoId, Guid usuarioId, CancellationToken cancellationToken = default)
+    {
+        var inscricao = await ObterDoUsuarioAsync(inscricaoId, usuarioId, cancellationToken);
+        var pendente = (await pagamentos.ListarDaInscricaoAsync(inscricao.Id, cancellationToken))
+            .FirstOrDefault(p => p.Status == StatusPagamento.Pendente && p.IdTransacaoGateway is not null);
+        if (pendente is null || inscricao.ReservaVencida(relogio.UtcAgora))
+        {
+            throw PixIndisponivel();
+        }
+
+        PixCobranca? pix;
+        try
+        {
+            pix = await gateway.ObterPixAsync(pendente.IdTransacaoGateway!, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Gateway indisponível ao obter o Pix do pagamento {PagamentoId}.", pendente.Id);
+            throw PixIndisponivel();
+        }
+
+        return pix is null ? throw PixIndisponivel() : new PixResponse(pix.CopiaECola, pix.ImagemBase64, pix.ExpiraEm);
+    }
+
+    private static RegraDeNegocioException PixIndisponivel() =>
+        new("PIX_INDISPONIVEL", "Pix indisponível", "O QR Code não está disponível agora. Use o link de pagamento.", 404);
 
     /// <summary>E30: situação do pagamento mais recente da inscrição.</summary>
     public async Task<PagamentoStatusResponse> ObterStatusAsync(Guid inscricaoId, Guid usuarioId, CancellationToken cancellationToken = default)

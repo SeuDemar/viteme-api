@@ -48,6 +48,16 @@ public class PagamentosController(PagamentoService pagamentos) : ControllerBase
     public async Task<IActionResult> ObterStatus(Guid id, CancellationToken cancellationToken) =>
         Ok(await pagamentos.ObterStatusAsync(id, User.ObterUsuarioId(), cancellationToken));
 
+    /// <summary>QR Code e "copia e cola" do Pix da cobrança pendente (E46).</summary>
+    /// <response code="404"><c>PIX_INDISPONIVEL</c>: sem cobrança pendente ou sem QR Code agora; use o <c>urlPagamento</c> de E29.</response>
+    [HttpGet("inscricoes/{id:guid}/pagamento/pix")]
+    [Authorize]
+    [ProducesResponseType<PixResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> ObterPix(Guid id, CancellationToken cancellationToken) =>
+        Ok(await pagamentos.ObterPixAsync(id, User.ObterUsuarioId(), cancellationToken));
+
     /// <summary>Recebe do gateway a mudança de status de um pagamento (E31).</summary>
     /// <remarks>
     /// Não usa JWT nem rate limiting: a autenticidade vem da assinatura do corpo (cabeçalho <c>X-Viteme-Assinatura</c>,

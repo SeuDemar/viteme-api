@@ -67,6 +67,13 @@ public class UsuariosController(UsuarioService usuarios) : ControllerBase
     /// <response code="422"><c>CNPJ_NAO_ENCONTRADO</c> ou <c>CNPJ_INATIVO</c>.</response>
     /// <response code="429">Limite de consultas excedido.</response>
     /// <response code="502"><c>CONSULTA_CNPJ_INDISPONIVEL</c>.</response>
+    [HttpPut("cpf")]
+    [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    public async Task<IActionResult> DefinirCpf([FromBody] DefinirCpfRequest requisicao, CancellationToken cancellationToken) =>
+        Ok(await usuarios.DefinirCpfAsync(User.ObterUsuarioId(), requisicao, cancellationToken));
+
     [HttpPut("cnpj")]
     [EnableRateLimiting(LimitacaoExtensions.ConsultaCnpj)]
     [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]

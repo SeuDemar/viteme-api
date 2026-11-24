@@ -105,6 +105,12 @@ public class InscricaoService(
             throw new RegraDeNegocioException("SEM_VAGAS", "Evento sem vagas", "Todas as vagas deste evento já foram preenchidas.");
         }
 
+        // O gateway só cobra com o CPF do pagador: recusa antes de reservar a vaga (a tela pede o CPF e tenta de novo).
+        if (!evento.Gratuito)
+        {
+            await pagamentoService.GarantirDocumentoDoPagadorAsync(usuarioId, cancellationToken);
+        }
+
         var codigo = aleatorio.GerarCodigoAlfanumerico(TamanhoCodigoCheckin);
         Pagamento? pagamento = null;
         Inscricao inscricao;

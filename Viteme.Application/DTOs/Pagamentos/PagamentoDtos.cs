@@ -11,5 +11,8 @@ public sealed record CobrancaResultado(CobrancaResponse Cobranca, bool Nova);
 public sealed record PagamentoStatusResponse(
     StatusPagamento Status, decimal Valor, string? Metodo, DateTime AtualizadoEm, StatusInscricao StatusInscricao);
 
+/// <summary>E46 — Pix da cobrança pendente: "copia e cola" e QR Code em PNG (base64, sem prefixo <c>data:</c>).</summary>
+public sealed record PixResponse(string CopiaECola, string ImagemBase64, DateTime? ExpiraEm);
+
 /// <summary>E31 — <c>processado</c> é falso quando o webhook já havia sido tratado antes.</summary>
 public sealed record WebhookResponse(bool Processado);

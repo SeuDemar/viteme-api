@@ -71,6 +71,8 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         _http.DefaultRequestHeaders.UserAgent.Add(ProductInfoHeaderValue.Parse(_opcoes.NomeAplicacao));
     }
 
+    public bool ExigeDocumentoDoPagador => true;
+
     private bool Sandbox => _opcoes.UrlBase.Contains("sandbox", StringComparison.OrdinalIgnoreCase);
 
     public async Task<CobrancaCriada> CriarCobrancaAsync(PedidoCobranca pedido, CancellationToken cancellationToken = default)
@@ -100,6 +102,26 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         var criada = await EnviarAsync<PagamentoAsaas>(HttpMethod.Post, "payments", corpo, cancellationToken);
         _logger.LogInformation("[Asaas] cobrança {IdTransacao} de {Valor} criada para a referência {Referencia}.", criada.Id, pedido.Valor, referencia);
         return new CobrancaCriada(criada.Id, criada.InvoiceUrl ?? string.Empty);
+    }
+
+    public async Task<PixCobranca?> ObterPixAsync(string idTransacao, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var qr = await EnviarAsync<PixAsaas>(HttpMethod.Get, $"payments/{Uri.EscapeDataString(idTransacao)}/pixQrCode", null, cancellationToken);
+            if (string.IsNullOrWhiteSpace(qr.Payload) || string.IsNullOrWhiteSpace(qr.EncodedImage))
+            {
+                return null;
+            }
+
+            return new PixCobranca(qr.Payload, qr.EncodedImage, DateTime.TryParse(qr.ExpirationDate, out var expira) ? expira : null);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            // Conta sem chave Pix cadastrada (ou cobrança já paga/cancelada): a tela cai no link da fatura.
+            _logger.LogWarning("[Asaas] QR Code Pix indisponível para {IdTransacao}: {Motivo}", idTransacao, ex.Message);
+            return null;
+        }
     }
 
     public async Task<StatusPagamento> ConsultarCobrancaAsync(string idTransacao, CancellationToken cancellationToken = default)
@@ -203,11 +225,19 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
         var existentes = await BuscarAsync<ListaAsaas<ClienteAsaas>>($"customers?externalReference={Uri.EscapeDataString(referencia)}", cancellationToken);
         if (existentes?.Data.FirstOrDefault(c => !c.Deleted) is { } cliente)
         {
+            // Cliente criado antes de o usuário informar o CPF (ou com outro CPF): atualiza para a cobrança ser aceita.
+            if (!string.IsNullOrWhiteSpace(pagador.CpfCnpj) && cliente.CpfCnpj != pagador.CpfCnpj)
+            {
+                await EnviarAsync<ClienteAsaas>(HttpMethod.Put, $"customers/{cliente.Id}", new { cpfCnpj = pagador.CpfCnpj }, cancellationToken);
+            }
+
             return cliente.Id;
         }
 
         // Pergunta Q4 do plano: o Asaas exige CPF/CNPJ para criar o cliente e o Viteme ainda não coleta o do pagador.
-        var documento = Sandbox ? _opcoes.CpfCnpjPagadorPadraoSandbox : string.Empty;
+        var documento = !string.IsNullOrWhiteSpace(pagador.CpfCnpj)
+            ? pagador.CpfCnpj
+            : Sandbox ? _opcoes.CpfCnpjPagadorPadraoSandbox : string.Empty;
         if (string.IsNullOrWhiteSpace(documento))
         {
             throw new InvalidOperationException(
@@ -257,10 +287,12 @@ public sealed class GatewayPagamentoAsaas : IGatewayPagamento, IDisposable
 
     private sealed record ListaAsaas<T>(List<T> Data);
 
-    private sealed record ClienteAsaas(string Id, bool Deleted);
+    private sealed record ClienteAsaas(string Id, bool Deleted, string? CpfCnpj = null);
 
     private sealed record PagamentoAsaas(
         string Id, string? Status, bool Deleted, string? InvoiceUrl, string? ExternalReference, decimal? Value, string? BillingType);
+
+    private sealed record PixAsaas(string? EncodedImage, string? Payload, string? ExpirationDate);
 
     private sealed record WebhookAsaas(string? Id, string? Event, PagamentoAsaas? Payment);
 

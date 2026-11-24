@@ -1,4 +1,4 @@
-# Endpoints (E01–E40, E43–E44)
+# Endpoints (E01–E40, E43–E46)
 
 Prefixo `/api/v1`. Convenções e erros: [convencoes-e-erros.md](convencoes-e-erros.md). Regras: [regras-de-negocio.md](regras-de-negocio.md).
 
@@ -51,6 +51,9 @@ Legenda de acesso: **Público** · **Autenticado** · **Organizador** · **Org./
 | E43 | POST | `/auth/esqueci-senha` | Público | Pedir o e-mail de redefinição de senha |
 | E44 | POST | `/auth/redefinir-senha` | Público | Definir a nova senha com o token do e-mail |
 
+| E45 | PUT | `/usuarios/me/cpf` | Autenticado | Informar o CPF do pagador (exigido pelo Asaas) |
+| E46 | GET | `/inscricoes/{id}/pagamento/pix` | Dono | QR Code e "copia e cola" do Pix pendente |
+
 > E41 e E42 estão reservados à conta de recebimento do organizador ([../pagamentos-asaas.md](../pagamentos-asaas.md)); por isso a redefinição de senha usa E43 e E44.
 
 ## 2. Especificação
@@ -93,6 +96,15 @@ Formato: **Entrada → Saída**; RN aplicadas; validações; erros possíveis. E
 - Validações: token obrigatório; senha conforme RN02. O token precisa existir, não ter sido usado nem ter expirado; o uso é marcado em uma instrução condicional, então dois envios simultâneos não trocam a senha duas vezes.
 - Efeitos: grava o novo hash da senha, zera as tentativas e o bloqueio de login (RN03), invalida os outros links pendentes e **revoga todas as sessões** (refresh tokens) do usuário.
 - Erros: 400 `LINK_REDEFINICAO_INVALIDO` (inexistente, usado ou expirado) ou por campo (senha fraca); 429 (5/min por IP).
+
+**E45 — PUT /usuarios/me/cpf** (Autenticado) · P54
+- Entrada: `{ cpf }`, com ou sem máscara; dígitos verificadores conferidos. Saída: `200` perfil com `temCpf` e `cpfMascarado` (`***.***.***-09`); o CPF completo nunca volta na API.
+- Quando o gateway exige o documento (Asaas), E24 e E29 respondem `422 CPF_OBRIGATORIO` se o usuário não tem CPF, **antes** de reservar a vaga; a tela pede o CPF aqui e repete a inscrição.
+- Erros: 400 (CPF inválido); 401.
+
+**E46 — GET /inscricoes/{id}/pagamento/pix** (Dono)
+- Saída: `200 { copiaECola, imagemBase64, expiraEm? }` (PNG em base64, sem prefixo `data:`) da cobrança pendente.
+- Erros: `404 PIX_INDISPONIVEL` (sem cobrança pendente, reserva vencida, ou o gateway não oferece o QR agora, por exemplo conta sem chave Pix): a tela usa o `urlPagamento` de E29. 401; 404 para inscrição de outro usuário.
 
 **E05 — GET /usuarios/me** (Autenticado)
 - Saída: `200 { id, nome, email, telefone, telefoneVerificado, aceitaSms, aceiteSmsEm, cnpj, razaoSocial, cnpjVerificadoEm, podeOrganizar }` (campos de CNPJ: E40, RN24). Erros: 401.

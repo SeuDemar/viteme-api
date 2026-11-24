@@ -110,6 +110,7 @@ public static class DependencyInjection
         servicos.Configure<TarefasOptions>(configuracao.GetSection(TarefasOptions.Secao));
         servicos.AddHostedService<EncerrarEventosWorker>();
         servicos.AddHostedService<ReservasEEstornosWorker>();
+        servicos.AddHostedService<ReconciliacaoPagamentosWorker>();
         servicos.AddHostedService<EnvioSmsWorker>();
         servicos.AddHostedService<LembretesWorker>();
 

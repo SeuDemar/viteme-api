@@ -6,7 +6,8 @@ namespace Viteme.Application.DTOs.Usuarios;
 /// <summary>E05 — perfil do usuário autenticado. <c>PodeOrganizar</c> diz se o CNPJ já foi verificado (RN24).</summary>
 public sealed record PerfilResponse(
     Guid Id, string Nome, string Email, string? Telefone, bool TelefoneVerificado, bool AceitaSms, DateTime? AceiteSmsEm,
-    string? Cnpj, string? RazaoSocial, DateTime? CnpjVerificadoEm, bool PodeOrganizar);
+    string? Cnpj, string? RazaoSocial, DateTime? CnpjVerificadoEm, bool PodeOrganizar,
+    bool TemCpf = false, string? CpfMascarado = null);
 
 /// <summary>E06 — atualização de nome e telefone. Trocar o telefone zera a verificação e o aceite de SMS.</summary>
 public sealed record AtualizarPerfilRequest
@@ -49,4 +50,13 @@ public sealed record DefinirCnpjRequest
     [Required(ErrorMessage = "Informe o CNPJ.")]
     [Cnpj]
     public string Cnpj { get; init; } = string.Empty;
+}
+
+/// <summary>E45 — CPF do pagador, com ou sem máscara. Exigido para pagar inscrições quando o gateway cobra em nome do CPF.</summary>
+public sealed record DefinirCpfRequest
+{
+    /// <example>123.456.789-09</example>
+    [Required(ErrorMessage = "Informe o CPF.")]
+    [Cpf]
+    public string Cpf { get; init; } = string.Empty;
 }

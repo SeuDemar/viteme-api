@@ -208,6 +208,15 @@ public class UsuarioService(
         return Mapear(usuario);
     }
 
+    /// <summary>E45: guarda o CPF do pagador (dígitos verificadores conferidos). Idempotente; pode ser corrigido.</summary>
+    public async Task<PerfilResponse> DefinirCpfAsync(Guid usuarioId, DefinirCpfRequest requisicao, CancellationToken cancellationToken = default)
+    {
+        var usuario = await ObterAsync(usuarioId, cancellationToken);
+        usuario.DefinirCpf(CpfAttribute.Normalizar(requisicao.Cpf));
+        await unitOfWork.SalvarAsync(cancellationToken);
+        return Mapear(usuario);
+    }
+
     private async Task<Usuario> ObterAsync(Guid usuarioId, CancellationToken cancellationToken) =>
         await usuarios.ObterPorIdAsync(usuarioId, cancellationToken)
         ?? throw new RegraDeNegocioException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado",
@@ -215,7 +224,8 @@ public class UsuarioService(
 
     private static PerfilResponse Mapear(Usuario u) =>
         new(u.Id, u.Nome, u.Email, u.Telefone, u.TelefoneVerificado, u.AceitaSms, u.AceiteSmsEm,
-            u.Cnpj, u.RazaoSocial, u.CnpjVerificadoEm, u.PodeOrganizar);
+            u.Cnpj, u.RazaoSocial, u.CnpjVerificadoEm, u.PodeOrganizar,
+            u.TemCpf, u.Cpf is null ? null : $"***.***.***-{u.Cpf[9..]}");
 
     private static RegraDeNegocioException CnpjJaCadastrado() =>
         new("CNPJ_JA_CADASTRADO", "CNPJ já cadastrado", "Este CNPJ já está vinculado a outra conta.", 409);

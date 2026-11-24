@@ -109,6 +109,50 @@ public class GatewayPagamentoAsaasTests
     }
 
     [Fact]
+    public async Task Cpf_do_pagador_tem_prioridade_sobre_o_cpf_padrao_do_sandbox()
+    {
+        var roteiro = new Roteiro()
+            .Responde(HttpMethod.Get, "payments?externalReference=", """{"data":[]}""")
+            .Responde(HttpMethod.Get, "customers?externalReference=", """{"data":[]}""")
+            .Responde(HttpMethod.Post, "customers", """{"id":"cus_1","deleted":false}""")
+            .Responde(HttpMethod.Post, "payments", """{"id":"pay_1","invoiceUrl":"u"}""");
+        using var gateway = Criar(roteiro);
+        var pedido = Pedido() with { Pagador = Pedido().Pagador! with { CpfCnpj = "12345678909" } };
+
+        await gateway.CriarCobrancaAsync(pedido);
+
+        var cliente = roteiro.Chamadas.Single(c => c.Metodo == HttpMethod.Post && c.Rota.EndsWith("/customers"));
+        Assert.Contains("\"cpfCnpj\":\"12345678909\"", cliente.Corpo);
+        Assert.DoesNotContain("24971563792", cliente.Corpo);
+    }
+
+    [Fact]
+    public async Task Cliente_existente_sem_cpf_e_atualizado_com_o_cpf_do_pagador()
+    {
+        var roteiro = new Roteiro()
+            .Responde(HttpMethod.Get, "payments?externalReference=", """{"data":[]}""")
+            .Responde(HttpMethod.Get, "customers?externalReference=", """{"data":[{"id":"cus_7","deleted":false,"cpfCnpj":null}]}""")
+            .Responde(HttpMethod.Put, "customers/cus_7", """{"id":"cus_7","deleted":false,"cpfCnpj":"12345678909"}""")
+            .Responde(HttpMethod.Post, "payments", """{"id":"pay_2","invoiceUrl":"u"}""");
+        using var gateway = Criar(roteiro);
+        var pedido = Pedido() with { Pagador = Pedido().Pagador! with { CpfCnpj = "12345678909" } };
+
+        await gateway.CriarCobrancaAsync(pedido);
+
+        var atualizacao = roteiro.Chamadas.Single(c => c.Metodo == HttpMethod.Put);
+        Assert.EndsWith("/customers/cus_7", atualizacao.Rota);
+        Assert.Contains("\"cpfCnpj\":\"12345678909\"", atualizacao.Corpo);
+    }
+
+    [Fact]
+    public void Asaas_exige_o_documento_do_pagador()
+    {
+        using var gateway = Criar(new Roteiro());
+
+        Assert.True(gateway.ExigeDocumentoDoPagador);
+    }
+
+    [Fact]
     public async Task Cliente_ja_cadastrado_e_reaproveitado()
     {
         var roteiro = new Roteiro()
@@ -174,6 +218,41 @@ public class GatewayPagamentoAsaasTests
         using var gateway = Criar(roteiro);
 
         Assert.Equal(esperado, await gateway.ConsultarCobrancaAsync("pay_1"));
+    }
+
+    [Fact]
+    public async Task Pix_devolve_copia_e_cola_e_imagem_do_qr_code()
+    {
+        var roteiro = new Roteiro().Responde(HttpMethod.Get, "payments/pay_1/pixQrCode",
+            """{"encodedImage":"iVBORw0KGgo=","payload":"00020126580014br.gov.bcb.pix","expirationDate":"2026-12-24 23:59:59"}""");
+        using var gateway = Criar(roteiro);
+
+        var pix = await gateway.ObterPixAsync("pay_1");
+
+        Assert.NotNull(pix);
+        Assert.Equal("00020126580014br.gov.bcb.pix", pix.CopiaECola);
+        Assert.Equal("iVBORw0KGgo=", pix.ImagemBase64);
+        Assert.Equal(new DateTime(2026, 12, 24, 23, 59, 59), pix.ExpiraEm);
+    }
+
+    [Fact]
+    public async Task Pix_sem_chave_cadastrada_no_asaas_devolve_nulo_em_vez_de_falhar()
+    {
+        var roteiro = new Roteiro().Responde(HttpMethod.Get, "payments/pay_1/pixQrCode",
+            """{"errors":[{"code":"invalid_action","description":"Você não possui uma chave Pix cadastrada para recebimentos de cobranças via Pix."}]}""",
+            HttpStatusCode.BadRequest);
+        using var gateway = Criar(roteiro);
+
+        Assert.Null(await gateway.ObterPixAsync("pay_1"));
+    }
+
+    [Fact]
+    public async Task Pix_com_erro_de_servidor_sobe_excecao()
+    {
+        var roteiro = new Roteiro().Responde(HttpMethod.Get, "payments/pay_1/pixQrCode", "{}", HttpStatusCode.InternalServerError);
+        using var gateway = Criar(roteiro);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => gateway.ObterPixAsync("pay_1"));
     }
 
     [Fact]
