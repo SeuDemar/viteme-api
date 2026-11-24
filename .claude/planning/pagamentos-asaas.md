@@ -6,7 +6,7 @@ Decisões da equipe em 2026-10-28:
 - Reembolso com o valor **retido** (Conta Escrow) até o evento acontecer.
 - Demonstração no **sandbox** do Asaas.
 
-Este documento é o plano. Feito: Fase 1a (CNPJ) e o adaptador da Fase 1b (`GatewayPagamentoAsaas`, testado só com HTTP falso). O script da Fase 0 está escrito em [docs/asaas](../../docs/asaas/README.md), mas **não foi executado** (faltava a chave do sandbox): Q1–Q6 seguem sem resposta real.
+Este documento é o plano. Feito: Fase 1a (CNPJ) e o adaptador da Fase 1b (`GatewayPagamentoAsaas`, testado só com HTTP falso). O script da Fase 0 ([docs/asaas](../../docs/asaas/README.md)) rodou em 2026-11-24 com uma conta sandbox **PF**: Q4 respondida, Q5 parcial, Q1/Q2/Q3/Q6 bloqueadas até haver conta sandbox **PJ** (seção 6). O que a documentação diz da Conta Escrow está na seção 7.
 
 ## 1. Modelo
 
@@ -61,6 +61,7 @@ E40 `PUT /usuarios/me/cnpj`, RN24, migration `CnpjUsuario`, consulta na BrasilAP
 - Guardar em `pagamento` o id da garantia e `garantia_liberada_em`.
 - **RN26 (proposta):** o valor fica retido até o evento ser ENCERRADO + 2 dias; uma tarefa periódica libera as garantias vencidas (`finish`). Evento cancelado → estorno (RN14), garantia nunca liberada.
 - `daysToExpire` do Asaas maior que a duração máxima de um evento + 2 dias, como trava caso a tarefa falhe.
+- Habilitar a garantia **antes** do primeiro recebimento de cada organizador (só recebimentos posteriores à habilitação ficam retidos): usar o padrão para todas as subcontas (`POST /v3/accounts/escrow`). A garantia tem **mensalidade** (seção 7): decidir quem paga (`isFeePayer`).
 - Depois da liberação não há estorno pelo Viteme (o evento já aconteceu); RN15 continua valendo até 24 h antes do início.
 
 ### Fase 4 — Frontend
@@ -95,3 +96,17 @@ Outras constatações:
 - `GET /payments/{id}/pixQrCode` responde **400** "Você não possui uma chave Pix cadastrada para recebimentos". Para o QR Code próprio (Fase 4) a conta raiz precisa de uma chave Pix.
 - O **estorno** logo após o recebimento respondeu **400 "Saldo insuficiente"**: o valor recebido ainda não está no saldo da conta do sandbox (saldo 0). O adaptador sobe `HttpRequestException` e o `EstornoService` repete a cada minuto (D30), então o estorno só passa quando o valor creditar. Confirmar no sandbox adicionando saldo à conta.
 - O `User-Agent` enviado (`Viteme-Fase0/1.0`) não causou erro; se ele é obrigatório continua sem confirmação.
+
+## 7. Conta Escrow e conta sandbox PJ: o que a documentação diz (consulta de 2026-11-24)
+
+Lido na documentação, **ainda não testado** no sandbox.
+
+- **Habilitação sem suporte.** A conta raiz habilita a garantia das subcontas pela API, sem liberação prévia do Asaas: por subconta `POST /v3/accounts/{id}/escrow` (`enabled`, `isFeePayer`, `daysToExpire`) ou como padrão para todas, atuais e futuras, `POST /v3/accounts/escrow`. Conferência: `GET /v3/accounts/{id}/escrow` e `GET /v3/accounts/escrow`.
+- **Só vale para recebimentos depois da habilitação**; os anteriores não ficam retidos. Cada subconta do fluxo precisa estar com a garantia habilitada.
+- **Mensalidade.** Cobrada a partir do dia seguinte à ativação; `isFeePayer` define se paga a subconta ou a conta raiz. Custo não previsto no plano: decidir antes de produção.
+- **Desabilitar encerra todas as garantias da subconta**; reabilitar só depois que as garantias em liberação forem encerradas.
+- **Consulta da garantia de uma cobrança** (`GET /v3/payments/{id}/escrow`) usa a **chave da própria subconta**, e não há webhook de mudança da garantia. Indício de que o Viteme vai guardar a chave de cada subconta, cifrada (a condição "só se Q1/Q2 exigirem" da Fase 2).
+- **Sandbox.** A página "O que pode ser testado" não cita a Conta Escrow: confirmar chamando `POST /v3/accounts/escrow` com a conta sandbox PJ (entra na nova rodada da Fase 0).
+- **Conta sandbox PJ (P55).** O sandbox é separado da produção e aprova a conta sozinho quando os dados obrigatórios estão corretos (nome sem números ou caracteres especiais). Limites: 20 subcontas por dia; a partir da primeira subconta, período de avaliação com até 10 subcontas de titulares diferentes, R$ 2.000 em cobranças por subconta e 60 dias. A chave de API da subconta só aparece na criação. O onboarding por link é simulado e o teste dele depende de liberação do suporte. Não confirmado: se o sandbox aceita CNPJ só com dígitos válidos ou exige CNPJ real.
+
+Fontes: [Introdução à Conta Escrow](https://docs.asaas.com/docs/introducao-conta-escrow) · [Habilitando a Conta Escrow para as subcontas](https://docs.asaas.com/docs/habilitando-a-conta-escrow-para-as-subcontas) · [Bloqueio dos valores](https://docs.asaas.com/docs/bloqueio-dos-valores) · [O que pode ser testado](https://docs.asaas.com/docs/o-que-pode-ser-testado) · [FAQ do Sandbox](https://docs.asaas.com/docs/faq-sandbox) · [Criar subconta](https://docs.asaas.com/reference/criar-subconta) · [Creating subaccounts](https://docs.asaas.com/docs/creating-subaccounts)
