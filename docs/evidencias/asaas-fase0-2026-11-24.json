@@ -1,0 +1,438 @@
+{
+  "executadoEm": "2026-11-24T00:55:52.5680166-03:00",
+  "urlBase": "https://api-sandbox.asaas.com/v3",
+  "passos": [
+    {
+      "passo": "saldo",
+      "requisicao": "GET /finance/balance",
+      "status": 200,
+      "resposta": {
+        "balance": 0
+      }
+    },
+    {
+      "passo": "Q4-cliente-sem-cpf",
+      "requisicao": "POST /customers",
+      "status": 200,
+      "resposta": {
+        "object": "customer",
+        "id": "cus_000010097026",
+        "dateCreated": "2026-11-24",
+        "name": "Pagador Sem CPF",
+        "email": "sem-cpf@exemplo.com",
+        "company": null,
+        "phone": null,
+        "mobilePhone": null,
+        "address": null,
+        "addressNumber": null,
+        "complement": null,
+        "province": null,
+        "postalCode": null,
+        "cpfCnpj": null,
+        "personType": null,
+        "deleted": false,
+        "additionalEmails": null,
+        "externalReference": null,
+        "notificationDisabled": false,
+        "observations": null,
+        "municipalInscription": null,
+        "stateInscription": null,
+        "canDelete": true,
+        "cannotBeDeletedReason": null,
+        "canEdit": true,
+        "cannotEditReason": null,
+        "city": null,
+        "cityName": null,
+        "state": null,
+        "country": "Brasil"
+      }
+    },
+    {
+      "passo": "Q4b-cobranca-cliente-sem-cpf",
+      "requisicao": "POST /payments",
+      "status": 400,
+      "resposta": {
+        "errors": [
+          {
+            "code": "invalid_object",
+            "description": "Para criar esta cobrança é necessário preencher o CPF ou CNPJ do cliente."
+          }
+        ]
+      }
+    },
+    {
+      "passo": "cliente",
+      "requisicao": "POST /customers",
+      "status": 200,
+      "resposta": {
+        "object": "customer",
+        "id": "cus_000010097027",
+        "dateCreated": "2026-11-24",
+        "name": "Pagador Fase 0",
+        "email": "fase0@exemplo.com",
+        "company": null,
+        "phone": null,
+        "mobilePhone": null,
+        "address": null,
+        "addressNumber": null,
+        "complement": null,
+        "province": null,
+        "postalCode": null,
+        "cpfCnpj": "12345678909",
+        "personType": "FISICA",
+        "deleted": false,
+        "additionalEmails": null,
+        "externalReference": "fase0-2026-11-24",
+        "notificationDisabled": true,
+        "observations": null,
+        "municipalInscription": null,
+        "stateInscription": null,
+        "canDelete": true,
+        "cannotBeDeletedReason": null,
+        "canEdit": true,
+        "cannotEditReason": null,
+        "city": null,
+        "cityName": null,
+        "state": null,
+        "country": "Brasil"
+      }
+    },
+    {
+      "passo": "cobranca-pix",
+      "requisicao": "POST /payments",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_nnxiy852d74qps",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010097027",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 0 Viteme",
+        "billingType": "PIX",
+        "pixTransaction": null,
+        "status": "PENDING",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": null,
+        "clientPaymentDate": null,
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_nnxiy852d74qps",
+        "invoiceNumber": "22609505",
+        "externalReference": "cedb030c-64c2-499e-bacd-e77235bb96cc",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": null,
+        "estimatedCreditDate": null,
+        "transactionReceiptUrl": null,
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "busca-por-referencia",
+      "requisicao": "GET /payments?externalReference=cedb030c-64c2-499e-bacd-e77235bb96cc",
+      "status": 200,
+      "resposta": {
+        "object": "list",
+        "hasMore": false,
+        "totalCount": 1,
+        "limit": 10,
+        "offset": 0,
+        "data": [
+          {
+            "object": "payment",
+            "id": "pay_0_nnxiy852d74qps",
+            "dateCreated": "2026-11-24",
+            "customer": "cus_000010097027",
+            "checkoutSession": null,
+            "paymentLink": null,
+            "value": 10.0,
+            "netValue": 9.01,
+            "originalValue": null,
+            "interestValue": null,
+            "description": "Fase 0 Viteme",
+            "billingType": "PIX",
+            "pixTransaction": null,
+            "status": "PENDING",
+            "dueDate": "2026-11-25",
+            "originalDueDate": "2026-11-25",
+            "paymentDate": null,
+            "clientPaymentDate": null,
+            "installmentNumber": null,
+            "invoiceUrl": "https://sandbox.asaas.com/i/0_nnxiy852d74qps",
+            "invoiceNumber": "22609505",
+            "externalReference": "cedb030c-64c2-499e-bacd-e77235bb96cc",
+            "deleted": false,
+            "anticipated": false,
+            "anticipable": false,
+            "creditDate": null,
+            "estimatedCreditDate": null,
+            "transactionReceiptUrl": null,
+            "nossoNumero": null,
+            "bankSlipUrl": null,
+            "lastInvoiceViewedDate": null,
+            "lastBankSlipViewedDate": null,
+            "discount": {
+              "value": 0.0,
+              "limitDate": null,
+              "dueDateLimitDays": 0,
+              "type": "FIXED"
+            },
+            "fine": {
+              "value": 0.0,
+              "type": "FIXED"
+            },
+            "interest": {
+              "value": 0.0,
+              "type": "PERCENTAGE"
+            },
+            "postalService": false,
+            "escrow": null,
+            "refunds": null
+          }
+        ]
+      }
+    },
+    {
+      "passo": "pix-qrcode",
+      "requisicao": "GET /payments/pay_0_nnxiy852d74qps/pixQrCode",
+      "status": 400,
+      "resposta": {
+        "errors": [
+          {
+            "code": "invalid_action",
+            "description": "Você não possui uma chave Pix cadastrada para recebimentos de cobranças via Pix."
+          }
+        ]
+      }
+    },
+    {
+      "passo": "confirmar-pagamento-sandbox",
+      "requisicao": "POST /sandbox/payment/pay_0_nnxiy852d74qps/confirm",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_nnxiy852d74qps",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010097027",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 0 Viteme",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "c0143ea0-6f4c-4c28-8be7-dfdd08ae1220",
+        "pixQrCodeId": "d43364c6-e438-4a1f-850c-8610c8ebe302",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_nnxiy852d74qps",
+        "invoiceNumber": "22609505",
+        "externalReference": "cedb030c-64c2-499e-bacd-e77235bb96cc",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF9ubnhpeTg1MmQ3NHFwcw%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "status-apos-pagamento",
+      "requisicao": "GET /payments/pay_0_nnxiy852d74qps",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_nnxiy852d74qps",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010097027",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 0 Viteme",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "c0143ea0-6f4c-4c28-8be7-dfdd08ae1220",
+        "pixQrCodeId": "d43364c6-e438-4a1f-850c-8610c8ebe302",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_nnxiy852d74qps",
+        "invoiceNumber": "22609505",
+        "externalReference": "cedb030c-64c2-499e-bacd-e77235bb96cc",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF9ubnhpeTg1MmQ3NHFwcw%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "estorno",
+      "requisicao": "POST /payments/pay_0_nnxiy852d74qps/refund",
+      "status": 400,
+      "resposta": {
+        "errors": [
+          {
+            "code": "invalid_action",
+            "description": "Saldo insuficiente."
+          }
+        ]
+      }
+    },
+    {
+      "passo": "status-apos-estorno",
+      "requisicao": "GET /payments/pay_0_nnxiy852d74qps",
+      "status": 200,
+      "resposta": {
+        "object": "payment",
+        "id": "pay_0_nnxiy852d74qps",
+        "dateCreated": "2026-11-24",
+        "customer": "cus_000010097027",
+        "checkoutSession": null,
+        "paymentLink": null,
+        "value": 10.0,
+        "netValue": 9.01,
+        "originalValue": null,
+        "interestValue": null,
+        "description": "Fase 0 Viteme",
+        "billingType": "PIX",
+        "confirmedDate": "2026-11-24",
+        "pixTransaction": "c0143ea0-6f4c-4c28-8be7-dfdd08ae1220",
+        "pixQrCodeId": "d43364c6-e438-4a1f-850c-8610c8ebe302",
+        "status": "RECEIVED",
+        "dueDate": "2026-11-25",
+        "originalDueDate": "2026-11-25",
+        "paymentDate": "2026-11-24",
+        "clientPaymentDate": "2026-11-24",
+        "installmentNumber": null,
+        "invoiceUrl": "https://sandbox.asaas.com/i/0_nnxiy852d74qps",
+        "invoiceNumber": "22609505",
+        "externalReference": "cedb030c-64c2-499e-bacd-e77235bb96cc",
+        "deleted": false,
+        "anticipated": false,
+        "anticipable": false,
+        "creditDate": "2026-11-24",
+        "estimatedCreditDate": "2026-11-24",
+        "transactionReceiptUrl": "https://sandbox.asaas.com/000/comprovantes/h/UEFZTUVOVF9SRUNFSVZFRDpwYXlfMF9ubnhpeTg1MmQ3NHFwcw%3D%3D",
+        "nossoNumero": null,
+        "bankSlipUrl": null,
+        "lastInvoiceViewedDate": null,
+        "lastBankSlipViewedDate": null,
+        "discount": {
+          "value": 0.0,
+          "limitDate": null,
+          "dueDateLimitDays": 0,
+          "type": "FIXED"
+        },
+        "fine": {
+          "value": 0.0,
+          "type": "FIXED"
+        },
+        "interest": {
+          "value": 0.0,
+          "type": "PERCENTAGE"
+        },
+        "postalService": false,
+        "escrow": null,
+        "refunds": null
+      }
+    },
+    {
+      "passo": "Q3-subconta",
+      "requisicao": "POST /accounts",
+      "status": 403,
+      "resposta": {
+        "message": "Contas de pessoa física (CPF) não podem criar subcontas no Asaas. Apenas contas de pessoa jurídica (CNPJ) podem acessar essa funcionalidade. Consulte as regras dos nossos produtos."
+      }
+    }
+  ],
+  "Q4_clienteSemCpfAceito": true,
+  "Q4b_cobrancaSemCpfAceita": false,
+  "cobrancaId": "pay_0_nnxiy852d74qps",
+  "invoiceUrl": "https://sandbox.asaas.com/i/0_nnxiy852d74qps",
+  "Q_pixQrCodeObtido": false,
+  "statusApoPagamento": "RECEIVED",
+  "statusApoEstorno": "RECEIVED",
+  "Q3_subcontaCriada": false
+}

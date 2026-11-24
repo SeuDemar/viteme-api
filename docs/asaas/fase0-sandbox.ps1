@@ -1,3 +1,4 @@
+#requires -Version 7
 <#
 .SYNOPSIS
   Fase 0 do plano Asaas (.claude/planning/pagamentos-asaas.md): prova no sandbox, sem código de produção.
@@ -70,6 +71,16 @@ $null = Chamar 'saldo' 'GET' 'finance/balance'
 $semCpf = Chamar 'Q4-cliente-sem-cpf' 'POST' 'customers' @{ name = 'Pagador Sem CPF'; email = 'sem-cpf@exemplo.com' } -EsperaErro
 $evidencias['Q4_clienteSemCpfAceito'] = ($script:evidencias.passos[-1].status -lt 400)
 
+# Q4b: o cliente sem CPF aceita uma cobrança Pix? (o cliente foi aceito, mas a cobrança pode exigir o documento)
+if ($evidencias['Q4_clienteSemCpfAceito']) {
+  $null = Chamar 'Q4b-cobranca-cliente-sem-cpf' 'POST' 'payments' @{
+    customer = $semCpf.id; billingType = 'PIX'; value = 10.00
+    dueDate = (Get-Date).AddDays(1).ToString('yyyy-MM-dd'); description = 'Fase 0 sem CPF'
+    externalReference = [guid]::NewGuid().ToString()
+  } -EsperaErro
+  $evidencias['Q4b_cobrancaSemCpfAceita'] = ($script:evidencias.passos[-1].status -lt 400)
+}
+
 # Cliente com CPF de teste válido (dígitos verificadores corretos), com externalReference como o adaptador faz.
 $cliente = Chamar 'cliente' 'POST' 'customers' @{
   name = 'Pagador Fase 0'; email = 'fase0@exemplo.com'; cpfCnpj = '12345678909'
@@ -89,8 +100,10 @@ $evidencias['invoiceUrl'] = $cobranca.invoiceUrl
 $null = Chamar 'busca-por-referencia' 'GET' "payments?externalReference=$($cobranca.externalReference)"
 
 # QR Code Pix: o frontend deve mostrar "copia e cola" (payload) e a imagem.
-$qr = Chamar 'pix-qrcode' 'GET' "payments/$($cobranca.id)/pixQrCode"
-$evidencias['Q_pixPayloadPresente'] = -not [string]::IsNullOrEmpty($qr.payload)
+# No sandbox a conta precisa ter uma chave Pix cadastrada (painel: Pix > Minhas chaves), senão responde 400.
+$qr = Chamar 'pix-qrcode' 'GET' "payments/$($cobranca.id)/pixQrCode" -EsperaErro
+$evidencias['Q_pixQrCodeObtido'] = ($script:evidencias.passos[-1].status -lt 400)
+if (-not $evidencias['Q_pixQrCodeObtido']) { Write-Warning 'Sem QR Code: cadastre uma chave Pix na conta do sandbox. Seguindo com o resto do fluxo.' }
 
 # Pagamento simulado (sandbox) e conferência do status.
 $null = Chamar 'confirmar-pagamento-sandbox' 'POST' "sandbox/payment/$($cobranca.id)/confirm" @{}

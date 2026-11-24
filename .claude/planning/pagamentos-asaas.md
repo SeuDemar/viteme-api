@@ -75,3 +75,23 @@ Fluxo completo no sandbox: organizador com CNPJ → subconta aprovada → evento
 - Conta Escrow: https://docs.asaas.com/docs/introducao-conta-escrow · https://docs.asaas.com/docs/bloqueio-dos-valores · https://docs.asaas.com/reference/encerrar-garantia-da-cobranca-na-conta-escrow · https://docs.asaas.com/docs/habilitando-a-conta-escrow-para-as-subcontas
 - Split e estorno: https://docs.asaas.com/docs/split-de-pagamentos · https://docs.asaas.com/docs/split-em-cobrancas-avulsas · https://docs.asaas.com/reference/estornar-cobranca-com-dados-resumidos-na-resposta
 - Subcontas: https://docs.asaas.com/docs/criacao-de-subcontas · https://docs.asaas.com/docs/detalhamento-do-fluxo-de-aprova%C3%A7%C3%A3o-de-subcontas · https://docs.asaas.com/docs/duvidas-frequentes-subcontas
+
+## 6. Respostas da Fase 0 (execução de 2026-11-24 no sandbox)
+
+Evidência: [docs/evidencias/asaas-fase0-2026-11-24.json](../../docs/evidencias/asaas-fase0-2026-11-24.json), gerada por [docs/asaas/fase0-sandbox.ps1](../../docs/asaas/README.md). A conta usada é de **pessoa física**.
+
+| # | Resposta | Situação |
+|---|---|---|
+| Q4 | **O CPF/CNPJ do pagador é obrigatório para cobrar.** O Asaas aceita criar o *cliente* sem documento (HTTP 200), mas a *cobrança* Pix para esse cliente é recusada: HTTP 400 "Para criar esta cobrança é necessário preencher o CPF ou CNPJ do cliente". O Viteme precisa coletar e validar o CPF do pagador (só ao pagar, LGPD) antes de produção (P1) | **Respondida** |
+| Q3 | Não testada: `POST /accounts` respondeu **403** "Contas de pessoa física (CPF) não podem criar subcontas. Apenas contas de pessoa jurídica (CNPJ)". A conta raiz do Viteme **tem de ser PJ**, também no sandbox, para testar subcontas, split e escrow | Bloqueada |
+| Q6 | Idem Q3 (sem subconta não há aprovação para observar) | Bloqueada |
+| Q1, Q2 | Idem: dependem de subconta com escrow | Bloqueada |
+| Q5 | Pagamento simulado (`POST /sandbox/payment/{id}/confirm`) levou a cobrança a `RECEIVED` (e não `CONFIRMED`), coerente com o mapeamento do adaptador. O envio do webhook não foi testado: nenhum webhook foi cadastrado no painel | Parcial |
+
+Outras constatações:
+- `dueDate` por data foi aceito; `externalReference` e a busca por ela funcionam (base da idempotência do adaptador).
+- `netValue` 9,01 para `value` 10,00: a tarifa do Pix (R$ 0,99) sai do valor líquido, como o plano previa.
+- `invoiceUrl` vem na criação da cobrança, mesmo sem chave Pix cadastrada.
+- `GET /payments/{id}/pixQrCode` responde **400** "Você não possui uma chave Pix cadastrada para recebimentos". Para o QR Code próprio (Fase 4) a conta raiz precisa de uma chave Pix.
+- O **estorno** logo após o recebimento respondeu **400 "Saldo insuficiente"**: o valor recebido ainda não está no saldo da conta do sandbox (saldo 0). O adaptador sobe `HttpRequestException` e o `EstornoService` repete a cada minuto (D30), então o estorno só passa quando o valor creditar. Confirmar no sandbox adicionando saldo à conta.
+- O `User-Agent` enviado (`Viteme-Fase0/1.0`) não causou erro; se ele é obrigatório continua sem confirmação.
